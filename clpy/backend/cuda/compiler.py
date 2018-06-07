@@ -1,16 +1,15 @@
 import hashlib
 import math
 import os
-import re
 import shutil
 import sys
 import tempfile
 
 import six
 
-from cupy.cuda import device
-from cupy.cuda import function
-from cupy.cuda import nvrtc
+from clpy.cuda import device
+from clpy.cuda import function
+from clpy.cuda import nvrtc
 
 _nvrtc_version = None
 
@@ -95,7 +94,7 @@ def _preprocess(source, options, arch):
     return result
 
 
-_default_cache_dir = os.path.expanduser('~/.cupy/kernel_cache')
+_default_cache_dir = os.path.expanduser('~/.clpy/kernel_cache')
 
 
 def get_cache_dir():
@@ -151,7 +150,7 @@ def compile_with_cache(source, options=(), arch=None, cache_dir=None,
 
     ptx = compile_using_nvrtc(source, options, arch)
     ls = function.LinkState()
-    ls.add_ptr_data(ptx, six.u('cupy.ptx'))
+    ls.add_ptr_data(ptx, six.u('clpy.ptx'))
     cubin = ls.complete()
     cubin_hash = six.b(hashlib.md5(cubin).hexdigest())
 
@@ -231,7 +230,3 @@ class _NVRTCProgram(object):
         except nvrtc.NVRTCError:
             log = nvrtc.getProgramLog(self.ptr)
             raise CompileException(log, self.src, self.name, options)
-
-
-def is_valid_kernel_name(name):
-    return re.match('^[a-zA-Z_][a-zA-Z_0-9]*$', name) is not None

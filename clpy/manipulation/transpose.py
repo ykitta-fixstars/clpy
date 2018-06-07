@@ -1,16 +1,16 @@
-from cupy import core
+from clpy import core
 
 
 def rollaxis(a, axis, start=0):
     """Moves the specified axis backwards to the given place.
 
     Args:
-        a (cupy.ndarray): Array to move the axis.
+        a (clpy.ndarray): Array to move the axis.
         axis (int): The axis to move.
         start (int): The place to which the axis is moved.
 
     Returns:
-        cupy.ndarray: A view of ``a`` that the axis is moved to ``start``.
+        clpy.ndarray: A view of ``a`` that the axis is moved to ``start``.
 
     .. seealso:: :func:`numpy.rollaxis`
 
@@ -22,12 +22,12 @@ def swapaxes(a, axis1, axis2):
     """Swaps the two axes.
 
     Args:
-        a (cupy.ndarray): Array to swap the axes.
+        a (clpy.ndarray): Array to swap the axes.
         axis1 (int): The first axis to swap.
         axis2 (int): The second axis to swap.
 
     Returns:
-        cupy.ndarray: A view of ``a`` that the two axes are swapped.
+        clpy.ndarray: A view of ``a`` that the two axes are swapped.
 
     .. seealso:: :func:`numpy.swapaxes`
 
@@ -40,12 +40,12 @@ def transpose(a, axes=None):
     """Permutes the dimensions of an array.
 
     Args:
-        a (cupy.ndarray): Array to permute the dimensions.
+        a (clpy.ndarray): Array to permute the dimensions.
         axes (tuple of ints): Permutation of the dimensions. This function
             reverses the shape by default.
 
     Returns:
-        cupy.ndarray: A view of ``a`` that the dimensions are permuted.
+        clpy.ndarray: A view of ``a`` that the dimensions are permuted.
 
     .. seealso:: :func:`numpy.transpose`
 

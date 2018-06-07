@@ -2,8 +2,8 @@ import math
 
 import numpy
 
-import cupy
-from cupy import core
+import clpy
+from clpy import core
 
 
 def arange(start, stop=None, step=1, dtype=None):
@@ -21,7 +21,7 @@ def arange(start, stop=None, step=1, dtype=None):
             default.
 
     Returns:
-        cupy.ndarray: The 1-D array of range values.
+        clpy.ndarray: The 1-D array of range values.
 
     .. seealso:: :func:`numpy.arange`
 
@@ -42,17 +42,17 @@ def arange(start, stop=None, step=1, dtype=None):
 
     size = int(numpy.ceil((stop - start) / step))
     if size <= 0:
-        return cupy.empty((0,), dtype=dtype)
+        return clpy.empty((0,), dtype=dtype)
 
     if numpy.dtype(dtype).type == numpy.bool_:
         if size > 2:
             raise ValueError('no fill-function for data-type.')
         if size == 2:
-            return cupy.array([start, start - step], dtype=numpy.bool_)
+            return clpy.array([start, start - step], dtype=numpy.bool_)
         else:
-            return cupy.array([start], dtype=numpy.bool_)
+            return clpy.array([start], dtype=numpy.bool_)
 
-    ret = cupy.empty((size,), dtype=dtype)
+    ret = clpy.empty((size,), dtype=dtype)
     typ = numpy.dtype(dtype).type
     _arange_ufunc(typ(start), typ(step), ret, dtype=dtype)
     return ret
@@ -61,7 +61,7 @@ def arange(start, stop=None, step=1, dtype=None):
 def linspace(start, stop, num=50, endpoint=True, retstep=False, dtype=None):
     """Returns an array with evenly-spaced values within a given interval.
 
-    Instead of specifying the step width like :func:`cupy.arange`, this
+    Instead of specifying the step width like :func:`clpy.arange`, this
     function requires the total number of elements specified.
 
     Args:
@@ -76,7 +76,7 @@ def linspace(start, stop, num=50, endpoint=True, retstep=False, dtype=None):
             arguments by default.
 
     Returns:
-        cupy.ndarray: The 1-D array of ranged values.
+        clpy.ndarray: The 1-D array of ranged values.
 
     """
     if num < 0:
@@ -86,7 +86,7 @@ def linspace(start, stop, num=50, endpoint=True, retstep=False, dtype=None):
         # In actual implementation, only float is used
         dtype = float
 
-    ret = cupy.empty((num,), dtype=dtype)
+    ret = clpy.empty((num,), dtype=dtype)
     if num == 0:
         step = float('nan')
     elif num == 1:
@@ -116,7 +116,7 @@ def linspace(start, stop, num=50, endpoint=True, retstep=False, dtype=None):
 def logspace(start, stop, num=50, endpoint=True, base=10.0, dtype=None):
     """Returns an array with evenly-spaced values on a log-scale.
 
-    Instead of specifying the step width like :func:`cupy.arange`, this
+    Instead of specifying the step width like :func:`clpy.arange`, this
     function requires the total number of elements specified.
 
     Args:
@@ -131,7 +131,7 @@ def logspace(start, stop, num=50, endpoint=True, base=10.0, dtype=None):
             arguments by default.
 
     Returns:
-        cupy.ndarray: The 1-D array of ranged values.
+        clpy.ndarray: The 1-D array of ranged values.
 
     """
     y = linspace(start, stop, num=num, endpoint=endpoint)
@@ -163,7 +163,7 @@ def meshgrid(*xi, **kwargs):
             into the original arrays are returned. Default is True.
 
     Returns:
-        list of cupy.ndarray
+        list of clpy.ndarray
 
     .. seealso:: :func:`numpy.meshgrid`
 
@@ -181,8 +181,8 @@ def meshgrid(*xi, **kwargs):
     for x in xi:
         if x.ndim != 1:
             raise ValueError('input has to be 1d')
-        if not isinstance(x, cupy.ndarray):
-            raise ValueError('input has to be cupy.ndarray')
+        if not isinstance(x, clpy.ndarray):
+            raise ValueError('input has to be clpy.ndarray')
     if len(xi) <= 1:
         return list(xi)
 
@@ -199,7 +199,7 @@ def meshgrid(*xi, **kwargs):
                          (slice(None),) +
                          (None,) * (len(xi) - (left_none + 1)))
         meshes.append(x[expand_slices])
-    meshes_br = list(cupy.broadcast_arrays(*meshes))
+    meshes_br = list(clpy.broadcast_arrays(*meshes))
 
     if copy:
         for i in range(len(meshes_br)):
@@ -248,9 +248,9 @@ class nd_grid(object):
                 if step != 1:
                     step = (key.stop - start) / float(step - 1)
                 stop = key.stop + step
-                return cupy.arange(0, length, 1, float) * step + start
+                return clpy.arange(0, length, 1, float) * step + start
             else:
-                return cupy.arange(start, stop, step)
+                return clpy.arange(start, stop, step)
 
         size = []
         typ = int
@@ -272,10 +272,10 @@ class nd_grid(object):
                     isinstance(key[k].stop, float)):
                 typ = float
         if self.sparse:
-            nn = [cupy.arange(_x, dtype=_t)
+            nn = [clpy.arange(_x, dtype=_t)
                   for _x, _t in zip(size, (typ,) * len(size))]
         else:
-            nn = cupy.indices(size, typ)
+            nn = clpy.indices(size, typ)
         for k in range(len(size)):
             step = key[k].step
             start = key[k].start
@@ -289,11 +289,11 @@ class nd_grid(object):
                     step = (key[k].stop - start) / float(step - 1)
             nn[k] = (nn[k] * step + start)
         if self.sparse:
-            slobj = [cupy.newaxis] * len(size)
+            slobj = [clpy.newaxis] * len(size)
             for k in range(len(size)):
                 slobj[k] = slice(None, None)
                 nn[k] = nn[k][slobj]
-                slobj[k] = cupy.newaxis
+                slobj[k] = clpy.newaxis
         return nn
 
     def __len__(self):
@@ -305,20 +305,20 @@ ogrid = nd_grid(sparse=True)
 
 
 _arange_ufunc = core.create_ufunc(
-    'cupy_arange',
+    'clpy_arange',
     ('bb->b', 'BB->B', 'hh->h', 'HH->H', 'ii->i', 'II->I', 'll->l', 'LL->L',
-     'qq->q', 'QQ->Q', 'ee->e', 'ff->f', 'dd->d',
+     'qq->q', 'QQ->Q', 'ff->f', 'dd->d',
      ('FF->F', 'out0 = in0 + float(i) * in1'),
      ('DD->D', 'out0 = in0 + double(i) * in1')),
     'out0 = in0 + i * in1')
 
 
 _linspace_ufunc = core.create_ufunc(
-    'cupy_linspace',
+    'clpy_linspace',
     ('dd->d',),
     'out0 = in0 + i * in1')
 
 _linspace_ufunc_underflow = core.create_ufunc(
-    'cupy_linspace',
+    'clpy_linspace',
     ('ddd->d',),
     'out0 = in0 + i * in1 / in2')

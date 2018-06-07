@@ -1,8 +1,8 @@
 import numpy
 
-import cupy
-from cupy.cuda import cusparse
-from cupy.cuda import device
+import clpy
+from clpy.cuda import cusparse
+from clpy.cuda import device
 
 
 class MatDescriptor(object):
@@ -63,15 +63,15 @@ def csrmv(a, x, y=None, alpha=1, beta=0, transa=False):
     is an identity function otherwise.
 
     Args:
-        a (cupy.cusparse.csr_matrix): Matrix A.
-        x (cupy.ndarray): Vector x.
-        y (cupy.ndarray or None): Vector y. It must be F-contiguous.
+        a (clpy.cusparse.csr_matrix): Matrix A.
+        x (clpy.ndarray): Vector x.
+        y (clpy.ndarray or None): Vector y. It must be F-contiguous.
         alpha (float): Coefficient for x.
         beta (float): Coefficient for y.
         transa (bool): If ``True``, transpose of ``A`` is used.
 
     Returns:
-        cupy.ndarray: Calculated ``y``.
+        clpy.ndarray: Calculated ``y``.
 
     """
     assert y is None or y.flags.f_contiguous
@@ -85,7 +85,7 @@ def csrmv(a, x, y=None, alpha=1, beta=0, transa=False):
     a, x, y = _cast_common_type(a, x, y)
     dtype = a.dtype
     if y is None:
-        y = cupy.zeros(m, dtype)
+        y = clpy.zeros(m, dtype)
     alpha = numpy.array(alpha, dtype).ctypes
     beta = numpy.array(beta, dtype).ctypes
     _call_cusparse(
@@ -109,15 +109,15 @@ def csrmm(a, b, c=None, alpha=1, beta=0, transa=False):
     is an identity function otherwise.
 
     Args:
-        a (cupy.sparse.csr): Sparse matrix A.
-        b (cupy.ndarray): Dense matrix B. It must be F-contiguous.
-        c (cupy.ndarray or None): Dense matrix C. It must be F-contiguous.
+        a (clpy.sparse.csr): Sparse matrix A.
+        b (clpy.ndarray): Dense matrix B. It must be F-contiguous.
+        c (clpy.ndarray or None): Dense matrix C. It must be F-contiguous.
         alpha (float): Coefficient for AB.
         beta (float): Coefficient for C.
         transa (bool): If ``True``, transpose of A is used.
 
     Returns:
-        cupy.ndarray: Calculated C.
+        clpy.ndarray: Calculated C.
 
     """
     assert a.ndim == b.ndim == 2
@@ -134,7 +134,7 @@ def csrmm(a, b, c=None, alpha=1, beta=0, transa=False):
 
     a, b, c = _cast_common_type(a, b, c)
     if c is None:
-        c = cupy.zeros((m, n), a.dtype, 'F')
+        c = clpy.zeros((m, n), a.dtype, 'F')
 
     ldb = k
     ldc = m
@@ -165,16 +165,16 @@ def csrmm2(a, b, c=None, alpha=1.0, beta=0.0, transa=False, transb=False):
     cuSPARSE specification.
 
     Args:
-        a (cupy.sparse.csr): Sparse matrix A.
-        b (cupy.ndarray): Dense matrix B. It must be F-contiguous.
-        c (cupy.ndarray or None): Dense matrix C. It must be F-contiguous.
+        a (clpy.sparse.csr): Sparse matrix A.
+        b (clpy.ndarray): Dense matrix B. It must be F-contiguous.
+        c (clpy.ndarray or None): Dense matrix C. It must be F-contiguous.
         alpha (float): Coefficient for AB.
         beta (float): Coefficient for C.
         transa (bool): If ``True``, transpose of A is used.
         transb (bool): If ``True``, transpose of B is used.
 
     Returns:
-        cupy.ndarray: Calculated C.
+        clpy.ndarray: Calculated C.
 
     """
     assert a.ndim == b.ndim == 2
@@ -193,7 +193,7 @@ def csrmm2(a, b, c=None, alpha=1.0, beta=0.0, transa=False, transb=False):
 
     a, b, c = _cast_common_type(a, b, c)
     if c is None:
-        c = cupy.zeros((m, n), a.dtype, 'F')
+        c = clpy.zeros((m, n), a.dtype, 'F')
 
     ldb = b.shape[0]
     ldc = c.shape[0]
@@ -217,13 +217,13 @@ def csrgeam(a, b, alpha=1, beta=1):
         C = \\alpha A + \\beta B
 
     Args:
-        a (cupy.sparse.csr_matrix): Sparse matrix A.
-        b (cupy.sparse.csr_matrix): Sparse matrix B.
+        a (clpy.sparse.csr_matrix): Sparse matrix A.
+        b (clpy.sparse.csr_matrix): Sparse matrix B.
         alpha (float): Coefficient for A.
         beta (float): Coefficient for B.
 
     Returns:
-        cupy.sparse.csr_matrix: Result matrix.
+        clpy.sparse.csr_matrix: Result matrix.
 
     """
     if a.shape != b.shape:
@@ -237,7 +237,7 @@ def csrgeam(a, b, alpha=1, beta=1):
         handle, cusparse.CUSPARSE_POINTER_MODE_HOST)
 
     c_descr = MatDescriptor.create()
-    c_indptr = cupy.empty(m + 1, 'i')
+    c_indptr = clpy.empty(m + 1, 'i')
 
     cusparse.xcsrgeamNnz(
         handle, m, n,
@@ -245,8 +245,8 @@ def csrgeam(a, b, alpha=1, beta=1):
         b._descr.descriptor, b.nnz, b.indptr.data.ptr, b.indices.data.ptr,
         c_descr.descriptor, c_indptr.data.ptr, nnz.ctypes.data)
 
-    c_indices = cupy.empty(int(nnz), 'i')
-    c_data = cupy.empty(int(nnz), a.dtype)
+    c_indices = clpy.empty(int(nnz), 'i')
+    c_data = clpy.empty(int(nnz), a.dtype)
     alpha = numpy.array(alpha, a.dtype).ctypes
     beta = numpy.array(beta, a.dtype).ctypes
     _call_cusparse(
@@ -259,7 +259,7 @@ def csrgeam(a, b, alpha=1, beta=1):
         c_descr.descriptor, c_data.data.ptr, c_indptr.data.ptr,
         c_indices.data.ptr)
 
-    return cupy.sparse.csr_matrix((c_data, c_indices, c_indptr), shape=a.shape)
+    return clpy.sparse.csr_matrix((c_data, c_indices, c_indptr), shape=a.shape)
 
 
 def csrgemm(a, b, transa=False, transb=False):
@@ -269,13 +269,13 @@ def csrgemm(a, b, transa=False, transb=False):
        C = op(A) op(B),
 
     Args:
-        a (cupy.sparse.csr_matrix): Sparse matrix A.
-        b (cupy.sparse.csr_matrix): Sparse matrix B.
+        a (clpy.sparse.csr_matrix): Sparse matrix A.
+        b (clpy.sparse.csr_matrix): Sparse matrix B.
         transa (bool): If ``True``, transpose of A is used.
         transb (bool): If ``True``, transpose of B is used.
 
     Returns:
-        cupy.sparse.csr_matrix: Calculated C.
+        clpy.sparse.csr_matrix: Calculated C.
 
     """
     assert a.ndim == b.ndim == 2
@@ -298,7 +298,7 @@ def csrgemm(a, b, transa=False, transb=False):
         handle, cusparse.CUSPARSE_POINTER_MODE_HOST)
 
     c_descr = MatDescriptor.create()
-    c_indptr = cupy.empty(m + 1, 'i')
+    c_indptr = clpy.empty(m + 1, 'i')
 
     cusparse.xcsrgemmNnz(
         handle, op_a, op_b, m, n, k, a._descr.descriptor, a.nnz,
@@ -306,8 +306,8 @@ def csrgemm(a, b, transa=False, transb=False):
         b.indptr.data.ptr, b.indices.data.ptr, c_descr.descriptor,
         c_indptr.data.ptr, nnz.ctypes.data)
 
-    c_indices = cupy.empty(int(nnz), 'i')
-    c_data = cupy.empty(int(nnz), a.dtype)
+    c_indices = clpy.empty(int(nnz), 'i')
+    c_data = clpy.empty(int(nnz), a.dtype)
     _call_cusparse(
         'csrgemm', a.dtype,
         handle, op_a, op_b, m, n, k, a._descr.descriptor, a.nnz,
@@ -317,25 +317,25 @@ def csrgemm(a, b, transa=False, transb=False):
         c_descr.descriptor, c_data.data.ptr, c_indptr.data.ptr,
         c_indices.data.ptr)
 
-    return cupy.sparse.csr_matrix((c_data, c_indices, c_indptr), shape=(m, n))
+    return clpy.sparse.csr_matrix((c_data, c_indices, c_indptr), shape=(m, n))
 
 
 def csr2dense(x, out=None):
     """Converts CSR-matrix to a dense matrix.
 
     Args:
-        x (cupy.sparse.csr_matrix): A sparse matrix to convert.
-        out (cupy.ndarray or None): A dense metrix to store the result.
+        x (clpy.sparse.csr_matrix): A sparse matrix to convert.
+        out (clpy.ndarray or None): A dense metrix to store the result.
             It must be F-contiguous.
 
     Returns:
-        cupy.ndarray: Converted result.
+        clpy.ndarray: Converted result.
 
     """
     dtype = x.dtype
     assert dtype == 'f' or dtype == 'd'
     if out is None:
-        out = cupy.empty(x.shape, dtype=dtype, order='F')
+        out = clpy.empty(x.shape, dtype=dtype, order='F')
     else:
         assert out.flags.f_contiguous
 
@@ -353,18 +353,18 @@ def csc2dense(x, out=None):
     """Converts CSC-matrix to a dense matrix.
 
     Args:
-        x (cupy.sparse.csc_matrix): A sparse matrix to convert.
-        out (cupy.ndarray or None): A dense metrix to store the result.
+        x (clpy.sparse.csc_matrix): A sparse matrix to convert.
+        out (clpy.ndarray or None): A dense metrix to store the result.
             It must be F-contiguous.
 
     Returns:
-        cupy.ndarray: Converted result.
+        clpy.ndarray: Converted result.
 
     """
     dtype = x.dtype
     assert dtype == 'f' or dtype == 'd'
     if out is None:
-        out = cupy.empty(x.shape, dtype=dtype, order='F')
+        out = clpy.empty(x.shape, dtype=dtype, order='F')
     else:
         assert out.flags.f_contiguous
 
@@ -382,7 +382,7 @@ def csrsort(x):
     """Sorts indices of CSR-matrix in place.
 
     Args:
-        x (cupy.sparse.csr_matrix): A sparse matrix to sort.
+        x (clpy.sparse.csr_matrix): A sparse matrix to sort.
 
     """
     handle = device.get_cusparse_handle()
@@ -392,8 +392,8 @@ def csrsort(x):
     buffer_size = cusparse.xcsrsort_bufferSizeExt(
         handle, m, n, nnz, x.indptr.data.ptr,
         x.indices.data.ptr)
-    buf = cupy.empty(buffer_size, 'b')
-    P = cupy.empty(nnz, 'i')
+    buf = clpy.empty(buffer_size, 'b')
+    P = clpy.empty(nnz, 'i')
     cusparse.createIdentityPermutation(handle, nnz, P.data.ptr)
     cusparse.xcsrsort(
         handle, m, n, nnz, x._descr.descriptor, x.indptr.data.ptr,
@@ -408,7 +408,7 @@ def cscsort(x):
     """Sorts indices of CSC-matrix in place.
 
     Args:
-        x (cupy.sparse.csc_matrix): A sparse matrix to sort.
+        x (clpy.sparse.csc_matrix): A sparse matrix to sort.
 
     """
     handle = device.get_cusparse_handle()
@@ -418,8 +418,8 @@ def cscsort(x):
     buffer_size = cusparse.xcscsort_bufferSizeExt(
         handle, m, n, nnz, x.indptr.data.ptr,
         x.indices.data.ptr)
-    buf = cupy.empty(buffer_size, 'b')
-    P = cupy.empty(nnz, 'i')
+    buf = clpy.empty(buffer_size, 'b')
+    P = clpy.empty(nnz, 'i')
     cusparse.createIdentityPermutation(handle, nnz, P.data.ptr)
     cusparse.xcscsort(
         handle, m, n, nnz, x._descr.descriptor, x.indptr.data.ptr,
@@ -439,8 +439,8 @@ def coosort(x):
 
     buffer_size = cusparse.xcoosort_bufferSizeExt(
         handle, m, n, nnz, x.row.data.ptr, x.col.data.ptr)
-    buf = cupy.empty(buffer_size, 'b')
-    P = cupy.empty(nnz, 'i')
+    buf = clpy.empty(buffer_size, 'b')
+    P = clpy.empty(nnz, 'i')
     cusparse.createIdentityPermutation(handle, nnz, P.data.ptr)
     cusparse.xcoosortByRow(
         handle, m, n, nnz, x.row.data.ptr, x.col.data.ptr,
@@ -454,11 +454,11 @@ def coosort(x):
 def coo2csr(x):
     handle = device.get_cusparse_handle()
     m = x.shape[0]
-    indptr = cupy.empty(m + 1, 'i')
+    indptr = clpy.empty(m + 1, 'i')
     cusparse.xcoo2csr(
         handle, x.row.data.ptr, x.nnz, m,
         indptr.data.ptr, cusparse.CUSPARSE_INDEX_BASE_ZERO)
-    return cupy.sparse.csr.csr_matrix(
+    return clpy.sparse.csr.csr_matrix(
         (x.data, x.col, indptr), shape=x.shape)
 
 
@@ -466,23 +466,23 @@ def csr2coo(x, data, indices):
     """Converts a CSR-matrix to COO format.
 
     Args:
-        x (cupy.sparse.csr_matrix): A matrix to be converted.
-        data (cupy.ndarray): A data array for converted data.
-        indices (cupy.ndarray): An index array for converted data.
+        x (clpy.sparse.csr_matrix): A matrix to be converted.
+        data (clpy.ndarray): A data array for converted data.
+        indices (clpy.ndarray): An index array for converted data.
 
     Returns:
-        cupy.sparse.coo_matrix: A converted matrix.
+        clpy.sparse.coo_matrix: A converted matrix.
 
     """
     handle = device.get_cusparse_handle()
     m = x.shape[0]
     nnz = len(x.data)
-    row = cupy.empty(nnz, 'i')
+    row = clpy.empty(nnz, 'i')
     cusparse.xcsr2coo(
         handle, x.indptr.data.ptr, nnz, m, row.data.ptr,
         cusparse.CUSPARSE_INDEX_BASE_ZERO)
     # data and indices did not need to be copied already
-    return cupy.sparse.coo_matrix(
+    return clpy.sparse.coo_matrix(
         (data, (row, indices)), shape=x.shape)
 
 
@@ -490,9 +490,9 @@ def csr2csc(x):
     handle = device.get_cusparse_handle()
     m, n = x.shape
     nnz = x.nnz
-    data = cupy.empty(nnz, x.dtype)
-    indptr = cupy.empty(n + 1, 'i')
-    indices = cupy.empty(nnz, 'i')
+    data = clpy.empty(nnz, x.dtype)
+    indptr = clpy.empty(n + 1, 'i')
+    indices = clpy.empty(nnz, 'i')
 
     _call_cusparse(
         'csr2csc', x.dtype,
@@ -501,36 +501,36 @@ def csr2csc(x):
         data.data.ptr, indices.data.ptr, indptr.data.ptr,
         cusparse.CUSPARSE_ACTION_NUMERIC,
         cusparse.CUSPARSE_INDEX_BASE_ZERO)
-    return cupy.sparse.csc_matrix((data, indices, indptr), shape=x.shape)
+    return clpy.sparse.csc_matrix((data, indices, indptr), shape=x.shape)
 
 
 def dense2csc(x):
     """Converts a dense matrix in CSC format.
 
     Args:
-        x (cupy.ndarray): A matrix to be converted.
+        x (clpy.ndarray): A matrix to be converted.
 
     Returns:
-        cupy.sparse.csc_matrix: A converted matrix.
+        clpy.sparse.csc_matrix: A converted matrix.
 
     """
     assert x.ndim == 2
-    x = cupy.asfortranarray(x)
+    x = clpy.asfortranarray(x)
     nnz = numpy.empty((), dtype='i')
     handle = device.get_cusparse_handle()
     m, n = x.shape
 
     descr = MatDescriptor.create()
-    nnz_per_col = cupy.empty(m, 'i')
+    nnz_per_col = clpy.empty(m, 'i')
     _call_cusparse(
         'nnz', x.dtype,
         handle, cusparse.CUSPARSE_DIRECTION_COLUMN, m, n, descr.descriptor,
         x.data.ptr, m, nnz_per_col.data.ptr, nnz.ctypes.data)
 
     nnz = int(nnz)
-    data = cupy.empty(nnz, x.dtype)
-    indptr = cupy.empty(n + 1, 'i')
-    indices = cupy.empty(nnz, 'i')
+    data = clpy.empty(nnz, x.dtype)
+    indptr = clpy.empty(n + 1, 'i')
+    indices = clpy.empty(nnz, 'i')
 
     _call_cusparse(
         'dense2csc', x.dtype,
@@ -538,36 +538,36 @@ def dense2csc(x):
         x.data.ptr, m, nnz_per_col.data.ptr,
         data.data.ptr, indices.data.ptr, indptr.data.ptr)
     # Note that a desciptor is recreated
-    return cupy.sparse.csc_matrix((data, indices, indptr), shape=x.shape)
+    return clpy.sparse.csc_matrix((data, indices, indptr), shape=x.shape)
 
 
 def dense2csr(x):
     """Converts a dense matrix in CSR format.
 
     Args:
-        x (cupy.ndarray): A matrix to be converted.
+        x (clpy.ndarray): A matrix to be converted.
 
     Returns:
-        cupy.sparse.csr_matrix: A converted matrix.
+        clpy.sparse.csr_matrix: A converted matrix.
 
     """
     assert x.ndim == 2
-    x = cupy.asfortranarray(x)
+    x = clpy.asfortranarray(x)
     nnz = numpy.empty((), dtype='i')
     handle = device.get_cusparse_handle()
     m, n = x.shape
 
     descr = MatDescriptor.create()
-    nnz_per_row = cupy.empty(m, 'i')
+    nnz_per_row = clpy.empty(m, 'i')
     _call_cusparse(
         'nnz', x.dtype,
         handle, cusparse.CUSPARSE_DIRECTION_ROW, m, n, descr.descriptor,
         x.data.ptr, m, nnz_per_row.data.ptr, nnz.ctypes.data)
 
     nnz = int(nnz)
-    data = cupy.empty(nnz, x.dtype)
-    indptr = cupy.empty(m + 1, 'i')
-    indices = cupy.empty(nnz, 'i')
+    data = clpy.empty(nnz, x.dtype)
+    indptr = clpy.empty(m + 1, 'i')
+    indices = clpy.empty(nnz, 'i')
 
     _call_cusparse(
         'dense2csr', x.dtype,
@@ -575,4 +575,4 @@ def dense2csr(x):
         x.data.ptr, m, nnz_per_row.data.ptr,
         data.data.ptr, indptr.data.ptr, indices.data.ptr)
     # Note that a desciptor is recreated
-    return cupy.sparse.csr_matrix((data, indices, indptr), shape=x.shape)
+    return clpy.sparse.csr_matrix((data, indices, indptr), shape=x.shape)

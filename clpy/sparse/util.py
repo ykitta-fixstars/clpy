@@ -1,5 +1,5 @@
-import cupy
-import cupy.sparse.base
+import clpy
+import clpy.sparse.base
 
 
 _preamble_atomic_add = '''
@@ -28,7 +28,7 @@ def isintlike(x):
 
 
 def isscalarlike(x):
-    return cupy.isscalar(x) or (cupy.sparse.base.isdense(x) and x.ndim == 0)
+    return clpy.isscalar(x) or (clpy.sparse.base.isdense(x) and x.ndim == 0)
 
 
 def isshape(x):

@@ -1,6 +1,6 @@
 import numpy
 
-import cupy
+import clpy
 
 
 class NpzFile(object):
@@ -17,7 +17,7 @@ class NpzFile(object):
 
     def __getitem__(self, key):
         arr = self.npz_file[key]
-        return cupy.array(arr)
+        return clpy.array(arr)
 
     def close(self):
         self.npz_file.close()
@@ -46,7 +46,7 @@ def load(file, mmap_mode=None):
     """
     obj = numpy.load(file, mmap_mode)
     if isinstance(obj, numpy.ndarray):
-        return cupy.array(obj)
+        return clpy.array(obj)
     elif isinstance(obj, numpy.lib.npyio.NpzFile):
         return NpzFile(obj)
     else:
@@ -59,12 +59,12 @@ def save(file, arr):
     Args:
         file (file or str): File or filename to save.
         arr (array_like): Array to save. It should be able to feed to
-            :func:`cupy.asnumpy`.
+            :func:`clpy.asnumpy`.
 
     .. seealso:: :func:`numpy.save`
 
     """
-    numpy.save(file, cupy.asnumpy(arr))
+    numpy.save(file, clpy.asnumpy(arr))
 
 
 def savez(file, *args, **kwds):
@@ -74,7 +74,7 @@ def savez(file, *args, **kwds):
     ``arr_0``, ``arr_1``, etc. corresponding to the positions in the argument
     list. The keys of arguments are used as keys in the ``.npz`` file, which
     are used for accessing NpzFile object when the file is read by
-    :func:`cupy.load` function.
+    :func:`clpy.load` function.
 
     Args:
         file (file or str): File or filename to save.
@@ -84,24 +84,24 @@ def savez(file, *args, **kwds):
     .. seealso:: :func:`numpy.savez`
 
     """
-    args = map(cupy.asnumpy, args)
+    args = map(clpy.asnumpy, args)
     for key in kwds:
-        kwds[key] = cupy.asnumpy(kwds[key])
+        kwds[key] = clpy.asnumpy(kwds[key])
     numpy.savez(file, *args, **kwds)
 
 
 def savez_compressed(file, *args, **kwds):
     """Saves one or more arrays into a file in compressed ``.npz`` format.
 
-    It is equivalent to :func:`cupy.savez` function except the output file is
+    It is equivalent to :func:`clpy.savez` function except the output file is
     compressed.
 
     .. seealso::
-       :func:`cupy.savez` for more detail,
+       :func:`clpy.savez` for more detail,
        :func:`numpy.savez_compressed`
 
     """
-    args = map(cupy.asnumpy, args)
+    args = map(clpy.asnumpy, args)
     for key in kwds:
-        kwds[key] = cupy.asnumpy(kwds[key])
+        kwds[key] = clpy.asnumpy(kwds[key])
     numpy.savez_compressed(file, *args, **kwds)

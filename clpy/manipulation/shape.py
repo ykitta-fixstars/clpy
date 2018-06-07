@@ -6,7 +6,7 @@ def reshape(a, newshape):
     This function currently does not support ``order`` option.
 
     Args:
-        a (cupy.ndarray): Array to be reshaped.
+        a (clpy.ndarray): Array to be reshaped.
         newshape (int or tuple of ints): The new shape of the array to return.
             If it is an integer, then it is treated as a tuple of length one.
             It should be compatible with ``a.size``. One of the elements can be
@@ -14,7 +14,7 @@ def reshape(a, newshape):
             make the shape compatible with ``a.size``.
 
     Returns:
-        cupy.ndarray: A reshaped view of ``a`` if possible, otherwise a copy.
+        clpy.ndarray: A reshaped view of ``a`` if possible, otherwise a copy.
 
     .. seealso:: :func:`numpy.reshape`
 
@@ -32,10 +32,10 @@ def ravel(a):
     This function currently does not support ``order`` option.
 
     Args:
-        a (cupy.ndarray): Array to be flattened.
+        a (clpy.ndarray): Array to be flattened.
 
     Returns:
-        cupy.ndarray: A flattened view of ``a`` if possible, otherwise a copy.
+        clpy.ndarray: A flattened view of ``a`` if possible, otherwise a copy.
 
     .. seealso:: :func:`numpy.ravel`
 

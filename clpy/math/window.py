@@ -1,9 +1,9 @@
 import numpy
 
-from cupy.creation import basic
-from cupy.creation import from_data
-from cupy.creation import ranges
-from cupy.math import trigonometric
+from clpy.creation import basic
+from clpy.creation import from_data
+from clpy.creation import ranges
+from clpy.math import trigonometric
 
 
 def blackman(M):
@@ -22,7 +22,7 @@ def blackman(M):
             array is returned.
 
     Returns:
-        ~cupy.ndarray: Output ndarray.
+        ~clpy.ndarray: Output ndarray.
 
     .. seealso:: :func:`numpy.blackman`
     """
@@ -50,7 +50,7 @@ def hamming(M):
             array is returned.
 
     Returns:
-        ~cupy.ndarray: Output ndarray.
+        ~clpy.ndarray: Output ndarray.
 
     .. seealso:: :func:`numpy.hamming`
     """
@@ -77,7 +77,7 @@ def hanning(M):
             array is returned.
 
     Returns:
-        ~cupy.ndarray: Output ndarray.
+        ~clpy.ndarray: Output ndarray.
 
     .. seealso:: :func:`numpy.hanning`
     """

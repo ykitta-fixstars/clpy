@@ -5,7 +5,7 @@
 cimport cython
 from libcpp cimport vector
 
-from cupy.cuda cimport driver
+from clpy.cuda cimport driver
 
 
 ###############################################################################

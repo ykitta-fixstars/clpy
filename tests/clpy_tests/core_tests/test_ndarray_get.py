@@ -1,8 +1,8 @@
 import unittest
 
-import cupy
-from cupy import cuda
-from cupy import testing
+import clpy
+from clpy import backend
+from clpy import testing
 import numpy
 from numpy import testing as np_testing
 
@@ -13,10 +13,10 @@ class TestArrayGet(unittest.TestCase):
     _multiprocess_can_split_ = True
 
     def setUp(self):
-        self.stream = cuda.Stream.null
+        self.stream = backend.Stream.null
 
     def check_get(self, f, stream):
-        a_gpu = f(cupy)
+        a_gpu = f(clpy)
         a_cpu = a_gpu.get(stream)
         if stream:
             stream.synchronize()
@@ -50,10 +50,10 @@ class TestArrayGet(unittest.TestCase):
     @testing.multi_gpu(2)
     @testing.for_all_dtypes()
     def test_get_multigpu(self, dtype):
-        with cuda.Device(1):
-            src = testing.shaped_arange((2, 3), xp=cupy, dtype=dtype)
-            src = cupy.asfortranarray(src)
-        with cuda.Device(0):
+        with backend.Device(1):
+            src = testing.shaped_arange((2, 3), xp=clpy, dtype=dtype)
+            src = clpy.asfortranarray(src)
+        with backend.Device(0):
             dst = src.get()
         expected = testing.shaped_arange((2, 3), xp=numpy, dtype=dtype)
         np_testing.assert_array_equal(dst, expected)

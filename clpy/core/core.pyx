@@ -6,25 +6,25 @@ import sys
 import numpy
 import six
 
-import cupy
-from cupy.core import flags
-from cupy.cuda import stream
+import clpy
+from clpy.core import flags
+# from clpy.backend import stream
 try:
-    from cupy.cuda import thrust
+    from clpy.backend import thrust
 except ImportError:
     pass
-from cupy import util
+from clpy import util
 
 cimport cpython
 cimport cython
 from libcpp cimport vector
 
-from cupy.core cimport internal
-from cupy.cuda cimport cublas
-from cupy.cuda cimport function
-from cupy.cuda cimport pinned_memory
-from cupy.cuda cimport runtime
-from cupy.cuda cimport memory
+from clpy.core cimport internal
+cimport clpy.backend.opencl.blas
+from clpy.backend cimport function
+# from clpy.backend cimport pinned_memory
+# from clpy.backend cimport runtime
+from clpy.backend cimport memory
 
 DEF MAX_NDIM = 25
 
@@ -58,14 +58,14 @@ cdef class ndarray:
     Args:
         shape (tuple of ints): Length of axes.
         dtype: Data type. It must be an argument of :class:`numpy.dtype`.
-        memptr (cupy.cuda.MemoryPointer): Pointer to the array content head.
+        memptr (clpy.backend.MemoryPointer): Pointer to the array content head.
         order ({'C', 'F'}): Row-major (C-style) or column-major
             (Fortran-style) order.
 
     Attributes:
-        base (None or cupy.ndarray): Base array from which this array is
+        base (None or clpy.ndarray): Base array from which this array is
             created as a view.
-        data (cupy.cuda.MemoryPointer): Pointer to the array content head.
+        data (clpy.backend.MemoryPointer): Pointer to the array content head.
         ~ndarray.dtype(numpy.dtype): Dtype object of element type.
 
             .. seealso::
@@ -81,6 +81,7 @@ cdef class ndarray:
     """
 
     def __init__(self, shape, dtype=float, memptr=None, order='C'):
+        buf = memptr  # TODO(LWisteria): rename param memptr if keyword argument is not used
         cdef Py_ssize_t x
         self._shape = internal.get_size(shape)
         for x in self._shape:
@@ -89,10 +90,10 @@ cdef class ndarray:
         self.dtype = numpy.dtype(dtype)
         self.size = internal.prod_ssize_t(self._shape)
 
-        if memptr is None:
+        if buf is None:
             self.data = memory.alloc(self.size * self.dtype.itemsize)
         else:
-            self.data = memptr
+            self.data = buf
         self.base = None
 
         if order == 'C':
@@ -225,7 +226,7 @@ cdef class ndarray:
 
         This property is used for sending an array to CUDA kernels. The type of
         returned C structure is different for different dtypes and ndims. The
-        definition of C type is written in ``cupy/carray.cuh``.
+        definition of C type is written in ``clpy/carray.cuh``.
 
         """
         return CArray(self)
@@ -261,8 +262,8 @@ cdef class ndarray:
     cpdef dump(self, file):
         """Dumps a pickle of the array to a file.
 
-        Dumped file can be read back to :class:`cupy.ndarray` by
-        :func:`cupy.load`.
+        Dumped file can be read back to :class:`clpy.ndarray` by
+        :func:`clpy.load`.
 
         """
         six.moves.cPickle.dump(self, file, -1)
@@ -365,7 +366,7 @@ cdef class ndarray:
                 possible.
 
         .. seealso::
-           :func:`cupy.copy` for full documentation,
+           :func:`clpy.copy` for full documentation,
            :meth:`numpy.ndarray.copy`
 
         """
@@ -393,7 +394,7 @@ cdef class ndarray:
                 this type.
 
         Returns:
-            cupy.ndarray: A view of the array. A reference to the original
+            clpy.ndarray: A view of the array. A reference to the original
             array is stored at the :attr:`~ndarray.base` attribute.
 
         .. seealso:: :meth:`numpy.ndarray.view`
@@ -441,10 +442,10 @@ cdef class ndarray:
                     'non-scalar numpy.ndarray cannot be used for fill')
             value = value.item()
 
-        if value == 0 and self._c_contiguous:
-            self.data.memset_async(0, self.nbytes, stream.Stream(True))
-        else:
-            elementwise_copy(value, self, dtype=self.dtype)
+#        if value == 0 and self._c_contiguous:
+#            self.data.memset_async(0, self.nbytes, stream.Stream(True))
+#        else:
+        elementwise_copy(value, self, dtype=self.dtype)
 
     # -------------------------------------------------------------------------
     # Shape manipulation
@@ -472,7 +473,7 @@ cdef class ndarray:
         """Returns an array of a different shape and the same content.
 
         .. seealso::
-           :func:`cupy.reshape` for full documentation,
+           :func:`clpy.reshape` for full documentation,
            :meth:`numpy.ndarray.reshape`
 
         """
@@ -531,7 +532,7 @@ cdef class ndarray:
         """Returns a view of the array with axes permuted.
 
         .. seealso::
-           :func:`cupy.transpose` for full documentation,
+           :func:`clpy.transpose` for full documentation,
            :meth:`numpy.ndarray.reshape`
 
         """
@@ -550,7 +551,7 @@ cdef class ndarray:
         """Returns a view of the array with two axes swapped.
 
         .. seealso::
-           :func:`cupy.swapaxes` for full documentation,
+           :func:`clpy.swapaxes` for full documentation,
            :meth:`numpy.ndarray.swapaxes`
 
         """
@@ -571,7 +572,7 @@ cdef class ndarray:
         It currently supports C-order only.
 
         Returns:
-            cupy.ndarray: A copy of the array with one dimension.
+            clpy.ndarray: A copy of the array with one dimension.
 
         .. seealso:: :meth:`numpy.ndarray.flatten`
 
@@ -589,7 +590,7 @@ cdef class ndarray:
         """Returns an array flattened into one dimension.
 
         .. seealso::
-           :func:`cupy.ravel` for full documentation,
+           :func:`clpy.ravel` for full documentation,
            :meth:`numpy.ndarray.ravel`
 
         """
@@ -602,7 +603,7 @@ cdef class ndarray:
         """Returns a view with size-one axes removed.
 
         .. seealso::
-           :func:`cupy.squeeze` for full documentation,
+           :func:`clpy.squeeze` for full documentation,
            :meth:`numpy.ndarray.squeeze`
 
         """
@@ -679,7 +680,7 @@ cdef class ndarray:
         """Returns an array of elements at given indices along the axis.
 
         .. seealso::
-           :func:`cupy.take` for full documentation,
+           :func:`clpy.take` for full documentation,
            :meth:`numpy.ndarray.take`
 
         """
@@ -691,7 +692,7 @@ cdef class ndarray:
         """Returns an array with repeated arrays along an axis.
 
         .. seealso::
-            :func:`cupy.repeat` for full documentation,
+            :func:`clpy.repeat` for full documentation,
             :meth:`numpy.ndarray.repeat`
 
         """
@@ -714,17 +715,19 @@ cdef class ndarray:
             out = ndarray(ba.shape[1:], choices.dtype)
 
         n_channel = numpy.prod(bcs[0].shape)
-        if mode == 'raise':
-            if not ((a < n).all() and (0 <= a).all()):
-                raise ValueError('invalid entry in choice array')
-            _choose_kernel(ba[0], bcs, n_channel, out)
-        elif mode == 'wrap':
-            ba = ba[0] % n
-            _choose_kernel(ba, bcs, n_channel, out)
-        elif mode == 'clip':
-            _choose_clip_kernel(ba[0], bcs, n_channel, n, out)
-        else:
-            raise TypeError('clipmode not understood')
+
+        raise NotImplementedError("clpy does not support this")
+#        if mode == 'raise':
+#            if not ((a < n).all() and (0 <= a).all()):
+#                raise ValueError('invalid entry in choice array')
+#            _choose_kernel(ba[0], bcs, n_channel, out)
+#        elif mode == 'wrap':
+#            ba = ba[0] % n
+#            _choose_kernel(ba, bcs, n_channel, out)
+#        elif mode == 'clip':
+#            _choose_clip_kernel(ba[0], bcs, n_channel, n, out)
+#        else:
+#            raise TypeError('clipmode not understood')
 
         return out
 
@@ -741,7 +744,7 @@ cdef class ndarray:
            ``order`` parameters that ``numpy.ndarray.sort`` does support.
 
         .. seealso::
-            :func:`cupy.sort` for full documentation,
+            :func:`clpy.sort` for full documentation,
             :meth:`numpy.ndarray.sort`
 
         """
@@ -750,10 +753,7 @@ cdef class ndarray:
 
         cdef Py_ssize_t ndim = self.ndim
 
-        if not cupy.cuda.thrust_enabled:
-            raise RuntimeError('Thrust is needed to use cupy.sort. Please '
-                               'install CUDA Toolkit with Thrust then '
-                               'reinstall CuPy after uninstalling it.')
+        raise NotImplementedError("clpy does not support this")
 
         if ndim == 0:
             raise ValueError('Sorting arrays with the rank of zero is not '
@@ -772,7 +772,7 @@ cdef class ndarray:
         if axis == ndim - 1:
             data = self
         else:
-            data = cupy.rollaxis(self, axis, ndim).copy()
+            data = clpy.rollaxis(self, axis, ndim).copy()
 
         if ndim == 1:
             thrust.sort(self.dtype, data.data.ptr, 0, self._shape)
@@ -784,7 +784,7 @@ cdef class ndarray:
         if axis == ndim - 1:
             pass
         else:
-            data = cupy.rollaxis(data, -1, axis)
+            data = clpy.rollaxis(data, -1, axis)
             elementwise_copy(data, self)
 
     def argsort(self, axis=-1):
@@ -796,10 +796,10 @@ cdef class ndarray:
                 is flattened before sorting.
 
         Returns:
-            cupy.ndarray: Array of indices that sort the array.
+            clpy.ndarray: Array of indices that sort the array.
 
         .. seealso::
-            :func:`cupy.argsort` for full documentation,
+            :func:`clpy.argsort` for full documentation,
             :meth:`numpy.ndarray.argsort`
 
         """
@@ -808,10 +808,7 @@ cdef class ndarray:
 
         cdef Py_ssize_t ndim = self.ndim
 
-        if not cupy.cuda.thrust_enabled:
-            raise RuntimeError('Thrust is needed to use cupy.argsort. Please '
-                               'install CUDA Toolkit with Thrust then '
-                               'reinstall CuPy after uninstalling it.')
+        raise NotImplementedError("clpy does not support this")
 
         if ndim == 0:
             raise ValueError('Sorting arrays with the rank of zero is not '
@@ -831,7 +828,7 @@ cdef class ndarray:
         if axis == ndim - 1:
             data = data.copy()
         else:
-            data = cupy.rollaxis(data, axis, ndim).copy()
+            data = clpy.rollaxis(data, axis, ndim).copy()
 
         idx_array = ndarray(data.shape, dtype=numpy.intp)
 
@@ -846,7 +843,7 @@ cdef class ndarray:
         if axis == ndim - 1:
             return idx_array
         else:
-            return cupy.rollaxis(idx_array, -1, axis)
+            return clpy.rollaxis(idx_array, -1, axis)
 
     def partition(self, kth, axis=-1):
         """Partially sorts an array.
@@ -860,13 +857,13 @@ cdef class ndarray:
                 sort along the last axis.
 
         .. note::
-           For its implementation reason, :func:`cupy.ndarray.partition` fully
-           sorts the given array as :meth:`cupy.ndarray.sort` does. It also
+           For its implementation reason, :func:`clpy.ndarray.partition` fully
+           sorts the given array as :meth:`clpy.ndarray.sort` does. It also
            does not support ``kind`` and ``order`` parameters that
            :func:`numpy.partition` supports.
 
         .. seealso::
-            :func:`cupy.partition` for full documentation,
+            :func:`clpy.partition` for full documentation,
             :meth:`numpy.ndarray.partition`
 
         """
@@ -900,10 +897,10 @@ cdef class ndarray:
                 is flattened before sorting.
 
         Returns:
-            cupy.ndarray: Array of the same type and shape as ``a``.
+            clpy.ndarray: Array of the same type and shape as ``a``.
 
         .. seealso::
-            :func:`cupy.argpartition` for full documentation,
+            :func:`clpy.argpartition` for full documentation,
             :meth:`numpy.ndarray.argpartition`
 
         """
@@ -928,12 +925,12 @@ cdef class ndarray:
             if not (0 <= k < length):
                 raise ValueError('kth(={}) out of bounds {}'.format(k, length))
 
-        # TODO(takgi) For its implementation reason, cupy.ndarray.argsort
+        # TODO(takgi) For its implementation reason, clpy.ndarray.argsort
         # currently performs full argsort with Thrust's efficient radix sort
         # algoritm.
 
         # kth is ignored.
-        return cupy.argsort(data, axis=axis)
+        return clpy.argsort(data, axis=axis)
 
     # TODO(okuta): Implement searchsorted
 
@@ -979,7 +976,7 @@ cdef class ndarray:
         """Returns a view of the specified diagonals.
 
         .. seealso::
-           :func:`cupy.diagonal` for full documentation,
+           :func:`clpy.diagonal` for full documentation,
            :meth:`numpy.ndarray.diagonal`
 
         """
@@ -992,7 +989,7 @@ cdef class ndarray:
         """Returns the maximum along a given axis.
 
         .. seealso::
-           :func:`cupy.amax` for full documentation,
+           :func:`clpy.amax` for full documentation,
            :meth:`numpy.ndarray.max`
 
         """
@@ -1004,7 +1001,7 @@ cdef class ndarray:
         """Returns the indices of the maximum along a given axis.
 
         .. seealso::
-           :func:`cupy.argmax` for full documentation,
+           :func:`clpy.argmax` for full documentation,
            :meth:`numpy.ndarray.argmax`
 
         """
@@ -1015,7 +1012,7 @@ cdef class ndarray:
         """Returns the minimum along a given axis.
 
         .. seealso::
-           :func:`cupy.amin` for full documentation,
+           :func:`clpy.amin` for full documentation,
            :meth:`numpy.ndarray.min`
 
         """
@@ -1027,7 +1024,7 @@ cdef class ndarray:
         """Returns the indices of the minimum along a given axis.
 
         .. seealso::
-           :func:`cupy.argmin` for full documentation,
+           :func:`clpy.argmin` for full documentation,
            :meth:`numpy.ndarray.argmin`
 
         """
@@ -1040,7 +1037,7 @@ cdef class ndarray:
         """Returns an array with values limited to [a_min, a_max].
 
         .. seealso::
-           :func:`cupy.clip` for full documentation,
+           :func:`clpy.clip` for full documentation,
            :meth:`numpy.ndarray.clip`
 
         """
@@ -1053,7 +1050,7 @@ cdef class ndarray:
         """Returns the sum along diagonals of the array.
 
         .. seealso::
-           :func:`cupy.trace` for full documentation,
+           :func:`clpy.trace` for full documentation,
            :meth:`numpy.ndarray.trace`
 
         """
@@ -1064,7 +1061,7 @@ cdef class ndarray:
         """Returns the sum along a given axis.
 
         .. seealso::
-           :func:`cupy.sum` for full documentation,
+           :func:`clpy.sum` for full documentation,
            :meth:`numpy.ndarray.sum`
 
         """
@@ -1076,7 +1073,7 @@ cdef class ndarray:
         """Returns the mean along a given axis.
 
         .. seealso::
-           :func:`cupy.mean` for full documentation,
+           :func:`clpy.mean` for full documentation,
            :meth:`numpy.ndarray.mean`
 
         """
@@ -1087,7 +1084,7 @@ cdef class ndarray:
         """Returns the variance along a given axis.
 
         .. seealso::
-           :func:`cupy.var` for full documentation,
+           :func:`clpy.var` for full documentation,
            :meth:`numpy.ndarray.var`
 
         """
@@ -1099,7 +1096,7 @@ cdef class ndarray:
         """Returns the standard deviation along a given axis.
 
         .. seealso::
-           :func:`cupy.std` for full documentation,
+           :func:`clpy.std` for full documentation,
            :meth:`numpy.ndarray.std`
 
         """
@@ -1110,7 +1107,7 @@ cdef class ndarray:
         """Returns the product along a given axis.
 
         .. seealso::
-           :func:`cupy.prod` for full documentation,
+           :func:`clpy.prod` for full documentation,
            :meth:`numpy.ndarray.prod`
 
         """
@@ -1336,7 +1333,7 @@ cdef class ndarray:
         if self.dtype.kind == 'c':
             _imag_setter(value, self)
         else:
-            raise TypeError('cupy.ndarray does not have imaginary part to set')
+            raise TypeError('clpy.ndarray does not have imaginary part to set')
 
     # -------------------------------------------------------------------------
     # Special methods
@@ -1358,7 +1355,7 @@ cdef class ndarray:
 
     # Basic customization:
 
-    # cupy.ndarray does not define __new__
+    # clpy.ndarray does not define __new__
 
     def __array__(self, dtype=None):
         if dtype is None or self.dtype == dtype:
@@ -1392,7 +1389,7 @@ cdef class ndarray:
 
            Examples
            --------
-           >>> a = cupy.arange(3)
+           >>> a = clpy.arange(3)
            >>> a[[1, 3]]
            array([1, 0])
 
@@ -1432,7 +1429,7 @@ cdef class ndarray:
         slices += noneslices * (ndim - <Py_ssize_t>len(slices) + n_newaxes)
 
         # Check if advanced is true,
-        # and convert list/NumPy arrays to cupy.ndarray
+        # and convert list/NumPy arrays to clpy.ndarray
         advanced = False
         mask_exists = False
         for i, s in enumerate(slices):
@@ -1581,8 +1578,8 @@ cdef class ndarray:
             using integer array indexing.
             NumPy handles them by raising an error, but CuPy wraps around them.
 
-            >>> import cupy
-            >>> x = cupy.arange(3)
+            >>> import clpy
+            >>> x = clpy.arange(3)
             >>> x[[1, 3]] = 10
             >>> x
             array([10, 10,  2])
@@ -1593,10 +1590,10 @@ cdef class ndarray:
             reference the same location multiple times.
             In that case, the value that is actually stored is undefined.
 
-            >>> import cupy; import numpy
-            >>> a = cupy.zeros((2,))
-            >>> i = cupy.arange(10000) % 2
-            >>> v = cupy.arange(10000).astype(numpy.float)
+            >>> import clpy; import numpy
+            >>> a = clpy.zeros((2,))
+            >>> i = clpy.arange(10000) % 2
+            >>> v = clpy.arange(10000).astype(numpy.float)
             >>> a[i] = v
             >>> a  # doctest: +SKIP
             array([ 9150.,  9151.])
@@ -1619,7 +1616,7 @@ cdef class ndarray:
         """Adds given values to specified elements of an array.
 
         .. seealso::
-            :func:`cupy.scatter_add` for full documentation.
+            :func:`clpy.scatter_add` for full documentation.
 
         """
         _scatter_op(self, slices, value, 'add')
@@ -1662,7 +1659,7 @@ cdef class ndarray:
         """Returns the dot product with given array.
 
         .. seealso::
-           :func:`cupy.dot` for full documentation,
+           :func:`clpy.dot` for full documentation,
            :meth:`numpy.ndarray.dot`
 
         """
@@ -1680,7 +1677,7 @@ cdef class ndarray:
         """Returns a copy of the array on host memory.
 
         Args:
-            stream (cupy.cuda.Stream): CUDA stream object. If it is given, the
+            stream (clpy.backend.Stream): CUDA stream object. If it is given, the
                 copy runs asynchronously. Otherwise, the copy is synchronous.
 
         Returns:
@@ -1690,8 +1687,9 @@ cdef class ndarray:
         if self.size == 0:
             return numpy.ndarray(self.shape, dtype=self.dtype)
 
-        with self.device:
-            a_gpu = ascontiguousarray(self)
+#        with self.device:
+#            a_gpu = ascontiguousarray(self)
+        a_gpu = ascontiguousarray(self)
         a_cpu = numpy.empty(self._shape, dtype=self.dtype)
         ptr = a_cpu.ctypes.get_as_parameter()
         if stream is None:
@@ -1701,16 +1699,16 @@ cdef class ndarray:
         return a_cpu
 
     cpdef set(self, arr, stream=None):
-        """Copies an array on the host memory to :class:`cupy.ndarray`.
+        """Copies an array on the host memory to :class:`clpy.ndarray`.
 
         Args:
             arr (numpy.ndarray): The source array on the host memory.
-            stream (cupy.cuda.Stream): CUDA stream object. If it is given, the
+            stream (clpy.backend.Stream): CUDA stream object. If it is given, the
                 copy runs asynchronously. Otherwise, the copy is synchronous.
 
         """
         if not isinstance(arr, numpy.ndarray):
-            raise TypeError('Only numpy.ndarray can be set to cupy.ndarray')
+            raise TypeError('Only numpy.ndarray can be set to clpy.ndarray')
         if self.dtype != arr.dtype:
             raise TypeError('{} array cannot be set to {} array'.format(
                 arr.dtype, self.dtype))
@@ -1739,7 +1737,7 @@ cdef class ndarray:
                 sequence is reinterpreted as the new type.
 
         Returns:
-            cupy.ndarray: A view of the array with reduced dimensions.
+            clpy.ndarray: A view of the array with reduced dimensions.
 
         """
         cdef vector.vector[Py_ssize_t] shape, strides
@@ -1853,10 +1851,10 @@ include "reduction.pxi"
 cdef _id = 'out0 = in0'
 
 _elementwise_copy = create_ufunc(
-    'cupy_copy',
+    'clpy_copy',
     ('?->?', 'b->b', 'B->B', 'h->h', 'H->H', 'i->i', 'I->I', 'l->l', 'L->L',
-     'q->q', 'Q->Q', 'e->e', 'f->f', 'd->d', 'F->F', 'D->D'),
-    'out0 = out0_type(in0)')
+     'q->q', 'Q->Q', 'f->f', 'd->d', 'F->F', 'D->D'),
+    'out0 = (out0_type)(in0)')
 # complex numbers requires out0 = complex<T>(in0)
 
 
@@ -1866,9 +1864,9 @@ def elementwise_copy(*args, **kwargs):
 
 
 _elementwise_copy_where = create_ufunc(
-    'cupy_copy_where',
+    'clpy_copy_where',
     ('??->?', 'b?->b', 'B?->B', 'h?->h', 'H?->H', 'i?->i', 'I?->I', 'l?->l',
-     'L?->L', 'q?->q', 'Q?->Q', 'e?->e', 'f?->f', 'd?->d', 'F?->F', 'D?->D'),
+     'L?->L', 'q?->q', 'Q?->Q', 'f?->f', 'd?->d', 'F?->F', 'D?->D'),
     'if (in1) out0 = in0')
 
 
@@ -1877,187 +1875,242 @@ def elementwise_copy_where(*args, **kwargs):
     return _elementwise_copy_where(*args, **kwargs)
 
 
-cdef _divmod_float = '''
-    out0_type a = _floor_divide(in0, in1);
-    out0 = a;
-    out1 = in0 - a * in1'''
-
-
-divmod = create_ufunc(
-    'cupy_divmod',
-    ('bb->bb', 'BB->BB', 'hh->hh', 'HH->HH', 'ii->ii', 'II->II', 'll->ll',
-     'LL->LL', 'qq->qq', 'QQ->QQ',
-     ('ee->ee', _divmod_float),
-     ('ff->ff', _divmod_float),
-     ('dd->dd', _divmod_float)),
-    '''
+cdef _divmod_int = string.Template('''
     if (in1 == 0) {
         out0 = 0;
         out1 = 0;
     } else {
-        out0_type a = _floor_divide(in0, in1);
+        out0_type a = ${floor_divide_expr};
         out0 = a;
         out1 = in0 - a * in1;
     }''')
 
+cdef _divmod_float = string.Template('''
+    out0_type a = ${floor_divide_expr};
+    out0 = a;
+    out1 = in0 - a * in1;''')
+
+divmod = create_ufunc(
+    'clpy_divmod',
+    (('bb->bb', _divmod_int  .substitute(floor_divide_expr='_floor_divide_c(in0, in1)')),
+     ('BB->BB', _divmod_int  .substitute(floor_divide_expr='_floor_divide_C(in0, in1)')),
+     ('hh->hh', _divmod_int  .substitute(floor_divide_expr='_floor_divide_s(in0, in1)')),
+     ('HH->HH', _divmod_int  .substitute(floor_divide_expr='_floor_divide_S(in0, in1)')),
+     ('ii->ii', _divmod_int  .substitute(floor_divide_expr='_floor_divide_i(in0, in1)')),
+     ('II->II', _divmod_int  .substitute(floor_divide_expr='_floor_divide_I(in0, in1)')),
+     ('ll->ll', _divmod_int  .substitute(floor_divide_expr='_floor_divide_l(in0, in1)')),
+     ('LL->LL', _divmod_int  .substitute(floor_divide_expr='_floor_divide_L(in0, in1)')),
+     ('qq->qq', _divmod_int  .substitute(floor_divide_expr='_floor_divide_l(in0, in1)')),
+     ('QQ->QQ', _divmod_int  .substitute(floor_divide_expr='_floor_divide_L(in0, in1)')),
+     ('ff->ff', _divmod_float.substitute(floor_divide_expr='_floor_divide_f(in0, in1)')),
+     ('dd->dd', _divmod_float.substitute(floor_divide_expr='_floor_divide_d(in0, in1)')))
+)
+
 
 cdef _min_max_preamble = '''
-template <typename T>
-struct min_max_st{
-    T value;
-    int index;
-    __device__ min_max_st() : index(-1) { }
-    __device__ min_max_st(T v) : value(v), index(0) { }
-    __device__ min_max_st(T v, int i) : value(v), index(i) { }
-};
+#define CREATE_MIN_MAX_ST(T) \\
+typedef struct{ \\
+    T value; \\
+    int index; \\
+} min_max_st_##T; \\
+static min_max_st_##T create0_min_max_st_##T() \\
+{ \
+    min_max_st_##T ret; \\
+    ret.index = -1; \\
+    return ret; \\
+} \\
+static min_max_st_##T create1_min_max_st_##T(const T v) \\
+{ \\
+    min_max_st_##T ret; \\
+    ret.value = v; \\
+    ret.index = 0; \\
+    return ret; \\
+} \\
+static min_max_st_##T create2_min_max_st_##T(const T v, const int i) \\
+{ \\
+    min_max_st_##T ret; \\
+    ret.value = v; \\
+    ret.index = i; \\
+    return ret; \\
+}
+CREATE_MIN_MAX_ST(double)
+CREATE_MIN_MAX_ST(float)
+CREATE_MIN_MAX_ST(long)
+CREATE_MIN_MAX_ST(int)
+CREATE_MIN_MAX_ST(short)
+CREATE_MIN_MAX_ST(char)
+CREATE_MIN_MAX_ST(ulong)
+CREATE_MIN_MAX_ST(uint)
+CREATE_MIN_MAX_ST(ushort)
+CREATE_MIN_MAX_ST(uchar)
+CREATE_MIN_MAX_ST(bool)
 
-template <typename T>
-inline __device__ bool is_nan(T x) {
-    return x != x;
-}
+#define is_nan(x) ((x) != (x))
 
-template <typename T>
-__device__ min_max_st<T> my_min(
-        const min_max_st<T>& a, const min_max_st<T>& b) {
-    if (a.index == -1) return b;
-    if (b.index == -1) return a;
-    return min_max_st<T>(min(a.value, b.value));
-}
-template <typename T>
-__device__ min_max_st<T> my_min_float(
-        const min_max_st<T>& a, const min_max_st<T>& b) {
-    if (a.index == -1) return b;
-    if (b.index == -1) return a;
-    if (is_nan(a.value)) return a;
-    if (is_nan(b.value)) return b;
-    return min_max_st<T>(min(a.value, b.value));
-}
+#define my_min(a, b, T) \\
+    ( ((a).index == -1) ? (b) : \\
+    ( ((b).index == -1) ? (a) : \\
+    ( create1_min_max_st_##T(min((a).value, (b).value)) \\
+    )))
+#define my_min_float(a, b, T) \\
+    ( ((a).index == -1) ? (b) : \\
+    ( ((b).index == -1) ? (a) : \\
+    ( is_nan((a).value) ? (a) : \\
+    ( is_nan((b).value) ? (b) : \\
+    ( create1_min_max_st_##T(fmin((a).value, (b).value)) \\
+    )))))
 
-template <typename T>
-__device__ min_max_st<T> my_max(
-        const min_max_st<T>& a, const min_max_st<T>& b) {
-    if (a.index == -1) return b;
-    if (b.index == -1) return a;
-    return min_max_st<T>(max(a.value, b.value));
-}
-template <typename T>
-__device__ min_max_st<T> my_max_float(
-        const min_max_st<T>& a, const min_max_st<T>& b) {
-    if (a.index == -1) return b;
-    if (b.index == -1) return a;
-    if (is_nan(a.value)) return a;
-    if (is_nan(b.value)) return b;
-    return min_max_st<T>(max(a.value, b.value));
-}
+#define my_max(a, b, T) \\
+    ( ((a).index == -1) ? (b) : \\
+    ( ((b).index == -1) ? (a) : \\
+    ( create1_min_max_st_##T(max((a).value, (b).value)) \\
+    )))
+#define my_max_float(a, b, T) \\
+    ( ((a).index == -1) ? (b) : \\
+    ( ((b).index == -1) ? (a) : \\
+    ( is_nan((a).value) ? (a) : \\
+    ( is_nan((b).value) ? (b) : \\
+    ( create1_min_max_st_##T(fmax((a).value, (b).value)) \\
+    )))))
 
-template <typename T>
-__device__ min_max_st<T> my_argmin(
-        const min_max_st<T>& a, const min_max_st<T>& b) {
-    if (a.index == -1) return b;
-    if (b.index == -1) return a;
-    if (a.value == b.value)
-        return min_max_st<T>(a.value, min(a.index, b.index));
-    return (a.value <= b.value) ? a : b;
-}
-template <typename T>
-__device__ min_max_st<T> my_argmin_float(
-        const min_max_st<T>& a, const min_max_st<T>& b) {
-    if (a.index == -1) return b;
-    if (b.index == -1) return a;
-    if (a.value == b.value)
-        return min_max_st<T>(a.value, min(a.index, b.index));
-    if (is_nan(a.value)) return a;
-    if (is_nan(b.value)) return b;
-    return (a.value <= b.value) ? a : b;
-}
+#define my_argmin(a, b, T) \\
+    ( ((a).index == -1) ? (b) : \\
+    ( ((b).index == -1) ? (a) : \\
+    ( ((a).value == (b).value) ? create2_min_max_st_##T( (a).value, min((a).index, (b).index) ) : \\
+    ( ((a).value <= (b).value) ? a : b \\
+    ))))
+#define my_argmin_float(a, b, T) \\
+    ( ((a).index == -1) ? (b) : \\
+    ( ((b).index == -1) ? (a) : \\
+    ( ((a).value == (b).value) ? create2_min_max_st_##T( (a).value, min((a).index, (b).index) ) : \\
+    ( is_nan((a).value) ? (a) : \\
+    ( is_nan((b).value) ? (b) : \\
+    ( ((a).value <= (b).value) ? a : b \\
+    ))))))
 
-template <typename T>
-__device__ min_max_st<T> my_argmax(
-        const min_max_st<T>& a, const min_max_st<T>& b) {
-    if (a.index == -1) return b;
-    if (b.index == -1) return a;
-    if (a.value == b.value)
-        return min_max_st<T>(a.value, min(a.index, b.index));
-    return (a.value >= b.value) ? a : b;
-}
-template <typename T>
-__device__ min_max_st<T> my_argmax_float(
-        const min_max_st<T>& a, const min_max_st<T>& b) {
-    if (a.index == -1) return b;
-    if (b.index == -1) return a;
-    if (a.value == b.value)
-        return min_max_st<T>(a.value, min(a.index, b.index));
-    if (is_nan(a.value)) return a;
-    if (is_nan(b.value)) return b;
-    return (a.value >= b.value) ? a : b;
-}
+#define my_argmax(a, b, T) \\
+    ( ((a).index == -1) ? (b) : \\
+    ( ((b).index == -1) ? (a) : \\
+    ( ((a).value == (b).value) ? create2_min_max_st_##T( (a).value, min((a).index, (b).index) ) : \\
+    ( ((a).value >= (b).value) ? a : b \\
+    ))))
+#define my_argmax_float(a, b, T) \\
+    ( ((a).index == -1) ? (b) : \\
+    ( ((b).index == -1) ? (a) : \\
+    ( ((a).value == (b).value) ? create2_min_max_st_##T( (a).value, min((a).index, (b).index) ) : \\
+    ( is_nan((a).value) ? (a) : \\
+    ( is_nan((b).value) ? (b) : \\
+    ( ((a).value >= (b).value) ? a : b \\
+    ))))))
 '''
 
-
 _amin = create_reduction_func(
-    'cupy_min',
-    ('?->?', 'b->b', 'B->B', 'h->h', 'H->H', 'i->i', 'I->I', 'l->l', 'L->L',
-     'q->q', 'Q->Q',
-     ('e->e', (None, 'my_min_float(a, b)', None, None)),
-     ('f->f', (None, 'my_min_float(a, b)', None, None)),
-     ('d->d', (None, 'my_min_float(a, b)', None, None))),
-    ('min_max_st<type_in0_raw>(in0)', 'my_min(a, b)', 'out0 = a.value',
-     'min_max_st<type_in0_raw>'),
-    None, _min_max_preamble)
-
+    'clpy_min',
+    (('?->?', ('create1_min_max_st_bool(in0)', 'my_min(a, b, bool)', None, 'min_max_st_bool')),
+     ('b->b', ('create1_min_max_st_char(in0)', 'my_min(a, b, char)', None, 'min_max_st_char')),
+     ('B->B', ('create1_min_max_st_uchar(in0)', 'my_min(a, b, uchar)', None, 'min_max_st_uchar')),
+     ('h->h', ('create1_min_max_st_short(in0)', 'my_min(a, b, short)', None, 'min_max_st_short')),
+     ('H->H', ('create1_min_max_st_ushort(in0)', 'my_min(a, b, ushort)', None, 'min_max_st_ushort')),
+     ('i->i', ('create1_min_max_st_int(in0)', 'my_min(a, b, int)', None, 'min_max_st_int')),
+     ('I->I', ('create1_min_max_st_uint(in0)', 'my_min(a, b, uint)', None, 'min_max_st_uint')),
+     ('l->l', ('create1_min_max_st_long(in0)', 'my_min(a, b, long)', None, 'min_max_st_long')),
+     ('L->L', ('create1_min_max_st_ulong(in0)', 'my_min(a, b, ulong)', None, 'min_max_st_ulong')),
+     ('q->q', ('create1_min_max_st_long(in0)', 'my_min(a, b, long)', None, 'min_max_st_long')),
+     ('Q->Q', ('create1_min_max_st_ulong(in0)', 'my_min(a, b, ulong)', None, 'min_max_st_ulong')),
+     ('f->f', ('create1_min_max_st_float(in0)', 'my_min_float(a, b, float)', None, 'min_max_st_float')),
+     ('d->d', ('create1_min_max_st_double(in0)', 'my_min_float(a, b, double)', None, 'min_max_st_double'))),
+              (None, None, 'out0 = a.value', None),
+    'create0_${reduce_type}()', _min_max_preamble)
 
 _amax = create_reduction_func(
-    'cupy_max',
-    ('?->?', 'b->b', 'B->B', 'h->h', 'H->H', 'i->i', 'I->I', 'l->l', 'L->L',
-     'q->q', 'Q->Q',
-     ('e->e', (None, 'my_max_float(a, b)', None, None)),
-     ('f->f', (None, 'my_max_float(a, b)', None, None)),
-     ('d->d', (None, 'my_max_float(a, b)', None, None))),
-    ('min_max_st<type_in0_raw>(in0)', 'my_max(a, b)', 'out0 = a.value',
-     'min_max_st<type_in0_raw>'),
-    None, _min_max_preamble)
-
+    'clpy_max',
+    (('?->?', ('create1_min_max_st_bool(in0)', 'my_max(a, b, bool)', None, 'min_max_st_bool')),
+     ('b->b', ('create1_min_max_st_char(in0)', 'my_max(a, b, char)', None, 'min_max_st_char')),
+     ('B->B', ('create1_min_max_st_uchar(in0)', 'my_max(a, b, uchar)', None, 'min_max_st_uchar')),
+     ('h->h', ('create1_min_max_st_short(in0)', 'my_max(a, b, short)', None, 'min_max_st_short')),
+     ('H->H', ('create1_min_max_st_ushort(in0)', 'my_max(a, b, ushort)', None, 'min_max_st_ushort')),
+     ('i->i', ('create1_min_max_st_int(in0)', 'my_max(a, b, int)', None, 'min_max_st_int')),
+     ('I->I', ('create1_min_max_st_uint(in0)', 'my_max(a, b, uint)', None, 'min_max_st_uint')),
+     ('l->l', ('create1_min_max_st_long(in0)', 'my_max(a, b, long)', None, 'min_max_st_long')),
+     ('L->L', ('create1_min_max_st_ulong(in0)', 'my_max(a, b, ulong)', None, 'min_max_st_ulong')),
+     ('q->q', ('create1_min_max_st_long(in0)', 'my_max(a, b, long)', None, 'min_max_st_long')),
+     ('Q->Q', ('create1_min_max_st_ulong(in0)', 'my_max(a, b, ulong)', None, 'min_max_st_ulong')),
+     ('f->f', ('create1_min_max_st_float(in0)', 'my_max_float(a, b, float)', None, 'min_max_st_float')),
+     ('d->d', ('create1_min_max_st_double(in0)', 'my_max_float(a, b, double)', None, 'min_max_st_double'))),
+              (None, None, 'out0 = a.value', None),
+    'create0_${reduce_type}()', _min_max_preamble)
 
 nanmin = create_reduction_func(
-    'cupy_nanmin',
-    ('?->?', 'b->b', 'B->B', 'h->h', 'H->H', 'i->i', 'I->I', 'l->l', 'L->L',
-     'q->q', 'Q->Q', 'e->e', 'f->f', 'd->d'),
-    ('min_max_st<type_in0_raw>(in0)', 'my_min(a, b)', 'out0 = a.value',
-     'min_max_st<type_in0_raw>'),
-    None, _min_max_preamble)
-
+    'clpy_nanmin',
+    (('?->?', ('create1_min_max_st_bool(in0)', 'my_min(a, b, bool)', None, 'min_max_st_bool')),
+     ('b->b', ('create1_min_max_st_char(in0)', 'my_min(a, b, char)', None, 'min_max_st_char')),
+     ('B->B', ('create1_min_max_st_uchar(in0)', 'my_min(a, b, uchar)', None, 'min_max_st_uchar')),
+     ('h->h', ('create1_min_max_st_short(in0)', 'my_min(a, b, short)', None, 'min_max_st_short')),
+     ('H->H', ('create1_min_max_st_ushort(in0)', 'my_min(a, b, ushort)', None, 'min_max_st_ushort')),
+     ('i->i', ('create1_min_max_st_int(in0)', 'my_min(a, b, int)', None, 'min_max_st_int')),
+     ('I->I', ('create1_min_max_st_uint(in0)', 'my_min(a, b, uint)', None, 'min_max_st_uint')),
+     ('l->l', ('create1_min_max_st_long(in0)', 'my_min(a, b, long)', None, 'min_max_st_long')),
+     ('L->L', ('create1_min_max_st_ulong(in0)', 'my_min(a, b, ulong)', None, 'min_max_st_ulong')),
+     ('q->q', ('create1_min_max_st_long(in0)', 'my_min(a, b, long)', None, 'min_max_st_long')),
+     ('Q->Q', ('create1_min_max_st_ulong(in0)', 'my_min(a, b, ulong)', None, 'min_max_st_ulong')),
+     ('f->f', ('create1_min_max_st_float(in0)', 'my_min(a, b, float)', None, 'min_max_st_float')),
+     ('d->d', ('create1_min_max_st_double(in0)', 'my_min(a, b, double)', None, 'min_max_st_double'))),
+              (None, None, 'out0 = a.value', None),
+    'create0_${reduce_type}()', _min_max_preamble)
 
 nanmax = create_reduction_func(
-    'cupy_nanmax',
-    ('?->?', 'b->b', 'B->B', 'h->h', 'H->H', 'i->i', 'I->I', 'l->l', 'L->L',
-     'q->q', 'Q->Q', 'e->e', 'f->f', 'd->d'),
-    ('min_max_st<type_in0_raw>(in0)', 'my_max(a, b)', 'out0 = a.value',
-     'min_max_st<type_in0_raw>'),
-    None, _min_max_preamble)
-
+    'clpy_nanmax',
+    (('?->?', ('create1_min_max_st_bool(in0)', 'my_max(a, b, bool)', None, 'min_max_st_bool')),
+     ('b->b', ('create1_min_max_st_char(in0)', 'my_max(a, b, char)', None, 'min_max_st_char')),
+     ('B->B', ('create1_min_max_st_uchar(in0)', 'my_max(a, b, uchar)', None, 'min_max_st_uchar')),
+     ('h->h', ('create1_min_max_st_short(in0)', 'my_max(a, b, short)', None, 'min_max_st_short')),
+     ('H->H', ('create1_min_max_st_ushort(in0)', 'my_max(a, b, ushort)', None, 'min_max_st_ushort')),
+     ('i->i', ('create1_min_max_st_int(in0)', 'my_max(a, b, int)', None, 'min_max_st_int')),
+     ('I->I', ('create1_min_max_st_uint(in0)', 'my_max(a, b, uint)', None, 'min_max_st_uint')),
+     ('l->l', ('create1_min_max_st_long(in0)', 'my_max(a, b, long)', None, 'min_max_st_long')),
+     ('L->L', ('create1_min_max_st_ulong(in0)', 'my_max(a, b, ulong)', None, 'min_max_st_ulong')),
+     ('q->q', ('create1_min_max_st_long(in0)', 'my_max(a, b, long)', None, 'min_max_st_long')),
+     ('Q->Q', ('create1_min_max_st_ulong(in0)', 'my_max(a, b, ulong)', None, 'min_max_st_ulong')),
+     ('f->f', ('create1_min_max_st_float(in0)', 'my_max(a, b, float)', None, 'min_max_st_float')),
+     ('d->d', ('create1_min_max_st_double(in0)', 'my_max(a, b, double)', None, 'min_max_st_double'))),
+              (None, None, 'out0 = a.value', None),
+    'create0_${reduce_type}()', _min_max_preamble)
 
 cdef _argmin = create_reduction_func(
-    'cupy_argmin',
-    ('?->q', 'B->q', 'h->q', 'H->q', 'i->q', 'I->q', 'l->q', 'L->q',
-     'q->q', 'Q->q',
-     ('e->q', (None, 'my_argmin_float(a, b)', None, None)),
-     ('f->q', (None, 'my_argmin_float(a, b)', None, None)),
-     ('d->q', (None, 'my_argmin_float(a, b)', None, None))),
-    ('min_max_st<type_in0_raw>(in0, _J)', 'my_argmin(a, b)', 'out0 = a.index',
-     'min_max_st<type_in0_raw>'),
-    None, _min_max_preamble)
-
+    'clpy_argmin',
+    (('?->?', ('create1_min_max_st_bool(in0)', 'my_argmin(a, b, bool)', None, 'min_max_st_bool')),
+     ('b->b', ('create1_min_max_st_char(in0)', 'my_argmin(a, b, char)', None, 'min_max_st_char')),
+     ('B->B', ('create1_min_max_st_uchar(in0)', 'my_argmin(a, b, uchar)', None, 'min_max_st_uchar')),
+     ('h->h', ('create1_min_max_st_short(in0)', 'my_argmin(a, b, short)', None, 'min_max_st_short')),
+     ('H->H', ('create1_min_max_st_ushort(in0)', 'my_argmin(a, b, ushort)', None, 'min_max_st_ushort')),
+     ('i->i', ('create1_min_max_st_int(in0)', 'my_argmin(a, b, int)', None, 'min_max_st_int')),
+     ('I->I', ('create1_min_max_st_uint(in0)', 'my_argmin(a, b, uint)', None, 'min_max_st_uint')),
+     ('l->l', ('create1_min_max_st_long(in0)', 'my_argmin(a, b, long)', None, 'min_max_st_long')),
+     ('L->L', ('create1_min_max_st_ulong(in0)', 'my_argmin(a, b, ulong)', None, 'min_max_st_ulong')),
+     ('q->q', ('create1_min_max_st_long(in0)', 'my_argmin(a, b, long)', None, 'min_max_st_long')),
+     ('Q->Q', ('create1_min_max_st_ulong(in0)', 'my_argmin(a, b, ulong)', None, 'min_max_st_ulong')),
+     ('f->f', ('create1_min_max_st_float(in0)', 'my_argmin_float(a, b, float)', None, 'min_max_st_float')),
+     ('d->d', ('create1_min_max_st_double(in0)', 'my_argmin_float(a, b, double)', None, 'min_max_st_double'))),
+              (None, None, 'out0 = a.index', None),
+    'create0_${reduce_type}()', _min_max_preamble)
 
 cdef _argmax = create_reduction_func(
-    'cupy_argmax',
-    ('?->q', 'B->q', 'h->q', 'H->q', 'i->q', 'I->q', 'l->q', 'L->q',
-     'q->q', 'Q->q',
-     ('e->q', (None, 'my_argmax_float(a, b)', None, None)),
-     ('f->q', (None, 'my_argmax_float(a, b)', None, None)),
-     ('d->q', (None, 'my_argmax_float(a, b)', None, None))),
-    ('min_max_st<type_in0_raw>(in0, _J)', 'my_argmax(a, b)', 'out0 = a.index',
-     'min_max_st<type_in0_raw>'),
-    None, _min_max_preamble)
+    'clpy_argmax',
+    (('?->q', ('create2_min_max_st_bool(in0, _J)', 'my_argmax(a, b, bool)', None, 'min_max_st_bool')),
+     ('b->q', ('create2_min_max_st_char(in0, _J)', 'my_argmax(a, b, char)', None, 'min_max_st_char')),
+     ('B->q', ('create2_min_max_st_uchar(in0, _J)', 'my_argmax(a, b, uchar)', None, 'min_max_st_uchar')),
+     ('h->q', ('create2_min_max_st_short(in0, _J)', 'my_argmax(a, b, short)', None, 'min_max_st_short')),
+     ('H->q', ('create2_min_max_st_ushort(in0, _J)', 'my_argmax(a, b, ushort)', None, 'min_max_st_ushort')),
+     ('i->q', ('create2_min_max_st_int(in0, _J)', 'my_argmax(a, b, int)', None, 'min_max_st_int')),
+     ('I->q', ('create2_min_max_st_uint(in0, _J)', 'my_argmax(a, b, uint)', None, 'min_max_st_uint')),
+     ('l->q', ('create2_min_max_st_long(in0, _J)', 'my_argmax(a, b, long)', None, 'min_max_st_long')),
+     ('L->q', ('create2_min_max_st_ulong(in0, _J)', 'my_argmax(a, b, ulong)', None, 'min_max_st_ulong')),
+     ('q->q', ('create2_min_max_st_long(in0, _J)', 'my_argmax(a, b, long)', None, 'min_max_st_long')),
+     ('Q->q', ('create2_min_max_st_ulong(in0, _J)', 'my_argmax(a, b, ulong)', None, 'min_max_st_ulong')),
+     ('f->q', ('create2_min_max_st_float(in0, _J)', 'my_argmax_float(a, b, float)', None, 'min_max_st_float')),
+     ('d->q', ('create2_min_max_st_double(in0, _J)', 'my_argmax_float(a, b, double)', None, 'min_max_st_double'))),
+              (None, None, 'out0 = a.index', None),
+    'create0_${reduce_type}()', _min_max_preamble, default=True)
 
 
 # -----------------------------------------------------------------------------
@@ -2075,11 +2128,16 @@ cpdef ndarray array(obj, dtype=None, bint copy=True, str order='K',
         src = obj
         if dtype is None:
             dtype = src.dtype
-        dev = src.data.device
-        if dev is None or dev.id == device.get_device_id():
-            a = src.astype(dtype, order=order, copy=copy)
-        else:
-            a = src.copy(order=order).astype(dtype, copy=False)
+
+        # --- device is not implemented ---
+        # dev = src.data.device
+        # if dev is None or dev.id == device.get_device_id():
+        #     a = src.astype(dtype, order=order, copy=copy)
+        # else:
+        #     a = src.copy(order=order).astype(dtype, copy=False)
+        # --- device is not implemented ---
+
+        a = src.astype(dtype, order=order, copy=copy)
 
         ndim = a._shape.size()
         if ndmin > ndim:
@@ -2100,13 +2158,15 @@ cpdef ndarray array(obj, dtype=None, bint copy=True, str order='K',
         if a_cpu.ndim == 0:
             a.fill(a_cpu[()])
             return a
-        mem = pinned_memory.alloc_pinned_memory(a.nbytes)
-        src_cpu = numpy.frombuffer(mem, a_cpu.dtype,
-                                   a_cpu.size).reshape(a_cpu.shape)
-        src_cpu[...] = a_cpu
-        stream = cuda.Stream.null
-        a.set(src_cpu, stream)
-        pinned_memory._add_to_watch_list(stream.record(), mem)
+        a.set(a_cpu)
+        # TODO(LWisteria): Use ALLOC_HOST_PTR and clEnqueueMapBuffer instead of above set()
+#        mem = pinned_memory.alloc_pinned_memory(a.nbytes)
+#        src_cpu = numpy.frombuffer(mem, a_cpu.dtype,
+#                                   a_cpu.size).reshape(a_cpu.shape)
+#        src_cpu[...] = a_cpu
+#        stream = cuda.Stream.null
+#        a.set(src_cpu, stream)
+#        pinned_memory._add_to_watch_list(stream.record(), mem)
     return a
 
 
@@ -2139,28 +2199,32 @@ cpdef ndarray asfortranarray(ndarray a, dtype=None):
             return a
 
     newarray = ndarray(a.shape, dtype, order='F')
-    if (a.flags.c_contiguous and
-            (a.dtype == numpy.float32 or a.dtype == numpy.float64) and
-            a.ndim == 2 and dtype == a.dtype):
-        m, n = a.shape
-        if a.dtype == numpy.float32:
-            cuda.cublas.sgeam(
-                cuda.Device().cublas_handle,
-                1,  # transpose a
-                1,  # transpose newarray
-                m, n, 1., a.data.ptr, n, 0., a.data.ptr, n,
-                newarray.data.ptr, m)
-        elif a.dtype == numpy.float64:
-            cuda.cublas.dgeam(
-                cuda.Device().cublas_handle,
-                1,  # transpose a
-                1,  # transpose newarray
-                m, n, 1., a.data.ptr, n, 0., a.data.ptr, n,
-                newarray.data.ptr, m)
-        return newarray
-    else:
-        elementwise_copy(a, newarray)
-        return newarray
+    # TODO(LWisteria): Implement GEAM
+#    if (a.flags.c_contiguous and
+#            (a.dtype == numpy.float32 or a.dtype == numpy.float64) and
+#            a.ndim == 2 and dtype == a.dtype):
+#        m, n = a.shape
+#
+#        if a.dtype == numpy.float32:
+#            raise NotImplementedError("clpy does not support this")
+#            cuda.cublas.sgeam(
+#                cuda.Device().cublas_handle,
+#                1,  # transpose a
+#                1,  # transpose newarray
+#                m, n, 1., a.data.ptr, n, 0., a.data.ptr, n,
+#                newarray.data.ptr, m)
+#        elif a.dtype == numpy.float64:
+#            raise NotImplementedError("clpy does not support this")
+#            cuda.cublas.dgeam(
+#                cuda.Device().cublas_handle,
+#                1,  # transpose a
+#                1,  # transpose newarray
+#                m, n, 1., a.data.ptr, n, 0., a.data.ptr, n,
+#                newarray.data.ptr, m)
+#        return newarray
+#    else:
+    elementwise_copy(a, newarray)
+    return newarray
 
 
 # -----------------------------------------------------------------------------
@@ -2330,7 +2394,7 @@ cpdef ndarray broadcast_to(ndarray array, shape):
     """Broadcast an array to a given shape.
 
     .. seealso::
-        :func:`cupy.broadcast_to` for full documentation,
+        :func:`clpy.broadcast_to` for full documentation,
         :meth:`numpy.broadcast_to`
 
     """
@@ -2358,12 +2422,12 @@ cpdef ndarray _repeat(ndarray a, repeats, axis=None):
     """Repeat arrays along an axis.
 
     Args:
-        a (cupy.ndarray): Array to transform.
+        a (clpy.ndarray): Array to transform.
         repeats (int, list or tuple): The number of repeats.
         axis (int): The axis to repeat.
 
     Returns:
-        cupy.ndarray: Transformed array with repeats.
+        clpy.ndarray: Transformed array with repeats.
 
     .. seealso:: :func:`numpy.repeat`
 
@@ -2412,7 +2476,7 @@ cpdef ndarray _repeat(ndarray a, repeats, axis=None):
             continue
         a_index[axis] = slice(i, i + 1)
         ret_index[axis] = slice(offset, offset + repeats[i])
-        # convert to tuple because cupy has a indexing bug
+        # convert to tuple because clpy has a indexing bug
         ret[tuple(ret_index)] = a[tuple(a_index)]
         offset += repeats[i]
     return ret
@@ -2430,7 +2494,7 @@ cpdef ndarray concatenate_method(tup, int axis):
     have_same_types = True
     for o in tup:
         if not isinstance(o, ndarray):
-            raise TypeError('Only cupy arrays can be concatenated')
+            raise TypeError('Only clpy arrays can be concatenated')
         a = o
         if a.ndim == 0:
             raise TypeError('zero-dimensional arrays cannot be concatenated')
@@ -2474,39 +2538,41 @@ cpdef ndarray concatenate(tup, axis, shape, dtype):
 
     ret = ndarray(shape, dtype=dtype)
 
-    if len(tup) > 3:
-        all_same_type = True
-        all_one_and_contiguous = True
-        dtype = tup[0].dtype
-        for a in tup:
-            all_same_type = all_same_type and (a.dtype == dtype)
-            all_one_and_contiguous = (
-                all_one_and_contiguous and a._c_contiguous and
-                a._shape[axis] == 1)
-
-        if all_same_type:
-            ptrs = numpy.ndarray(len(tup), numpy.int64)
-            for i, a in enumerate(tup):
-                ptrs[i] = a.data.ptr
-            x = array(ptrs)
-
-            if all_one_and_contiguous:
-                base = <int>internal.prod_ssize_t(shape[axis + 1:])
-                _concatenate_kernel_one(x, base, ret)
-            else:
-                ndim = tup[0].ndim
-                x_strides = numpy.ndarray((len(tup), ndim), numpy.int32)
-                cum_sizes = numpy.ndarray(len(tup), numpy.int32)
-                cum = 0
-                for i, a in enumerate(tup):
-                    for j in range(ndim):
-                        x_strides[i, j] = <int>a._strides[j]
-                    cum_sizes[i] = cum
-                    cum += <int>a._shape[axis]
-
-                _concatenate_kernel(
-                    x, axis, array(cum_sizes), array(x_strides), ret)
-            return ret
+    # TODO(yoshiki.imaizumi): keep clpy implementation to optimize when len(tup) > 3
+#    if len(tup) > 3:
+#        all_same_type = True
+#        all_one_and_contiguous = True
+#        dtype = tup[0].dtype
+#        for a in tup:
+#            all_same_type = all_same_type and (a.dtype == dtype)
+#            all_one_and_contiguous = (
+#                all_one_and_contiguous and a._c_contiguous and
+#                a._shape[axis] == 1)
+#
+#        if all_same_type:
+#            ptrs = numpy.ndarray(len(tup), numpy.int64)
+#            for i, a in enumerate(tup):
+#                ptrs[i] = a.data.ptr
+#            x = array(ptrs)
+#
+#            raise NotImplementedError("clpy does not support this")
+#            if all_one_and_contiguous:
+#                base = <int>internal.prod_ssize_t(shape[axis + 1:])
+#                _concatenate_kernel_one(x, base, ret)
+#            else:
+#                ndim = tup[0].ndim
+#                x_strides = numpy.ndarray((len(tup), ndim), numpy.int32)
+#                cum_sizes = numpy.ndarray(len(tup), numpy.int32)
+#                cum = 0
+#                for i, a in enumerate(tup):
+#                    for j in range(ndim):
+#                        x_strides[i, j] = <int>a._strides[j]
+#                    cum_sizes[i] = cum
+#                    cum += <int>a._shape[axis]
+#
+#                _concatenate_kernel(
+#                    x, axis, array(cum_sizes), array(x_strides), ret)
+#            return ret
 
     skip = (slice(None),) * axis
     i = 0
@@ -2517,57 +2583,57 @@ cpdef ndarray concatenate(tup, axis, shape, dtype):
 
     return ret
 
-cdef _concatenate_kernel_one = ElementwiseKernel(
-    'raw P x, int32 base',
-    'T y',
-    '''
-    int middle = i / base;
-    int top = middle / x.size();
-    int array_ind = middle - top * x.size();
-    int offset = i + (top - middle) * base;
-    y = reinterpret_cast<T*>(x[array_ind])[offset];
-    ''',
-    'cupy_concatenate_one'
-)
+# cdef _concatenate_kernel_one = ElementwiseKernel(
+#     'raw P x, int32 base',
+#     'T y',
+#     '''
+#     int middle = i / base;
+#     int top = middle / x.size();
+#     int array_ind = middle - top * x.size();
+#     int offset = i + (top - middle) * base;
+#     y = reinterpret_cast<T*>(x[array_ind])[offset];
+#     ''',
+#     'clpy_concatenate_one'
+# )
 
 
-cdef _concatenate_kernel = ElementwiseKernel(
-    '''raw P x, int32 axis, raw int32 cum_sizes,
-    raw int32 x_strides''',
-    'T y',
-    '''
-    int axis_ind = _ind.get()[axis];
-    int left = 0;
-    int right = cum_sizes.size();
-
-    while (left < right - 1) {
-      int m = (left + right) / 2;
-      if (axis_ind < cum_sizes[m]) {
-        right = m;
-      } else {
-        left = m;
-      }
-    }
-
-    int array_ind = left;
-    axis_ind -= cum_sizes[left];
-    char* ptr = reinterpret_cast<char*>(x[array_ind]);
-    for (int j = _ind.ndim - 1; j >= 0; --j) {
-      ptrdiff_t ind[] = {array_ind, j};
-      ptrdiff_t offset;
-      if (j == axis) {
-        offset = axis_ind;
-      } else {
-        offset = _ind.get()[j];
-      }
-      ptr += x_strides[ind] * offset;
-    }
-
-    y = *reinterpret_cast<T*>(ptr);
-    ''',
-    'cupy_concatenate',
-    reduce_dims=False
-)
+# cdef _concatenate_kernel = ElementwiseKernel(
+#     '''raw P x, int32 axis, raw int32 cum_sizes,
+#     raw int32 x_strides''',
+#     'T y',
+#     '''
+#     int axis_ind = _ind.get()[axis];
+#     int left = 0;
+#     int right = cum_sizes.size();
+#
+#     while (left < right - 1) {
+#       int m = (left + right) / 2;
+#       if (axis_ind < cum_sizes[m]) {
+#         right = m;
+#       } else {
+#         left = m;
+#       }
+#     }
+#
+#     int array_ind = left;
+#     axis_ind -= cum_sizes[left];
+#     char* ptr = reinterpret_cast<char*>(x[array_ind]);
+#     for (int j = _ind.ndim - 1; j >= 0; --j) {
+#       ptrdiff_t ind[] = {array_ind, j};
+#       ptrdiff_t offset;
+#       if (j == axis) {
+#         offset = axis_ind;
+#       } else {
+#         offset = _ind.get()[j];
+#       }
+#       ptr += x_strides[ind] * offset;
+#     }
+#
+#     y = *reinterpret_cast<T*>(ptr);
+#     ''',
+#     'clpy_concatenate',
+#     reduce_dims=False
+# )
 
 
 # -----------------------------------------------------------------------------
@@ -2577,7 +2643,7 @@ cdef _concatenate_kernel = ElementwiseKernel(
 cpdef _create_bit_op(name, op, no_bool, doc=''):
     types = () if no_bool else ('??->?',)
     return create_ufunc(
-        'cupy_' + name,
+        'clpy_' + name,
         types + ('bb->b', 'BB->B', 'hh->h', 'HH->H', 'ii->i', 'II->I', 'll->l',
                  'LL->L', 'qq->q', 'QQ->Q'),
         'out0 = in0 %s in1' % op,
@@ -2618,7 +2684,7 @@ bitwise_xor = _create_bit_op(
 
 
 invert = create_ufunc(
-    'cupy_invert',
+    'clpy_invert',
     (('?->?', 'out0 = !in0'), 'b->b', 'B->B', 'h->h', 'H->H', 'i->i', 'I->I',
      'l->l', 'L->L', 'q->q', 'Q->Q'),
     'out0 = ~in0',
@@ -2660,95 +2726,95 @@ cdef _take_kernel = ElementwiseKernel(
     'raw T a, S indices, int32 cdim, int32 rdim, int32 adim, S index_range',
     'T out',
     '''
-      S wrap_indices = indices % index_range;
-      if (wrap_indices < 0) wrap_indices += index_range;
+    S wrap_indices = indices % index_range;
+    if (wrap_indices < 0) wrap_indices += index_range;
 
-      ptrdiff_t li = i / (rdim * cdim);
-      ptrdiff_t ri = i % rdim;
-      out = a[(li * adim + wrap_indices) * rdim + ri];
+    ptrdiff_t li = i / (rdim * cdim);
+    ptrdiff_t ri = i % rdim;
+    out = a[(li * adim + wrap_indices) * rdim + ri];
     ''',
-    'cupy_take')
+    'clpy_take')
 
 
 cdef _take_kernel_0axis = ElementwiseKernel(
     'raw T a, S indices, int32 rdim, S index_range',
     'T out',
     '''
-      S wrap_indices = indices % index_range;
-      if (wrap_indices < 0) wrap_indices += index_range;
+    S wrap_indices = indices % index_range;
+    if (wrap_indices < 0) wrap_indices += index_range;
 
-      out = a[wrap_indices * rdim + i % rdim];
+    out = a[wrap_indices * rdim + i % rdim];
     ''',
-    'cupy_take_0axis')
+    'clpy_take_0axis')
 
 
-cdef _choose_kernel = ElementwiseKernel(
-    'S a, raw T choices, int32 n_channel',
-    'T y',
-    'y = choices[i + n_channel * a]',
-    'cupy_choose')
+# cdef _choose_kernel = ElementwiseKernel(
+#     'S a, raw T choices, int32 n_channel',
+#     'T y',
+#     'y = choices[i + n_channel * a]',
+#     'clpy_choose')
 
 
-cdef _choose_clip_kernel = ElementwiseKernel(
-    'S a, raw T choices, int32 n_channel, int32 n',
-    'T y',
-    '''
-      S x = a;
-      if (a < 0) {
-        x = 0;
-      } else if (a >= n) {
-        x = n - 1;
-      }
-      y = choices[i + n_channel * x];
-    ''',
-    'cupy_choose_clip')
+# cdef _choose_clip_kernel = ElementwiseKernel(
+#     'S a, raw T choices, int32 n_channel, int32 n',
+#     'T y',
+#     '''
+#       S x = a;
+#       if (a < 0) {
+#         x = 0;
+#       } else if (a >= n) {
+#         x = n - 1;
+#       }
+#       y = choices[i + n_channel * x];
+#     ''',
+#     'clpy_choose_clip')
 
 
-cdef _scatter_update_kernel = ElementwiseKernel(
-    'T v, S indices, int32 cdim, int32 rdim, int32 adim',
-    'raw T a',
-    '''
-      S wrap_indices = indices % adim;
-      if (wrap_indices < 0) wrap_indices += adim;
-      ptrdiff_t li = i / (rdim * cdim);
-      ptrdiff_t ri = i % rdim;
-      a[(li * adim + wrap_indices) * rdim + ri] = v;
-    ''',
-    'cupy_scatter_update')
+# cdef _scatter_update_kernel = ElementwiseKernel(
+#     'T v, S indices, int32 cdim, int32 rdim, int32 adim',
+#     'raw T a',
+#     '''
+#       S wrap_indices = indices % adim;
+#       if (wrap_indices < 0) wrap_indices += adim;
+#       ptrdiff_t li = i / (rdim * cdim);
+#       ptrdiff_t ri = i % rdim;
+#       a[(li * adim + wrap_indices) * rdim + ri] = v;
+#     ''',
+#     'clpy_scatter_update')
 
 
-cdef _scatter_add_kernel = ElementwiseKernel(
-    'raw T v, S indices, int32 cdim, int32 rdim, int32 adim',
-    'raw T a',
-    '''
-      S wrap_indices = indices % adim;
-      if (wrap_indices < 0) wrap_indices += adim;
-      ptrdiff_t li = i / (rdim * cdim);
-      ptrdiff_t ri = i % rdim;
-      atomicAdd(&a[(li * adim + wrap_indices) * rdim + ri], v[i]);
-    ''',
-    'cupy_scatter_add')
+# cdef _scatter_add_kernel = ElementwiseKernel(
+#     'raw T v, S indices, int32 cdim, int32 rdim, int32 adim',
+#     'raw T a',
+#     '''
+#       S wrap_indices = indices % adim;
+#       if (wrap_indices < 0) wrap_indices += adim;
+#       ptrdiff_t li = i / (rdim * cdim);
+#       ptrdiff_t ri = i % rdim;
+#       atomicAdd(&a[(li * adim + wrap_indices) * rdim + ri], v[i]);
+#     ''',
+#     'clpy_scatter_add')
 
 
-cdef _scatter_update_mask_kernel = ElementwiseKernel(
-    'raw T v, bool mask, S mask_scanned',
-    'T a',
-    'if (mask) a = v[mask_scanned - 1]',
-    'cupy_scatter_update_mask')
+# cdef _scatter_update_mask_kernel = ElementwiseKernel(
+#     'raw T v, bool mask, S mask_scanned',
+#     'T a',
+#     'if (mask) a = v[mask_scanned - 1]',
+#     'clpy_scatter_update_mask')
 
 
-cdef _scatter_add_mask_kernel = ElementwiseKernel(
-    'raw T v, bool mask, S mask_scanned',
-    'T a',
-    'if (mask) a = a + v[mask_scanned - 1]',
-    'cupy_scatter_add_mask')
+# cdef _scatter_add_mask_kernel = ElementwiseKernel(
+#     'raw T v, bool mask, S mask_scanned',
+#     'T a',
+#     'if (mask) a = a + v[mask_scanned - 1]',
+#     'clpy_scatter_add_mask')
 
 
-cdef _getitem_mask_kernel = ElementwiseKernel(
-    'T a, bool mask, S mask_scanned',
-    'raw T out',
-    'if (mask) out[mask_scanned - 1] = a',
-    'cupy_getitem_mask')
+# cdef _getitem_mask_kernel = ElementwiseKernel(
+#     'T a, bool mask, S mask_scanned',
+#     'raw T out',
+#     'if (mask) out[mask_scanned - 1] = a',
+#     'clpy_getitem_mask')
 
 
 cpdef _prepare_mask_indexing_single(ndarray a, ndarray mask, Py_ssize_t axis):
@@ -2800,7 +2866,8 @@ cpdef ndarray _getitem_mask_single(ndarray a, ndarray mask, int axis):
     out = ndarray(masked_shape, dtype=a.dtype)
     if out.size == 0:
         return out
-    return _getitem_mask_kernel(a, mask, mask_scanned, out)
+    raise NotImplementedError("clpy does not support this")
+    # return _getitem_mask_kernel(a, mask, mask_scanned, out)
 
 
 cpdef ndarray _take(ndarray a, indices, li=None, ri=None, ndarray out=None):
@@ -2855,6 +2922,7 @@ cpdef ndarray _take(ndarray a, indices, li=None, ri=None, ndarray out=None):
     rdim = internal.prod(rshape)
     indices = indices.reshape(
         (1,) * len(lshape) + indices.shape + (1,) * len(rshape))
+
     if (li == 0 and ri == 0) or (li is None and ri is None):
         return _take_kernel_0axis(
             a.reduced_view(), indices, rdim, index_range, out)
@@ -2907,22 +2975,23 @@ cpdef _scatter_op_single(ndarray a, ndarray indices, v,
         (1,) * len(lshape) + indices_shape + (1,) * len(rshape))
     indices = broadcast_to(indices, v_shape)
 
-    if op == 'update':
-        _scatter_update_kernel(
-            v, indices, cdim, rdim, adim, a.reduced_view())
-    elif op == 'add':
-        # There is constraints on types because atomicAdd() in CUDA 7.5
-        # only supports int32, uint32, uint64, and float32.
-        if not issubclass(v.dtype.type,
-                          (numpy.int32, numpy.float32,
-                           numpy.uint32, numpy.uint64, numpy.ulonglong)):
-            raise TypeError(
-                'scatter_add only supports int32, float32, uint32, uint64 as '
-                'data type')
-        _scatter_add_kernel(
-            v, indices, cdim, rdim, adim, a.reduced_view())
-    else:
-        raise ValueError('provided op is not supported')
+    raise NotImplementedError("clpy does not support this")
+#    if op == 'update':
+#        _scatter_update_kernel(
+#            v, indices, cdim, rdim, adim, a.reduced_view())
+#    elif op == 'add':
+#        # There is constraints on types because atomicAdd() in CUDA 7.5
+#        # only supports int32, uint32, uint64, and float32.
+#        if not issubclass(v.dtype.type,
+#                          (numpy.int32, numpy.float32,
+#                           numpy.uint32, numpy.uint64, numpy.ulonglong)):
+#            raise TypeError(
+#                'scatter_add only supports int32, float32, uint32, uint64 as '
+#                'data type')
+#        _scatter_add_kernel(
+#            v, indices, cdim, rdim, adim, a.reduced_view())
+#    else:
+#        raise ValueError('provided op is not supported')
 
 
 cpdef _scatter_op_mask_single(ndarray a, ndarray mask, v, Py_ssize_t axis, op):
@@ -2940,12 +3009,13 @@ cpdef _scatter_op_mask_single(ndarray a, ndarray mask, v, Py_ssize_t axis, op):
     # broadcast v to shape determined by the mask
     v = broadcast_to(v, masked_shape)
 
-    if op == 'update':
-        _scatter_update_mask_kernel(v, mask, mask_scanned, a)
-    elif op == 'add':
-        _scatter_add_mask_kernel(v, mask, mask_scanned, a)
-    else:
-        raise ValueError('provided op is not supported')
+    raise NotImplementedError("clpy does not support this")
+#    if op == 'update':
+#        _scatter_update_mask_kernel(v, mask, mask_scanned, a)
+#    elif op == 'add':
+#        _scatter_add_mask_kernel(v, mask, mask_scanned, a)
+#    else:
+#        raise ValueError('provided op is not supported')
 
 
 cpdef _scatter_op(ndarray a, slices, value, op):
@@ -2984,7 +3054,7 @@ cpdef _scatter_op(ndarray a, slices, value, op):
     slices += noneslices * (ndim - <Py_ssize_t>len(slices) + n_newaxes)
 
     # Check if advanced is true,
-    # and convert list/NumPy arrays to cupy.ndarray
+    # and convert list/NumPy arrays to clpy.ndarray
     advanced = False
     mask_exists = False
     for i, s in enumerate(slices):
@@ -3074,11 +3144,11 @@ cpdef _scatter_op(ndarray a, slices, value, op):
             y, x = broadcast(v, value).values
             if (internal.vector_equal(y._shape, x._shape) and
                     internal.vector_equal(y._strides, x._strides)):
-                if y.data.ptr == x.data.ptr:
+                if y.data.mem == x.data.mem and y.data.offset == x.data.offset:
                     return  # Skip since x and y are the same array
                 elif y._c_contiguous and x.dtype == y.dtype:
                     y.data.copy_from_device_async(x.data, x.nbytes,
-                                                  cuda.Stream.null)
+                                                  backend.Stream.null)
                     return
             elementwise_copy(x, y)
         else:
@@ -3323,7 +3393,7 @@ cpdef ndarray matmul(ndarray a, ndarray b, ndarray out=None):
     """ Returns the matrix product of two arrays and is the implementation of
     the `@` operator introduced in Python 3.5 following PEP465.
 
-    The main difference against cupy.dot are the handling of arrays with more
+    The main difference against clpy.dot are the handling of arrays with more
     than 2 dimensions. For more information see :func:`numpy.matmul`.
 
     .. note::
@@ -3336,12 +3406,12 @@ cpdef ndarray matmul(ndarray a, ndarray b, ndarray out=None):
         The out array as input is currently not supported.
 
     Args:
-        a (cupy.ndarray): The left argument.
-        b (cupy.ndarray): The right argument.
-        out (cupy.ndarray): Output array.
+        a (clpy.ndarray): The left argument.
+        b (clpy.ndarray): The right argument.
+        out (clpy.ndarray): Output array.
 
     Returns:
-        cupy.ndarray: Output array.
+        clpy.ndarray: Output array.
 
     .. seealso:: :func:`numpy.matmul`
 
@@ -3456,23 +3526,25 @@ cpdef ndarray matmul(ndarray a, ndarray b, ndarray out=None):
     outp = _mat_ptrs(out_view)
 
     if dtype == numpy.float32:
-        cuda.cublas.sgemmBatched(
-            cuda.Device().cublas_handle,
-            0,  # transa
-            0,  # transb
-            n, m, ka, 1.0,
-            ap.data.ptr, lda,
-            bp.data.ptr, ldb,
-            0.0, outp.data.ptr, ldout, batchCount)
+        raise NotImplementedError("clpy does not support this")
+#        cuda.cublas.sgemmBatched(
+#            cuda.Device().cublas_handle,
+#            0,  # transa
+#            0,  # transb
+#            n, m, ka, 1.0,
+#            ap.data.ptr, lda,
+#            bp.data.ptr, ldb,
+#            0.0, outp.data.ptr, ldout, batchCount)
     elif dtype == numpy.float64:
-        cuda.cublas.dgemmBatched(
-            cuda.Device().cublas_handle,
-            0,  # transa
-            0,  # transb
-            n, m, ka, 1.0,
-            ap.data.ptr, lda,
-            bp.data.ptr, ldb,
-            0.0, outp.data.ptr, ldout, batchCount)
+        raise NotImplementedError("clpy does not support this")
+#        cuda.cublas.dgemmBatched(
+#            cuda.Device().cublas_handle,
+#            0,  # transa
+#            0,  # transb
+#            n, m, ka, 1.0,
+#            ap.data.ptr, lda,
+#            bp.data.ptr, ldb,
+#            0.0, outp.data.ptr, ldout, batchCount)
     # elif dtype == numpy.complex64:
     #     cuda.cublas.cgemmBatched(
     #         cuda.Device().cublas_handle,
@@ -3502,10 +3574,9 @@ cpdef ndarray matmul(ndarray a, ndarray b, ndarray out=None):
         return ret
 
 
-cdef _cuda_runtime_version = None
 cdef _tensordot_core_mul_sum = ReductionKernel(
     'S x, T y', 'U out',
-    'static_cast<U>(x) * static_cast<U>(y)',
+    '(U)(x) * (U)(y)',
     'a + b', 'out = a', '0', '_tensordot_core_mul_sum')
 
 
@@ -3516,7 +3587,6 @@ cpdef ndarray tensordot_core(
     cdef Py_ssize_t inca, incb, transa, transb, lda, ldb
     cdef Py_ssize_t mode, handle
     cdef str dtype, ret_dtype
-    cdef bint use_sgemmEx
     ret_dtype = a.dtype.char
     if ret_dtype != b.dtype.char:
         ret_dtype = numpy.find_common_type((ret_dtype, b.dtype), ()).char
@@ -3527,15 +3597,7 @@ cpdef ndarray tensordot_core(
         out.fill(0)
         return out
 
-    global _cuda_runtime_version
-    if _cuda_runtime_version is None:
-        _cuda_runtime_version = runtime.runtimeGetVersion()
-
-    use_sgemmEx = (_cuda_runtime_version >= 7500 and
-                   a.dtype == 'e' and b.dtype == 'e' and
-                   (ret_dtype == 'e' or ret_dtype == 'f'))
-
-    if use_sgemmEx or ret_dtype in 'fdFD':
+    if ret_dtype in 'fdFD':
         dtype = ret_dtype
     else:
         dtype = numpy.find_common_type((ret_dtype, 'f'), ()).char
@@ -3573,39 +3635,34 @@ cpdef ndarray tensordot_core(
         c = c.view()
         c.shape = (n, m)
 
-    if not use_sgemmEx:
-        a = a.astype(dtype, copy=False)
-        b = b.astype(dtype, copy=False)
+    a = a.astype(dtype, copy=False)
+    b = b.astype(dtype, copy=False)
 
     # Be careful that cuBLAS uses the FORTRAN-order matrix representation.
-    handle = device.get_cublas_handle()
     # Matrix-Matrix product A^T * B
     # c is C-contiguous while cuBLAS assumes F-contiguous inputs, so we
     # compute C^T = B^T * A here.
     a, transa, lda = _mat_to_cublas_contiguous(a, 0)
     b, transb, ldb = _mat_to_cublas_contiguous(b, 1)
-    if use_sgemmEx:
-        Ctype = runtime.CUDA_R_16F if c.dtype == 'e' else runtime.CUDA_R_32F
-        cublas.sgemmEx(
-            handle, <int>transb, <int> transa, <int>m, <int>n, <int>k, 1,
-            b.data.ptr, runtime.CUDA_R_16F, <int>ldb, a.data.ptr,
-            runtime.CUDA_R_16F, <int>lda, 0, c.data.ptr, Ctype, <int>m)
-    elif dtype == 'f':
-        cublas.sgemm(
-            handle, <int>transb, <int>transa, <int>m, <int> n, <int> k, 1,
-            b.data.ptr, <int>ldb, a.data.ptr, <int>lda, 0, c.data.ptr, <int>m)
+    if dtype == 'f':
+        clpy.backend.opencl.blas.sgemm(
+            <int>transb, <int>transa, <int>m, <int>n, <int>k, 1,
+            b, <int>ldb, a, <int>lda, 0, c, <int>m)
     elif dtype == 'd':
-        cublas.dgemm(
-            handle, <int>transb, <int>transa, <int>m, <int>n, <int>k, 1,
-            b.data.ptr, <int>ldb, a.data.ptr, <int>lda, 0, c.data.ptr, <int>m)
+        raise NotImplementedError("clpy does not support dgemm")
+#        cublas.dgemm(
+#            handle, <int>transb, <int>transa, <int>m, <int>n, <int>k, 1,
+#            b.data.ptr, <int>ldb, a.data.ptr, <int>lda, 0, c.data.ptr, <int>m)
     elif dtype == 'F':
-        cublas.cgemm(
-            handle, <int>transb, <int>transa, <int>m, <int>n, <int>k, 1,
-            b.data.ptr, <int>ldb, a.data.ptr, <int>lda, 0, c.data.ptr, <int>m)
+        raise NotImplementedError("clpy does not support cgemm")
+#        cublas.cgemm(
+#            handle, <int>transb, <int>transa, <int>m, <int>n, <int>k, 1,
+#            b.data.ptr, <int>ldb, a.data.ptr, <int>lda, 0, c.data.ptr, <int>m)
     elif dtype == 'D':
-        cublas.zgemm(
-            handle, <int>transb, <int>transa, <int>m, <int>n, <int>k, 1,
-            b.data.ptr, <int>ldb, a.data.ptr, <int>lda, 0, c.data.ptr, <int>m)
+        raise NotImplementedError("clpy does not support zgemm")
+#        cublas.zgemm(
+#            handle, <int>transb, <int>transa, <int>m, <int>n, <int>k, 1,
+#            b.data.ptr, <int>ldb, a.data.ptr, <int>lda, 0, c.data.ptr, <int>m)
     else:
         raise ValueError('Invalid dtype: %s' % str(dtype))
 
@@ -3643,13 +3700,13 @@ cpdef create_comparison(name, op, doc='', require_sortable_dtype=True):
 
     if require_sortable_dtype:
         ops = ('??->?', 'bb->?', 'BB->?', 'hh->?', 'HH->?', 'ii->?', 'II->?',
-               'll->?', 'LL->?', 'qq->?', 'QQ->?', 'ee->?', 'ff->?', 'dd->?')
+               'll->?', 'LL->?', 'qq->?', 'QQ->?', 'ff->?', 'dd->?')
     else:
         ops = ('??->?', 'bb->?', 'BB->?', 'hh->?', 'HH->?', 'ii->?', 'II->?',
-               'll->?', 'LL->?', 'qq->?', 'QQ->?', 'ee->?', 'ff->?', 'FF->?',
+               'll->?', 'LL->?', 'qq->?', 'QQ->?', 'ff->?', 'FF->?',
                'dd->?', 'DD->?')
     return create_ufunc(
-        'cupy_' + name,
+        'clpy_' + name,
         ops,
         'out0 = in0 %s in1' % op,
         doc=doc)
@@ -3710,18 +3767,18 @@ not_equal = create_comparison(
 
 
 _all = create_reduction_func(
-    'cupy_all',
+    'clpy_all',
     ('?->?', 'B->?', 'h->?', 'H->?', 'i->?', 'I->?', 'l->?', 'L->?',
-     'q->?', 'Q->?', 'e->?', 'f->?', 'd->?', 'F->?', 'D->?'),
-    ('in0 != type_in0_raw(0)', 'a & b', 'out0 = a', 'bool'),
+     'q->?', 'Q->?', 'f->?', 'd->?', 'F->?', 'D->?'),
+    ('in0 != 0', 'a & b', 'out0 = a', 'bool'),
     'true', '')
 
 
 _any = create_reduction_func(
-    'cupy_any',
+    'clpy_any',
     ('?->?', 'B->?', 'h->?', 'H->?', 'i->?', 'I->?', 'l->?', 'L->?',
-     'q->?', 'Q->?', 'e->?', 'f->?', 'd->?', 'F->?', 'D->?'),
-    ('in0 != type_in0_raw(0)', 'a | b', 'out0 = a', 'bool'),
+     'q->?', 'Q->?', 'f->?', 'd->?', 'F->?', 'D->?'),
+    ('in0 != 0', 'a | b', 'out0 = a', 'bool'),
     'false', '')
 
 
@@ -3730,29 +3787,27 @@ _any = create_reduction_func(
 # -----------------------------------------------------------------------------
 
 _sum = create_reduction_func(
-    'cupy_sum',
+    'clpy_sum',
     ('?->l', 'B->L', 'h->l', 'H->L', 'i->l', 'I->L', 'l->l', 'L->L',
      'q->q', 'Q->Q',
-     ('e->e', (None, None, None, 'float')),
      'f->f', 'd->d', 'F->F', 'D->D'),
-    ('in0', 'a + b', 'out0 = type_out0_raw(a)', None), 0)
+    ('in0', 'a + b', 'out0 = a', None), 0)
 
 
 _prod = create_reduction_func(
-    'cupy_prod',
+    'clpy_prod',
     ['?->l', 'B->L', 'h->l', 'H->L', 'i->l', 'I->L', 'l->l', 'L->L',
      'q->q', 'Q->Q',
-     ('e->e', (None, None, None, 'float')),
      'f->f', 'd->d', 'F->F', 'D->D'],
-    ('in0', 'a * b', 'out0 = type_out0_raw(a)', None), 1)
+    ('in0', 'a * b', 'out0 = a', None), 1)
 
 
 cdef create_arithmetic(name, op, boolop, doc):
     return create_ufunc(
-        'cupy_' + name,
+        'clpy_' + name,
         (('??->?', 'out0 = in0 %s in1' % boolop),
          'bb->b', 'BB->B', 'hh->h', 'HH->H', 'ii->i', 'II->I', 'll->l',
-         'LL->L', 'qq->q', 'QQ->Q', 'ee->e', 'ff->f', 'dd->d', 'FF->F',
+         'LL->L', 'qq->q', 'QQ->Q', 'ff->f', 'dd->d', 'FF->F',
          'DD->D'),
         'out0 = in0 %s in1' % op,
         doc=doc)
@@ -3768,9 +3823,9 @@ add = create_arithmetic(
 
 
 conj = create_ufunc(
-    'cupy_conj',
+    'clpy_conj',
     ('b->b', 'B->B', 'h->h', 'H->H', 'i->i', 'I->I', 'l->l', 'L->L', 'q->q',
-     'Q->Q', 'e->e', 'f->f', 'd->d',
+     'Q->Q', 'f->f', 'd->d',
      ('F->F', 'out0 = conj(in0)'),
      ('D->D', 'out0 = conj(in0)')),
     'out0 = in0',
@@ -3782,8 +3837,8 @@ conj = create_ufunc(
 
 
 angle = create_ufunc(
-    'cupy_angle',
-    ('?->d', 'e->e', 'f->f', 'd->d',
+    'clpy_angle',
+    ('?->d', 'f->f', 'd->d',
      ('F->f', 'out0 = arg(in0)'),
      ('D->d', 'out0 = arg(in0)')),
     'out0 = in0 >= 0 ? 0 : M_PI',
@@ -3795,9 +3850,9 @@ angle = create_ufunc(
 
 
 real = create_ufunc(
-    'cupy_real',
+    'clpy_real',
     ('?->?', 'b->b', 'B->B', 'h->h', 'H->H', 'i->i', 'I->I', 'l->l', 'L->L',
-     'q->q', 'Q->Q', 'e->e', 'f->f', 'd->d',
+     'q->q', 'Q->Q', 'f->f', 'd->d',
      ('F->f', 'out0 = in0.real()'),
      ('D->d', 'out0 = in0.real()')),
     'out0 = in0',
@@ -3809,7 +3864,7 @@ real = create_ufunc(
 
 
 _real_setter = create_ufunc(
-    'cupy_real_setter',
+    'clpy_real_setter',
     ('f->F', 'd->D'),
     'out0.real(in0)',
     doc='''Sets the real part of the elements of the array.
@@ -3817,9 +3872,9 @@ _real_setter = create_ufunc(
 
 
 imag = create_ufunc(
-    'cupy_imag',
+    'clpy_imag',
     ('?->?', 'b->b', 'B->B', 'h->h', 'H->H', 'i->i', 'I->I', 'l->l', 'L->L',
-     'q->q', 'Q->Q', 'e->e', 'f->f', 'd->d',
+     'q->q', 'Q->Q', 'f->f', 'd->d',
      ('F->f', 'out0 = in0.imag()'),
      ('D->d', 'out0 = in0.imag()')),
     'out0 = 0',
@@ -3831,7 +3886,7 @@ imag = create_ufunc(
 
 
 _imag_setter = create_ufunc(
-    'cupy_imag_setter',
+    'clpy_imag_setter',
     ('f->F', 'd->D'),
     'out0.imag(in0)',
     doc='''Sets the imaginary part of the elements of the array.
@@ -3839,10 +3894,10 @@ _imag_setter = create_ufunc(
 
 
 negative = create_ufunc(
-    'cupy_negative',
+    'clpy_negative',
     (('?->?', 'out0 = !in0'),
      'b->b', 'B->B', 'h->h', 'H->H', 'i->i', 'I->I', 'l->l', 'L->L',
-     'q->q', 'Q->Q', 'e->e', 'f->f', 'd->d', 'F->F', 'D->D'),
+     'q->q', 'Q->Q', 'f->f', 'd->d', 'F->F', 'D->D'),
     'out0 = -in0',
     doc='''Takes numerical negative elementwise.
 
@@ -3861,10 +3916,9 @@ multiply = create_arithmetic(
 
 
 divide = create_ufunc(
-    'cupy_divide',
+    'clpy_divide',
     ('bb->b', 'BB->B', 'hh->h', 'HH->H', 'ii->i', 'II->I', 'll->l', 'LL->L',
      'qq->q', 'QQ->Q',
-     ('ee->e', 'out0 = in0 / in1'),
      ('ff->f', 'out0 = in0 / in1'),
      ('dd->d', 'out0 = in0 / in1'),
      ('FF->F', 'out0 = in0 / in1'),
@@ -3878,11 +3932,10 @@ divide = create_ufunc(
 
 
 power = create_ufunc(
-    'cupy_power',
+    'clpy_power',
     ('bb->b', 'BB->B', 'hh->h', 'HH->H', 'ii->i', 'II->I', 'll->l', 'LL->L',
      'qq->q', 'QQ->Q',
-     ('ee->e', 'out0 = powf(in0, in1)'),
-     ('ff->f', 'out0 = powf(in0, in1)'),
+     ('ff->f', 'out0 = pow(in0, in1)'),
      ('dd->d', 'out0 = pow(in0, in1)'),
      ('FF->F', 'out0 = pow(in0, in1)'),
      ('DD->D', 'out0 = pow(in0, in1)')),
@@ -3904,9 +3957,9 @@ subtract = create_arithmetic(
 
 
 true_divide = create_ufunc(
-    'cupy_true_divide',
+    'clpy_true_divide',
     ('bb->d', 'BB->d', 'hh->d', 'HH->d', 'ii->d', 'II->d', 'll->d', 'LL->d',
-     'qq->d', 'QQ->d', 'ee->e', 'ff->f', 'dd->d', 'FF->F', 'DD->D'),
+     'qq->d', 'QQ->d', 'ff->f', 'dd->d', 'FF->F', 'DD->D'),
     'out0 = (out0_type)in0 / (out0_type)in1',
     doc='''Elementwise true division (i.e. division as floating values).
 
@@ -3920,10 +3973,21 @@ if six.PY3:
 
 
 floor_divide = create_ufunc(
-    'cupy_floor_divide',
-    ('bb->b', 'BB->B', 'hh->h', 'HH->H', 'ii->i', 'II->I', 'll->l', 'LL->L',
-     'qq->q', 'QQ->Q', 'ee->e', 'ff->f', 'dd->d'),
-    'out0 = _floor_divide(in0, in1)',
+    'clpy_floor_divide',
+    (
+     ('bb->b', 'out0 = _floor_divide_c(in0, in1)'),
+     ('BB->B', 'out0 = _floor_divide_C(in0, in1)'),
+     ('hh->h', 'out0 = _floor_divide_s(in0, in1)'),
+     ('HH->H', 'out0 = _floor_divide_S(in0, in1)'),
+     ('ii->i', 'out0 = _floor_divide_i(in0, in1)'),
+     ('II->I', 'out0 = _floor_divide_I(in0, in1)'),
+     ('ll->l', 'out0 = _floor_divide_l(in0, in1)'),
+     ('LL->L', 'out0 = _floor_divide_L(in0, in1)'),
+     ('qq->q', 'out0 = _floor_divide_l(in0, in1)'),
+     ('QQ->Q', 'out0 = _floor_divide_L(in0, in1)'),
+     ('ff->f', 'out0 = _floor_divide_f(in0, in1)'),
+     ('dd->d', 'out0 = _floor_divide_d(in0, in1)'),
+    ),
     doc='''Elementwise floor division (i.e. integer quotient).
 
     .. seealso:: :data:`numpy.floor_divide`
@@ -3932,13 +3996,21 @@ floor_divide = create_ufunc(
 
 
 remainder = create_ufunc(
-    'cupy_remainder',
-    ('bb->b', 'BB->B', 'hh->h', 'HH->H', 'ii->i', 'II->I', 'll->l', 'LL->L',
-     'qq->q', 'QQ->Q',
-     ('ee->e', 'out0 = in0 - _floor_divide(in0, in1) * in1'),
-     ('ff->f', 'out0 = in0 - _floor_divide(in0, in1) * in1'),
-     ('dd->d', 'out0 = in0 - _floor_divide(in0, in1) * in1')),
-    'out0 = (in0 - _floor_divide(in0, in1) * in1) * (in1 != 0)',
+    'clpy_remainder',
+    (
+     ('bb->b', 'out0 = (in0 - _floor_divide_c(in0, in1) * in1) * (in1 != 0)'),
+     ('BB->B', 'out0 = (in0 - _floor_divide_C(in0, in1) * in1) * (in1 != 0)'),
+     ('hh->h', 'out0 = (in0 - _floor_divide_s(in0, in1) * in1) * (in1 != 0)'),
+     ('HH->H', 'out0 = (in0 - _floor_divide_S(in0, in1) * in1) * (in1 != 0)'),
+     ('ii->i', 'out0 = (in0 - _floor_divide_i(in0, in1) * in1) * (in1 != 0)'),
+     ('II->I', 'out0 = (in0 - _floor_divide_I(in0, in1) * in1) * (in1 != 0)'),
+     ('ll->l', 'out0 = (in0 - _floor_divide_l(in0, in1) * in1) * (in1 != 0)'),
+     ('LL->L', 'out0 = (in0 - _floor_divide_L(in0, in1) * in1) * (in1 != 0)'),
+     ('qq->q', 'out0 = (in0 - _floor_divide_l(in0, in1) * in1) * (in1 != 0)'),
+     ('QQ->Q', 'out0 = (in0 - _floor_divide_L(in0, in1) * in1) * (in1 != 0)'),
+     ('ff->f', 'out0 =  in0 - _floor_divide_f(in0, in1) * in1'),
+     ('dd->d', 'out0 =  in0 - _floor_divide_d(in0, in1) * in1'),
+    ),
     doc='''Computes the remainder of Python division elementwise.
 
     .. seealso:: :data:`numpy.remainder`
@@ -3947,17 +4019,16 @@ remainder = create_ufunc(
 
 
 absolute = create_ufunc(
-    'cupy_absolute',
+    'clpy_absolute',
     (('?->?', 'out0 = in0'),
      'b->b', ('B->B', 'out0 = in0'), 'h->h', ('H->H', 'out0 = in0'),
      'i->i', ('I->I', 'out0 = in0'), 'l->l', ('L->L', 'out0 = in0'),
      'q->q', ('Q->Q', 'out0 = in0'),
-     ('e->e', 'out0 = fabsf(in0)'),
-     ('f->f', 'out0 = fabsf(in0)'),
+     ('f->f', 'out0 = fabs(in0)'),
      ('d->d', 'out0 = fabs(in0)'),
      ('F->f', 'out0 = abs(in0)'),
      ('D->d', 'out0 = abs(in0)')),
-    'out0 = in0 > 0 ? in0 : -in0',
+    'out0 = abs(in0)',
     doc='''Elementwise absolute value function.
 
     .. seealso:: :data:`numpy.absolute`
@@ -3966,15 +4037,15 @@ absolute = create_ufunc(
 
 
 sqrt = create_ufunc(
-    'cupy_sqrt',
-    ('e->e', 'f->f', 'd->d', 'F->F', 'D->D'),
+    'clpy_sqrt',
+    ('f->f', 'd->d', 'F->F', 'D->D'),
     'out0 = sqrt(in0)')
 
 
 _clip = create_ufunc(
-    'cupy_clip',
+    'clpy_clip',
     ('???->?', 'bbb->b', 'BBB->B', 'hhh->h', 'HHH->H', 'iii->i', 'III->I',
-     'lll->l', 'LLL->L', 'qqq->q', 'QQQ->Q', 'eee->e', 'fff->f', 'ddd->d'),
+     'lll->l', 'LLL->L', 'qqq->q', 'QQQ->Q', 'fff->f', 'ddd->d'),
     'out0 = in0 < in1 ? in1 : (in0 > in2 ? in2 : in0)')
 
 
@@ -4002,11 +4073,12 @@ cpdef ndarray _var(ndarray a, axis=None, dtype=None, out=None, ddof=0,
         items *= shape[ax]
     alpha = 1. / max(items - ddof, 0)
     arrmean = a.mean(axis=axis, dtype=dtype, keepdims=True)
-    if out is None:
-        return _var_core(a, arrmean, alpha, axis=axis, keepdims=keepdims)
-    else:
-        return _var_core_out(
-            a, arrmean, alpha, out, axis=axis, keepdims=keepdims)
+    raise NotImplementedError("clpy does not support this")
+#    if out is None:
+#        return _var_core(a, arrmean, alpha, axis=axis, keepdims=keepdims)
+#    else:
+#        return _var_core_out(
+#            a, arrmean, alpha, out, axis=axis, keepdims=keepdims)
 
 
 cpdef _std(a, axis=None, dtype=None, out=None, ddof=0, keepdims=False):
@@ -4014,22 +4086,21 @@ cpdef _std(a, axis=None, dtype=None, out=None, ddof=0, keepdims=False):
     return sqrt(ret, dtype=dtype, out=out)
 
 
-cdef _var_core = ReductionKernel(
-    'S x, T mean, T alpha', 'T out',
-    '(x - mean) * (x - mean)',
-    'a + b', 'out = alpha * a', '0', '_var_core')
+# cdef _var_core = ReductionKernel(
+#     'S x, T mean, T alpha', 'T out',
+#     '(x - mean) * (x - mean)',
+#     'a + b', 'out = alpha * a', '0', '_var_core')
 
-cdef _var_core_out = ReductionKernel(
-    'S x, T mean, T alpha', 'U out',
-    '(x - mean) * (x - mean)',
-    'a + b', 'out = alpha * a', '0', '_var_core')
+# cdef _var_core_out = ReductionKernel(
+#     'S x, T mean, T alpha', 'U out',
+#     '(x - mean) * (x - mean)',
+#     'a + b', 'out = alpha * a', '0', '_var_core')
 
 # TODO(okuta) needs cast
 cdef _mean = create_reduction_func(
-    'cupy_mean',
+    'clpy_mean',
     ('?->d', 'B->d', 'h->d', 'H->d', 'i->d', 'I->d', 'l->d', 'L->d',
      'q->d', 'Q->d',
-     ('e->e', (None, None, None, 'float')),
      'f->f', 'd->d', 'F->F', 'D->D'),
     ('in0', 'a + b',
      'out0 = a / _type_reduce(_in_ind.size() / _out_ind.size())', None))
@@ -4058,7 +4129,7 @@ def _inclusive_scan_kernel(dtype, block_size):
         block_size: block_size
 
     Returns:
-         cupy.cuda.Function: cuda function
+         clpy.cuda.Function: cuda function
     """
 
     name = "inclusive_scan_kernel"
@@ -4188,12 +4259,12 @@ cpdef ndarray scan(ndarray a, ndarray out=None):
     """Return the prefix sum(scan) of the elements.
 
     Args:
-        a (cupy.ndarray): input array.
-        out (cupy.ndarray): Alternative output array in which to place
+        a (clpy.ndarray): input array.
+        out (clpy.ndarray): Alternative output array in which to place
          the result. The same size and same type as the input array(a).
 
     Returns:
-        cupy.ndarray: A new array holding the result is returned.
+        clpy.ndarray: A new array holding the result is returned.
 
     """
     if a.ndim != 1:

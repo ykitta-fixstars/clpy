@@ -4,8 +4,8 @@ import unittest
 import numpy
 import six
 
-import cupy
-from cupy import testing
+import clpy
+from clpy import testing
 
 
 @testing.parameterize(
@@ -13,8 +13,8 @@ from cupy import testing
         'assertion': ['assert_allclose', 'assert_array_almost_equal',
                       'assert_array_almost_equal_nulp',
                       'assert_array_max_ulp', 'assert_array_equal'],
-        'array_module_x': [numpy, cupy],
-        'array_module_y': [numpy, cupy]
+        'array_module_x': [numpy, clpy],
+        'array_module_y': [numpy, clpy]
     })
 )
 @testing.gpu
@@ -38,17 +38,17 @@ class TestEqualityAssertion(unittest.TestCase):
 def _convert_array(xs, array_module):
     if array_module == 'all_numpy':
         return xs
-    elif array_module == 'all_cupy':
-        return cupy.asarray(xs)
+    elif array_module == 'all_clpy':
+        return clpy.asarray(xs)
     else:
-        return [cupy.asarray(x) if numpy.random.randint(0, 2)
+        return [clpy.asarray(x) if numpy.random.randint(0, 2)
                 else x for x in xs]
 
 
 @testing.parameterize(
     *testing.product({
-        'array_module_x': ['all_numpy', 'all_cupy', 'random'],
-        'array_module_y': ['all_numpy', 'all_cupy', 'random']
+        'array_module_x': ['all_numpy', 'all_clpy', 'random'],
+        'array_module_y': ['all_numpy', 'all_clpy', 'random']
     })
 )
 @testing.gpu
@@ -72,8 +72,8 @@ class TestListEqualityAssertion(unittest.TestCase):
 
 @testing.parameterize(
     *testing.product({
-        'array_module_x': [numpy, cupy],
-        'array_module_y': [numpy, cupy]
+        'array_module_x': [numpy, clpy],
+        'array_module_y': [numpy, clpy]
     })
 )
 @testing.gpu

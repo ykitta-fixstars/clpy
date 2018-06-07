@@ -4,9 +4,9 @@ import unittest
 import numpy
 import six
 
-import cupy
-from cupy import testing
-from cupy.testing import helper
+import clpy
+from clpy import testing
+from clpy.testing import helper
 
 
 class TestContainsSignedAndUnsigned(unittest.TestCase):
@@ -34,53 +34,53 @@ class TestCheckCupyNumpyError(unittest.TestCase):
 
     def test_both_success(self):
         with self.assertRaises(AssertionError):
-            helper._check_cupy_numpy_error(self, None, None, None, None)
+            helper._check_clpy_numpy_error(self, None, None, None, None)
 
-    def test_cupy_error(self):
-        cupy_error = Exception()
-        cupy_tb = 'xxxx'
-        with six.assertRaisesRegex(self, AssertionError, cupy_tb):
-            helper._check_cupy_numpy_error(self, cupy_error, cupy_tb,
+    def test_clpy_error(self):
+        clpy_error = Exception()
+        clpy_tb = 'xxxx'
+        with six.assertRaisesRegex(self, AssertionError, clpy_tb):
+            helper._check_clpy_numpy_error(self, clpy_error, clpy_tb,
                                            None, None)
 
     def test_numpy_error(self):
         numpy_error = Exception()
         numpy_tb = 'yyyy'
         with six.assertRaisesRegex(self, AssertionError, numpy_tb):
-            helper._check_cupy_numpy_error(self, None, None,
+            helper._check_clpy_numpy_error(self, None, None,
                                            numpy_error, numpy_tb)
 
-    def test_cupy_numpy_different_error(self):
-        cupy_error = TypeError()
-        cupy_tb = 'xxxx'
+    def test_clpy_numpy_different_error(self):
+        clpy_error = TypeError()
+        clpy_tb = 'xxxx'
         numpy_error = ValueError()
         numpy_tb = 'yyyy'
         # Use re.S mode to ignore new line characters
-        pattern = re.compile(cupy_tb + '.*' + numpy_tb, re.S)
+        pattern = re.compile(clpy_tb + '.*' + numpy_tb, re.S)
         with six.assertRaisesRegex(self, AssertionError, pattern):
-            helper._check_cupy_numpy_error(self, cupy_error, cupy_tb,
+            helper._check_clpy_numpy_error(self, clpy_error, clpy_tb,
                                            numpy_error, numpy_tb)
 
     def test_same_error(self):
-        cupy_error = Exception()
-        cupy_tb = 'xxxx'
+        clpy_error = Exception()
+        clpy_tb = 'xxxx'
         numpy_error = Exception()
         numpy_tb = 'yyyy'
         # Nothing happens
-        helper._check_cupy_numpy_error(self, cupy_error, cupy_tb,
+        helper._check_clpy_numpy_error(self, clpy_error, clpy_tb,
                                        numpy_error, numpy_tb,
                                        accept_error=Exception)
 
     def test_forbidden_error(self):
-        cupy_error = Exception()
-        cupy_tb = 'xxxx'
+        clpy_error = Exception()
+        clpy_tb = 'xxxx'
         numpy_error = Exception()
         numpy_tb = 'yyyy'
         # Use re.S mode to ignore new line characters
-        pattern = re.compile(cupy_tb + '.*' + numpy_tb, re.S)
+        pattern = re.compile(clpy_tb + '.*' + numpy_tb, re.S)
         with six.assertRaisesRegex(self, AssertionError, pattern):
-            helper._check_cupy_numpy_error(
-                self, cupy_error, cupy_tb,
+            helper._check_clpy_numpy_error(
+                self, clpy_error, clpy_tb,
                 numpy_error, numpy_tb, accept_error=False)
 
 
@@ -106,14 +106,14 @@ class NumPyCuPyDecoratorBase(object):
 def numpy_error(_, xp):
     if xp == numpy:
         raise ValueError()
-    elif xp == cupy:
-        return cupy.array(1)
+    elif xp == clpy:
+        return clpy.array(1)
 
 
-def cupy_error(_, xp):
+def clpy_error(_, xp):
     if xp == numpy:
         return numpy.array(1)
-    elif xp == cupy:
+    elif xp == clpy:
         raise ValueError()
 
 
@@ -126,9 +126,9 @@ class NumPyCuPyDecoratorBase2(object):
         with self.assertRaises(AssertionError):
             decorated_func(self)
 
-    def test_accept_error_cupy(self):
+    def test_accept_error_clpy(self):
         decorator = getattr(testing, self.decorator)(accept_error=False)
-        decorated_func = decorator(cupy_error)
+        decorated_func = decorator(clpy_error)
         with self.assertRaises(AssertionError):
             decorated_func(self)
 
@@ -136,64 +136,64 @@ class NumPyCuPyDecoratorBase2(object):
 def make_result(xp, np_result, cp_result):
     if xp == numpy:
         return np_result
-    elif xp == cupy:
+    elif xp == clpy:
         return cp_result
 
 
 @testing.parameterize(
-    {'decorator': 'numpy_cupy_allclose'},
-    {'decorator': 'numpy_cupy_array_almost_equal'},
-    {'decorator': 'numpy_cupy_array_almost_equal_nulp'},
-    {'decorator': 'numpy_cupy_array_max_ulp'},
-    {'decorator': 'numpy_cupy_array_equal'}
+    {'decorator': 'numpy_clpy_allclose'},
+    {'decorator': 'numpy_clpy_array_almost_equal'},
+    {'decorator': 'numpy_clpy_array_almost_equal_nulp'},
+    {'decorator': 'numpy_clpy_array_max_ulp'},
+    {'decorator': 'numpy_clpy_array_equal'}
 )
 class TestNumPyCuPyEqual(unittest.TestCase, NumPyCuPyDecoratorBase,
                          NumPyCuPyDecoratorBase2):
 
     def valid_func(self, xp):
-        return make_result(xp, numpy.array(1), cupy.array(1))
+        return make_result(xp, numpy.array(1), clpy.array(1))
 
     def invalid_func(self, xp):
-        return make_result(xp, numpy.array(1), cupy.array(2))
+        return make_result(xp, numpy.array(1), clpy.array(2))
 
     def strange_kw_func(self, foo):
-        return make_result(foo, numpy.array(1), cupy.array(1))
+        return make_result(foo, numpy.array(1), clpy.array(1))
 
 
 @testing.parameterize(
-    {'decorator': 'numpy_cupy_array_list_equal'}
+    {'decorator': 'numpy_clpy_array_list_equal'}
 )
 @testing.gpu
 class TestNumPyCuPyListEqual(unittest.TestCase, NumPyCuPyDecoratorBase):
 
     def valid_func(self, xp):
-        return make_result(xp, [numpy.array(1)], [cupy.array(1)])
+        return make_result(xp, [numpy.array(1)], [clpy.array(1)])
 
     def invalid_func(self, xp):
-        return make_result(xp, [numpy.array(1)], [cupy.array(2)])
+        return make_result(xp, [numpy.array(1)], [clpy.array(2)])
 
     def strange_kw_func(self, foo):
-        return make_result(foo, [numpy.array(1)], [cupy.array(1)])
+        return make_result(foo, [numpy.array(1)], [clpy.array(1)])
 
 
 @testing.parameterize(
-    {'decorator': 'numpy_cupy_array_less'}
+    {'decorator': 'numpy_clpy_array_less'}
 )
 class TestNumPyCuPyLess(unittest.TestCase, NumPyCuPyDecoratorBase,
                         NumPyCuPyDecoratorBase2):
 
     def valid_func(self, xp):
-        return make_result(xp, numpy.array(2), cupy.array(1))
+        return make_result(xp, numpy.array(2), clpy.array(1))
 
     def invalid_func(self, xp):
-        return make_result(xp, numpy.array(1), cupy.array(2))
+        return make_result(xp, numpy.array(1), clpy.array(2))
 
     def strange_kw_func(self, foo):
-        return make_result(foo, numpy.array(2), cupy.array(1))
+        return make_result(foo, numpy.array(2), clpy.array(1))
 
 
 @testing.parameterize(
-    {'decorator': 'numpy_cupy_raises'}
+    {'decorator': 'numpy_clpy_raises'}
 )
 class TestNumPyCuPyRaise(unittest.TestCase, NumPyCuPyDecoratorBase):
 
@@ -201,7 +201,7 @@ class TestNumPyCuPyRaise(unittest.TestCase, NumPyCuPyDecoratorBase):
         raise ValueError()
 
     def invalid_func(self, xp):
-        return make_result(xp, numpy.array(1), cupy.array(1))
+        return make_result(xp, numpy.array(1), clpy.array(1))
 
     def strange_kw_func(self, foo):
         raise ValueError()
@@ -212,9 +212,9 @@ class TestNumPyCuPyRaise(unittest.TestCase, NumPyCuPyDecoratorBase):
         with self.assertRaises(AssertionError):
             decorated_func(self)
 
-    def test_accept_error_cupy(self):
+    def test_accept_error_clpy(self):
         decorator = getattr(testing, self.decorator)()
-        decorated_func = decorator(cupy_error)
+        decorated_func = decorator(clpy_error)
         with self.assertRaises(AssertionError):
             decorated_func(self)
 
@@ -223,7 +223,7 @@ class TestIgnoreOfNegativeValueDifferenceOnCpuAndGpu(unittest.TestCase):
 
     @helper.for_unsigned_dtypes('dtype1')
     @helper.for_signed_dtypes('dtype2')
-    @helper.numpy_cupy_allclose()
+    @helper.numpy_clpy_allclose()
     def correct_failure(self, xp, dtype1, dtype2):
         if xp == numpy:
             return xp.array(-1, dtype=numpy.float32)
@@ -236,7 +236,7 @@ class TestIgnoreOfNegativeValueDifferenceOnCpuAndGpu(unittest.TestCase):
 
     @helper.for_unsigned_dtypes('dtype1')
     @helper.for_signed_dtypes('dtype2')
-    @helper.numpy_cupy_allclose()
+    @helper.numpy_clpy_allclose()
     def test_correct_success(self, xp, dtype1, dtype2):
         # Behavior of assigning a negative value to an unsigned integer
         # variable is undefined.

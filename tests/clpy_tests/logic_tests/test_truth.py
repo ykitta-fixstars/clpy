@@ -3,7 +3,7 @@ import unittest
 import numpy
 import six
 
-from cupy import testing
+from clpy import testing
 
 
 def _calc_out_shape(shape, axis, keepdims):
@@ -40,13 +40,13 @@ class TestAllAny(unittest.TestCase):
     _multiprocess_can_split_ = True
 
     @testing.for_all_dtypes()
-    @testing.numpy_cupy_array_equal()
+    @testing.numpy_clpy_array_equal()
     def test_without_out(self, xp, dtype):
         x = xp.asarray(self.x).astype(dtype)
         return getattr(xp, self.f)(x, self.axis, None, self.keepdims)
 
     @testing.for_all_dtypes()
-    @testing.numpy_cupy_array_equal()
+    @testing.numpy_clpy_array_equal()
     def test_with_out(self, xp, dtype):
         x = xp.asarray(self.x).astype(dtype)
         out_shape = _calc_out_shape(x.shape, self.axis, self.keepdims)
@@ -71,14 +71,14 @@ class TestAllAnyWithNaN(unittest.TestCase):
 
     @testing.for_dtypes(
         (numpy.float64, numpy.float32, numpy.float16, numpy.bool_))
-    @testing.numpy_cupy_array_equal()
+    @testing.numpy_clpy_array_equal()
     def test_without_out(self, xp, dtype):
         x = xp.asarray(self.x).astype(dtype)
         return getattr(xp, self.f)(x, self.axis, None, self.keepdims)
 
     @testing.for_dtypes(
         (numpy.float64, numpy.float32, numpy.float16, numpy.bool_))
-    @testing.numpy_cupy_array_equal()
+    @testing.numpy_clpy_array_equal()
     def test_with_out(self, xp, dtype):
         x = xp.asarray(self.x).astype(dtype)
         out_shape = _calc_out_shape(x.shape, self.axis, self.keepdims)

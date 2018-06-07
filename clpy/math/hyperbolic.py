@@ -1,8 +1,8 @@
-from cupy.math import ufunc
+from clpy.math import ufunc
 
 
 sinh = ufunc.create_math_ufunc(
-    'sinh', 1, 'cupy_sinh',
+    'sinh', 1, 'clpy_sinh',
     '''Elementwise hyperbolic sine function.
 
     .. seealso:: :data:`numpy.sinh`
@@ -11,7 +11,7 @@ sinh = ufunc.create_math_ufunc(
 
 
 cosh = ufunc.create_math_ufunc(
-    'cosh', 1, 'cupy_cosh',
+    'cosh', 1, 'clpy_cosh',
     '''Elementwise hyperbolic cosine function.
 
     .. seealso:: :data:`numpy.cosh`
@@ -20,7 +20,7 @@ cosh = ufunc.create_math_ufunc(
 
 
 tanh = ufunc.create_math_ufunc(
-    'tanh', 1, 'cupy_tanh',
+    'tanh', 1, 'clpy_tanh',
     '''Elementwise hyperbolic tangent function.
 
     .. seealso:: :data:`numpy.tanh`
@@ -29,7 +29,7 @@ tanh = ufunc.create_math_ufunc(
 
 
 arcsinh = ufunc.create_math_ufunc(
-    'asinh', 1, 'cupy_arcsinh',
+    'asinh', 1, 'clpy_arcsinh',
     '''Elementwise inverse of hyperbolic sine function.
 
     .. seealso:: :data:`numpy.arcsinh`
@@ -38,7 +38,7 @@ arcsinh = ufunc.create_math_ufunc(
 
 
 arccosh = ufunc.create_math_ufunc(
-    'acosh', 1, 'cupy_arccosh',
+    'acosh', 1, 'clpy_arccosh',
     '''Elementwise inverse of hyperbolic cosine function.
 
     .. seealso:: :data:`numpy.arccosh`
@@ -47,7 +47,7 @@ arccosh = ufunc.create_math_ufunc(
 
 
 arctanh = ufunc.create_math_ufunc(
-    'atanh', 1, 'cupy_arctanh',
+    'atanh', 1, 'clpy_arctanh',
     '''Elementwise inverse of hyperbolic tangent function.
 
     .. seealso:: :data:`numpy.arctanh`

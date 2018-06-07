@@ -1,6 +1,6 @@
 import unittest
 
-from cupy import testing
+from clpy import testing
 
 
 @testing.parameterize(*testing.product({
@@ -14,14 +14,14 @@ class TestInsert(unittest.TestCase):
     _multiprocess_can_split_ = True
 
     @testing.for_all_dtypes()
-    @testing.numpy_cupy_array_equal()
+    @testing.numpy_clpy_array_equal()
     def test_fill_diagonal(self, xp, dtype):
         a = testing.shaped_arange(self.shape, xp, dtype)
         xp.fill_diagonal(a, val=self.val, wrap=self.wrap)
         return a
 
     @testing.for_all_dtypes()
-    @testing.numpy_cupy_raises()
+    @testing.numpy_clpy_raises()
     def test_1darray(self, xp, dtype):
         a = testing.shaped_arange(5, xp, dtype)
         xp.fill_diagonal(a, val=self.val, wrap=self.wrap)

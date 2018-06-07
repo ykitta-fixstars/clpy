@@ -4,11 +4,11 @@ import unittest
 import numpy
 import six
 
-from cupy import cuda
-from cupy import random
-from cupy import testing
-from cupy.testing import condition
-from cupy.testing import hypothesis
+from clpy import backend
+from clpy import random
+from clpy import testing
+from clpy.testing import condition
+from clpy.testing import hypothesis
 
 
 @testing.gpu
@@ -102,17 +102,17 @@ class TestRandomIntegers(unittest.TestCase):
     _multiprocess_can_split_ = True
 
     def test_normal(self):
-        with mock.patch('cupy.random.sample_.randint') as m:
+        with mock.patch('clpy.random.sample_.randint') as m:
             random.random_integers(3, 5)
         m.assert_called_with(3, 6, None)
 
     def test_high_is_none(self):
-        with mock.patch('cupy.random.sample_.randint') as m:
+        with mock.patch('clpy.random.sample_.randint') as m:
             random.random_integers(3, None)
         m.assert_called_with(1, 4, None)
 
     def test_size_is_not_none(self):
-        with mock.patch('cupy.random.sample_.randint') as m:
+        with mock.patch('clpy.random.sample_.randint') as m:
             random.random_integers(3, 5, (1, 2, 3))
         m.assert_called_with(3, 6, (1, 2, 3))
 
@@ -164,7 +164,7 @@ class TestChoice(unittest.TestCase):
 
     def setUp(self):
         self.rs_tmp = random.generator._random_states
-        device_id = cuda.Device().id
+        device_id = backend.Device().id
         self.m = mock.Mock()
         self.m.choice.return_value = 0
         random.generator._random_states = {device_id: self.m}
@@ -209,13 +209,13 @@ class TestChoice(unittest.TestCase):
 class TestRandomSample(unittest.TestCase):
 
     def test_rand(self):
-        with mock.patch('cupy.random.sample_.random_sample') as m:
+        with mock.patch('clpy.random.sample_.random_sample') as m:
             random.rand(1, 2, 3, dtype=numpy.float32)
         m.assert_called_once_with(
             size=(1, 2, 3), dtype=numpy.float32)
 
     def test_rand_default_dtype(self):
-        with mock.patch('cupy.random.sample_.random_sample') as m:
+        with mock.patch('clpy.random.sample_.random_sample') as m:
             random.rand(1, 2, 3)
         m.assert_called_once_with(
             size=(1, 2, 3), dtype=float)
@@ -225,13 +225,13 @@ class TestRandomSample(unittest.TestCase):
             random.rand(1, 2, 3, unnecessary='unnecessary_argument')
 
     def test_randn(self):
-        with mock.patch('cupy.random.distributions.normal') as m:
+        with mock.patch('clpy.random.distributions.normal') as m:
             random.randn(1, 2, 3, dtype=numpy.float32)
         m.assert_called_once_with(
             size=(1, 2, 3), dtype=numpy.float32)
 
     def test_randn_default_dtype(self):
-        with mock.patch('cupy.random.distributions.normal') as m:
+        with mock.patch('clpy.random.distributions.normal') as m:
             random.randn(1, 2, 3)
         m.assert_called_once_with(
             size=(1, 2, 3), dtype=float)
@@ -256,7 +256,7 @@ class TestMultinomial(unittest.TestCase):
 
     @condition.repeat(3, 10)
     @testing.for_float_dtypes()
-    @testing.numpy_cupy_allclose(rtol=0.05)
+    @testing.numpy_clpy_allclose(rtol=0.05)
     def test_multinomial(self, xp, dtype):
         pvals = xp.array([0.2, 0.3, 0.5], dtype)
         x = xp.random.multinomial(100000, pvals, self.size)

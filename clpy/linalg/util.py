@@ -1,14 +1,14 @@
 from numpy import linalg
 
-import cupy
-from cupy import core
+import clpy
+from clpy import core
 
 
-def _assert_cupy_array(*arrays):
+def _assert_clpy_array(*arrays):
     for a in arrays:
-        if not isinstance(a, cupy.core.ndarray):
+        if not isinstance(a, clpy.core.ndarray):
             raise linalg.LinAlgError(
-                'cupy.linalg only supports cupy.core.ndarray')
+                'clpy.linalg only supports clpy.core.ndarray')
 
 
 def _assert_rank2(*arrays):

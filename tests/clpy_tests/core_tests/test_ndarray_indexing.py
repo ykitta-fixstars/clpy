@@ -1,6 +1,6 @@
 import unittest
 
-from cupy import testing
+from clpy import testing
 
 
 @testing.parameterize(
@@ -76,7 +76,7 @@ class TestArrayIndexingParameterized(unittest.TestCase):
     _multiprocess_can_split_ = True
 
     @testing.for_all_dtypes()
-    @testing.numpy_cupy_array_equal()
+    @testing.numpy_clpy_array_equal()
     def test_getitem(self, xp, dtype):
         a = testing.shaped_arange(self.shape, xp, dtype)
         if self.transpose:
@@ -106,7 +106,7 @@ class TestArrayIndexingParameterized(unittest.TestCase):
 class TestArrayInvalidIndex(unittest.TestCase):
 
     @testing.for_all_dtypes()
-    @testing.numpy_cupy_raises()
+    @testing.numpy_clpy_raises()
     def test_invalid_getitem(self, xp, dtype):
         a = testing.shaped_arange(self.shape, xp, dtype)
         if self.transpose:
@@ -120,21 +120,21 @@ class TestArrayIndex(unittest.TestCase):
     _multiprocess_can_split_ = True
 
     @testing.for_all_dtypes()
-    @testing.numpy_cupy_array_equal()
+    @testing.numpy_clpy_array_equal()
     def test_setitem_constant(self, xp, dtype):
         a = xp.zeros((2, 3, 4), dtype=dtype)
         a[:] = 1
         return a
 
     @testing.for_all_dtypes()
-    @testing.numpy_cupy_array_equal()
+    @testing.numpy_clpy_array_equal()
     def test_setitem_partial_constant(self, xp, dtype):
         a = xp.zeros((2, 3, 4), dtype=dtype)
         a[1, 1:3] = 1
         return a
 
     @testing.for_all_dtypes()
-    @testing.numpy_cupy_array_equal()
+    @testing.numpy_clpy_array_equal()
     def test_setitem_copy(self, xp, dtype):
         a = xp.zeros((2, 3, 4), dtype=dtype)
         b = testing.shaped_arange((2, 3, 4), xp, dtype)
@@ -142,19 +142,19 @@ class TestArrayIndex(unittest.TestCase):
         return a
 
     @testing.for_all_dtypes()
-    @testing.numpy_cupy_array_equal()
+    @testing.numpy_clpy_array_equal()
     def test_setitem_partial_copy(self, xp, dtype):
         a = xp.zeros((2, 3, 4), dtype=dtype)
         b = testing.shaped_arange((3, 2), xp, dtype)
         a[1, ::-1, 1:4:2] = b
         return a
 
-    @testing.numpy_cupy_array_equal()
+    @testing.numpy_clpy_array_equal()
     def test_T(self, xp):
         a = testing.shaped_arange((2, 3, 4), xp)
         return a.T
 
-    @testing.numpy_cupy_array_equal()
+    @testing.numpy_clpy_array_equal()
     def test_T_vector(self, xp):
         a = testing.shaped_arange((4,), xp)
         return a.T

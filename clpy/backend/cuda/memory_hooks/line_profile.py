@@ -2,7 +2,7 @@ from os import path
 import sys
 import traceback
 
-from cupy.cuda import memory_hook
+from clpy.cuda import memory_hook
 
 
 class LineProfileHook(memory_hook.MemoryHook):
@@ -15,7 +15,7 @@ class LineProfileHook(memory_hook.MemoryHook):
     Example:
         Code example::
 
-            from cupy.cuda import memory_hooks
+            from clpy.cuda import memory_hooks
             hook = memory_hooks.LineProfileHook()
             with hook:
                 # some CuPy codes
@@ -26,9 +26,9 @@ class LineProfileHook(memory_hook.MemoryHook):
             _root (4.00KB, 4.00KB)
               lib/python3.6/unittest/__main__.py:18:<module> (4.00KB, 4.00KB)
                 lib/python3.6/unittest/main.py:255:runTests (4.00KB, 4.00KB)
-                  tests/cupy_tests/test.py:37:test (1.00KB, 1.00KB)
-                  tests/cupy_tests/test.py:38:test (1.00KB, 1.00KB)
-                  tests/cupy_tests/test.py:39:test (2.00KB, 2.00KB)
+                  tests/clpy_tests/test.py:37:test (1.00KB, 1.00KB)
+                  tests/clpy_tests/test.py:38:test (1.00KB, 1.00KB)
+                  tests/clpy_tests/test.py:39:test (2.00KB, 2.00KB)
 
         Each line shows::
 

@@ -1,10 +1,10 @@
-from cupy import core
-from cupy.math import ufunc
+from clpy import core
+from clpy.math import ufunc
 
 
 signbit = core.create_ufunc(
-    'cupy_signbit',
-    ('e->?', 'f->?', 'd->?'),
+    'clpy_signbit',
+    ('f->?', 'd->?'),
     'out0 = signbit(in0)',
     doc='''Tests elementwise if the sign bit is set (i.e. less than zero).
 
@@ -14,7 +14,7 @@ signbit = core.create_ufunc(
 
 
 copysign = ufunc.create_math_ufunc(
-    'copysign', 2, 'cupy_copysign',
+    'copysign', 2, 'clpy_copysign',
     '''Returns the first argument with the sign bit of the second elementwise.
 
     .. seealso:: :data:`numpy.copysign`
@@ -23,8 +23,8 @@ copysign = ufunc.create_math_ufunc(
 
 
 ldexp = core.create_ufunc(
-    'cupy_ldexp',
-    ('ei->e', 'fi->f', 'el->e', 'fl->f', 'di->d', 'dq->d'),
+    'clpy_ldexp',
+    ('fi->f', 'fl->f', 'di->d', 'dq->d'),
     'out0 = ldexp(in0, in1)',
     doc='''Computes ``x1 * 2 ** x2`` elementwise.
 
@@ -34,8 +34,8 @@ ldexp = core.create_ufunc(
 
 
 frexp = core.create_ufunc(
-    'cupy_frexp',
-    ('e->ei', 'f->fi', 'd->di'),
+    'clpy_frexp',
+    ('f->fi', 'd->di'),
     'int nptr; out0 = frexp(in0, &nptr); out1 = nptr',
     doc='''Decomposes each element to mantissa and two's exponent.
 
@@ -47,7 +47,7 @@ frexp = core.create_ufunc(
 
 
 nextafter = ufunc.create_math_ufunc(
-    'nextafter', 2, 'cupy_nextafter',
+    'nextafter', 2, 'clpy_nextafter',
     '''Computes the nearest neighbor float values towards the second argument.
 
     .. seealso:: :data:`numpy.nextafter`

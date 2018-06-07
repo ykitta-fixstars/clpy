@@ -1,3 +1,6 @@
+cimport clpy.backend.opencl.api
+cimport clpy.backend.opencl.types
+
 cdef class CPointer:
     cdef void* ptr
 
@@ -5,22 +8,22 @@ cdef class CPointer:
 cdef class Function:
 
     cdef:
-        public Module module
-        public size_t ptr
+        Module module
+        clpy.backend.opencl.types.cl_kernel kernel
 
-    cpdef linear_launch(self, size_t size, args, size_t shared_mem=*,
-                        size_t block_max_size=*, stream=*)
+    cpdef linear_launch(self, size_t size, args, size_t local_mem=*, size_t local_size=*)
 
 
 cdef class Module:
 
     cdef:
-        public size_t ptr
+        clpy.backend.opencl.types.cl_program program
 
     cpdef load_file(self, str filename)
     cpdef load(self, bytes cubin)
     cpdef get_global_var(self, str name)
     cpdef get_function(self, str name)
+    cdef set(self, clpy.backend.opencl.types.cl_program program)
 
 
 cdef class LinkState:

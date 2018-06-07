@@ -1,18 +1,18 @@
-from cupy.sparse.base import issparse  # NOQA
-from cupy.sparse.base import isspmatrix  # NOQA
-from cupy.sparse.base import spmatrix  # NOQA
-from cupy.sparse.coo import coo_matrix  # NOQA
-from cupy.sparse.coo import isspmatrix_coo  # NOQA
-from cupy.sparse.csc import csc_matrix  # NOQA
-from cupy.sparse.csc import isspmatrix_csc  # NOQA
-from cupy.sparse.csr import csr_matrix  # NOQA
-from cupy.sparse.csr import isspmatrix_csr  # NOQA
-from cupy.sparse.dia import dia_matrix  # NOQA
-from cupy.sparse.dia import isspmatrix_dia  # NOQA
+# from clpy.sparse.base import issparse  # NOQA
+# from clpy.sparse.base import isspmatrix  # NOQA
+from clpy.sparse.base import spmatrix  # NOQA
+# from clpy.sparse.coo import coo_matrix  # NOQA
+# from clpy.sparse.coo import isspmatrix_coo  # NOQA
+# from clpy.sparse.csc import csc_matrix  # NOQA
+# from clpy.sparse.csc import isspmatrix_csc  # NOQA
+# from clpy.sparse.csr import csr_matrix  # NOQA
+# from clpy.sparse.csr import isspmatrix_csr  # NOQA
+# from clpy.sparse.dia import dia_matrix  # NOQA
+# from clpy.sparse.dia import isspmatrix_dia  # NOQA
 
-from cupy.sparse.construct import eye  # NOQA
-from cupy.sparse.construct import identity  # NOQA
-from cupy.sparse.construct import spdiags  # NOQA
+# from clpy.sparse.construct import eye  # NOQA
+# from clpy.sparse.construct import identity  # NOQA
+# from clpy.sparse.construct import spdiags  # NOQA
 
 # TODO(unno): implement bsr_matrix
 # TODO(unno): implement dok_matrix

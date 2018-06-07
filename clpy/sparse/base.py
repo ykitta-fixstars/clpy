@@ -1,9 +1,9 @@
 import numpy
 import six
 
-import cupy
-from cupy.core import core
-from cupy.sparse import util
+import clpy
+from clpy.core import core
+from clpy.sparse import util
 
 
 class spmatrix(object):
@@ -30,7 +30,7 @@ class spmatrix(object):
         """Return a copy of the array on host memory.
 
         Args:
-            stream (cupy.cuda.Stream): CUDA stream object. If it is given, the
+            stream (clpy.cuda.Stream): CUDA stream object. If it is given, the
                 copy runs asynchronously. Otherwise, the copy is synchronous.
 
         Returns:
@@ -98,7 +98,7 @@ class spmatrix(object):
         return self.tocsr().__mul__(other)
 
     def __rmul__(self, other):
-        if cupy.isscalar(other) or isdense(other) and other.ndim == 0:
+        if clpy.isscalar(other) or isdense(other) and other.ndim == 0:
             return self * other
         else:
             try:
@@ -147,7 +147,7 @@ class spmatrix(object):
             other (int): Exponent.
 
         Returns:
-            cupy.sparse.spmatrix: A sparse matrix representing n-th power of
+            clpy.sparse.spmatrix: A sparse matrix representing n-th power of
                 this matrix.
 
         """
@@ -161,7 +161,7 @@ class spmatrix(object):
                 raise ValueError('exponent must be >= 0')
 
             if other == 0:
-                return cupy.sparse.identity(m, dtype=self.dtype, format='csr')
+                return clpy.sparse.identity(m, dtype=self.dtype, format='csr')
             elif other == 1:
                 return self.copy()
             else:
@@ -179,7 +179,7 @@ class spmatrix(object):
     def A(self):
         """Dense ndarray representation of this matrix.
 
-        This property is equivalent to :meth:`~cupy.sparse.spmatrix.toarray`
+        This property is equivalent to :meth:`~clpy.sparse.spmatrix.toarray`
         method.
 
         """
@@ -231,7 +231,7 @@ class spmatrix(object):
         Otherwise it makes a copy with floating point type and the same format.
 
         Returns:
-            cupy.sparse.spmatrix: A matrix with float type.
+            clpy.sparse.spmatrix: A matrix with float type.
 
         """
         if self.dtype.kind == 'f':
@@ -247,7 +247,7 @@ class spmatrix(object):
             t: Type specifier.
 
         Returns:
-            cupy.sparse.spmatrix:
+            clpy.sparse.spmatrix:
                 A copy of the array with the given type and the same format.
 
         """
@@ -368,7 +368,7 @@ def issparse(x):
     """Checks if a given matrix is a sparse matrix.
 
     Returns:
-        bool: Returns if ``x`` is :class:`cupy.sparse.spmatrix` that is a base
+        bool: Returns if ``x`` is :class:`clpy.sparse.spmatrix` that is a base
             class of all sparse matrix classes.
 
     """

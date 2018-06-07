@@ -1,7 +1,7 @@
 import numpy
 import six
 
-from cupy import core
+from clpy import core
 
 
 def copyto(dst, src, casting='same_kind', where=None):
@@ -12,10 +12,10 @@ def copyto(dst, src, casting='same_kind', where=None):
     raised if these are used.
 
     Args:
-        dst (cupy.ndarray): Target array.
-        src (cupy.ndarray): Source array.
+        dst (clpy.ndarray): Target array.
+        src (clpy.ndarray): Source array.
         casting (str): Casting rule. See :func:`numpy.can_cast` for detail.
-        where (cupy.ndarray of bool): If specified, this array acts as a mask,
+        where (clpy.ndarray of bool): If specified, this array acts as a mask,
             and an element is copied only if the corresponding element of
             ``where`` is True.
 

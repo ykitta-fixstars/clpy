@@ -1,6 +1,6 @@
 import numpy
 
-import cupy
+import clpy
 
 
 def array_repr(arr, max_line_width=None, precision=None, suppress_small=None):
@@ -8,7 +8,7 @@ def array_repr(arr, max_line_width=None, precision=None, suppress_small=None):
 
     Args:
         arr (array_like): Input array. It should be able to feed to
-            :func:`cupy.asnumpy`.
+            :func:`clpy.asnumpy`.
         max_line_width (int): The maximum number of line lengths.
         precision (int): Floating point precision. It uses the current printing
             precision of NumPy.
@@ -21,7 +21,7 @@ def array_repr(arr, max_line_width=None, precision=None, suppress_small=None):
     .. seealso:: :func:`numpy.array_repr`
 
     """
-    return numpy.array_repr(cupy.asnumpy(arr), max_line_width, precision,
+    return numpy.array_repr(clpy.asnumpy(arr), max_line_width, precision,
                             suppress_small)
 
 
@@ -30,7 +30,7 @@ def array_str(arr, max_line_width=None, precision=None, suppress_small=None):
 
     Args:
         arr (array_like): Input array. It should be able to feed to
-            :func:`cupy.asnumpy`.
+            :func:`clpy.asnumpy`.
         max_line_width (int): The maximum number of line lengths.
         precision (int): Floating point precision. It uses the current printing
             precision of NumPy.
@@ -40,5 +40,5 @@ def array_str(arr, max_line_width=None, precision=None, suppress_small=None):
     .. seealso:: :func:`numpy.array_str`
 
     """
-    return numpy.array_str(cupy.asnumpy(arr), max_line_width, precision,
+    return numpy.array_str(clpy.asnumpy(arr), max_line_width, precision,
                            suppress_small)

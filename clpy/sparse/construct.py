@@ -1,4 +1,4 @@
-import cupy
+import clpy
 
 
 def eye(m, n=None, k=0, dtype='d', format=None):
@@ -13,7 +13,7 @@ def eye(m, n=None, k=0, dtype='d', format=None):
         format (str or None): Format of the result, e.g. ``format="csr"``.
 
     Returns:
-        cupy.sparse.spmatrix: Created sparse matrix.
+        clpy.sparse.spmatrix: Created sparse matrix.
 
     .. seealso:: :func:`scipy.sparse.eye`
 
@@ -24,22 +24,22 @@ def eye(m, n=None, k=0, dtype='d', format=None):
 
     if m == n and k == 0:
         if format in ['csr', 'csc']:
-            indptr = cupy.arange(n + 1, dtype='i')
-            indices = cupy.arange(n, dtype='i')
-            data = cupy.ones(n, dtype=dtype)
+            indptr = clpy.arange(n + 1, dtype='i')
+            indices = clpy.arange(n, dtype='i')
+            data = clpy.ones(n, dtype=dtype)
             if format == 'csr':
-                cls = cupy.sparse.csr_matrix
+                cls = clpy.sparse.csr_matrix
             else:
-                cls = cupy.sparse.csc_matrix
+                cls = clpy.sparse.csc_matrix
             return cls((data, indices, indptr), (n, n))
 
         elif format == 'coo':
-            row = cupy.arange(n, dtype='i')
-            col = cupy.arange(n, dtype='i')
-            data = cupy.ones(n, dtype=dtype)
-            return cupy.sparse.coo_matrix((data, (row, col)), (n, n))
+            row = clpy.arange(n, dtype='i')
+            col = clpy.arange(n, dtype='i')
+            data = clpy.ones(n, dtype=dtype)
+            return clpy.sparse.coo_matrix((data, (row, col)), (n, n))
 
-    diags = cupy.ones((1, max(0, min(m + k, n))), dtype=dtype)
+    diags = clpy.ones((1, max(0, min(m + k, n))), dtype=dtype)
     return spdiags(diags, k, m, n).asformat(format)
 
 
@@ -55,7 +55,7 @@ def identity(n, dtype='d', format=None):
         format (str or None): Format of the result, e.g. ``format="csr"``.
 
     Returns:
-        cupy.sparse.spmatrix: Created identity matrix.
+        clpy.sparse.spmatrix: Created identity matrix.
 
     .. seealso:: :func:`scipy.sparse.identity`
 
@@ -67,16 +67,16 @@ def spdiags(data, diags, m, n, format=None):
     """Creates a sparse matrix from diagonals.
 
     Args:
-        data (cupy.ndarray): Matrix diagonals stored row-wise.
-        diags (cupy.ndarray): Diagonals to set.
+        data (clpy.ndarray): Matrix diagonals stored row-wise.
+        diags (clpy.ndarray): Diagonals to set.
         m (int): Number of rows.
         n (int): Number of cols.
         format (str or None): Sparse format, e.g. ``format="csr"``.
 
     Returns:
-        cupy.sparse.spmatrix: Created sparse matrix.
+        clpy.sparse.spmatrix: Created sparse matrix.
 
     .. seealso:: :func:`scipy.sparse.spdiags`
 
     """
-    return cupy.sparse.dia_matrix((data, diags), shape=(m, n)).asformat(format)
+    return clpy.sparse.dia_matrix((data, diags), shape=(m, n)).asformat(format)

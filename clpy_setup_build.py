@@ -1,9 +1,6 @@
 from __future__ import print_function
 from distutils import ccompiler
-from distutils import errors
-from distutils import msvccompiler
 from distutils import sysconfig
-from distutils import unixccompiler
 import os
 from os import path
 import sys
@@ -24,122 +21,42 @@ ignore_cython_versions = [
 
 MODULES = [
     {
-        'name': 'cuda',
+        'name': 'opencl',
         'file': [
-            'cupy.core.core',
-            'cupy.core.flags',
-            'cupy.core.internal',
-            'cupy.cuda.cublas',
-            'cupy.cuda.curand',
-            'cupy.cuda.cusparse',
-            'cupy.cuda.device',
-            'cupy.cuda.driver',
-            'cupy.cuda.memory',
-            'cupy.cuda.memory_hook',
-            'cupy.cuda.nvrtc',
-            'cupy.cuda.pinned_memory',
-            'cupy.cuda.profiler',
-            'cupy.cuda.nvtx',
-            'cupy.cuda.function',
-            'cupy.cuda.runtime',
-            'cupy.util',
+            'clpy.core.core',
+            'clpy.core.flags',
+            'clpy.core.internal',
+            # 'clpy.backend.cublas',
+            # 'clpy.backend.curand',
+            # 'clpy.backend.cusparse',
+            'clpy.backend.device',
+            # 'clpy.backend.driver',
+            'clpy.backend.memory',
+            # 'clpy.backend.memory_hook',
+            # 'clpy.backend.nvrtc',
+            'clpy.backend.pinned_memory',
+            # 'clpy.backend.profiler',
+            # 'clpy.backend.nvtx',
+            'clpy.backend.function',
+            # 'clpy.backend.runtime',
+            'clpy.backend.opencl.api',
+            'clpy.backend.opencl.blas',
+            'clpy.backend.opencl.env',
+            'clpy.backend.opencl.types',
+            'clpy.backend.opencl.utility',
+            'clpy.backend.opencl.exceptions',
+            'clpy.util',
+            'clpy.testing.bufio',
         ],
         'include': [
-            'cublas_v2.h',
-            'cuda.h',
-            'cuda_profiler_api.h',
-            'cuda_runtime.h',
-            'curand.h',
-            'cusparse.h',
-            'nvrtc.h',
-            'nvToolsExt.h',
+            'CL/cl.h'
         ],
         'libraries': [
-            'cublas',
-            'cuda',
-            'cudart',
-            'curand',
-            'cusparse',
-            'nvrtc',
-            'nvToolsExt',
+            'OpenCL'
         ],
-        'check_method': build.check_cuda_version,
+        'check_method': build.check_opencl_version,
     },
-    {
-        'name': 'cudnn',
-        'file': [
-            'cupy.cuda.cudnn',
-        ],
-        'include': [
-            'cudnn.h',
-        ],
-        'libraries': [
-            'cudnn',
-        ],
-        'check_method': build.check_cudnn_version,
-    },
-    {
-        'name': 'nccl',
-        'file': [
-            'cupy.cuda.nccl',
-        ],
-        'include': [
-            'nccl.h',
-        ],
-        'libraries': [
-            'nccl',
-        ],
-        'check_method': build.check_nccl_version,
-    },
-    {
-        'name': 'cusolver',
-        'file': [
-            'cupy.cuda.cusolver',
-        ],
-        'include': [
-            'cusolverDn.h',
-        ],
-        'libraries': [
-            'cusolver',
-        ],
-        'check_method': build.check_cusolver_version,
-    },
-    {
-        # The value of the key 'file' is a list that contains extension names
-        # or tuples of an extension name and a list of other souces files
-        # required to build the extension such as .cpp files and .cu files.
-        #
-        #   <extension name> | (<extension name>, a list of <other source>)
-        #
-        # The extension name is also interpreted as the name of the Cython
-        # source file required to build the extension with appending '.pyx'
-        # file extension.
-        'name': 'thrust',
-        'file': [
-            ('cupy.cuda.thrust', ['cupy/cuda/cupy_thrust.cu']),
-        ],
-        'include': [
-            'thrust/device_ptr.h',
-            'thrust/sequence.h',
-            'thrust/sort.h',
-        ],
-        'libraries': [
-            'cudart',
-        ],
-        'check_method': build.check_cuda_version,
-    }
 ]
-
-if sys.platform == 'win32':
-    mod_cuda = MODULES[0]
-    mod_cuda['libraries'].remove('nvToolsExt')
-    if utils.search_on_path(['nvToolsExt64_1.dll']) is None:
-        mod_cuda['file'].remove('cupy.cuda.nvtx')
-        mod_cuda['include'].remove('nvToolsExt.h')
-        utils.print_warning(
-            'Cannot find nvToolsExt. nvtx was disabled.')
-    else:
-        mod_cuda['libraries'].append('nvToolsExt64_1')
 
 
 def ensure_module_file(file):
@@ -153,21 +70,10 @@ def module_extension_name(file):
     return ensure_module_file(file)[0]
 
 
-def module_extension_sources(file, use_cython, no_cuda):
+def module_extension_sources(file, use_cython):
     pyx, others = ensure_module_file(file)
     ext = '.pyx' if use_cython else '.cpp'
     pyx = path.join(*pyx.split('.')) + ext
-
-    # If CUDA SDK is not available, remove CUDA C files from extension sources
-    # and use stubs defined in header files.
-    if no_cuda:
-        others1 = []
-        for source in others:
-            base, ext = os.path.splitext(source)
-            if ext == '.cu':
-                continue
-            others1.append(source)
-        others = others1
 
     return [pyx] + others
 
@@ -197,7 +103,6 @@ def check_library(compiler, includes=(), libraries=(),
 def make_extensions(options, compiler, use_cython):
     """Produce a list of Extension instances which passed to cythonize()."""
 
-    no_cuda = options['no_cuda']
     settings = build.get_compiler_setting()
 
     include_dirs = settings['include_dirs']
@@ -232,69 +137,47 @@ def make_extensions(options, compiler, use_cython):
     if options['linetrace']:
         settings['define_macros'].append(('CYTHON_TRACE', '1'))
         settings['define_macros'].append(('CYTHON_TRACE_NOGIL', '1'))
-    if no_cuda:
-        settings['define_macros'].append(('CUPY_NO_CUDA', '1'))
 
     ret = []
     for module in MODULES:
         print('Include directories:', settings['include_dirs'])
         print('Library directories:', settings['library_dirs'])
 
-        if not no_cuda:
-            err = False
-            if not check_library(compiler,
-                                 includes=module['include'],
-                                 include_dirs=settings['include_dirs']):
-                utils.print_warning(
-                    'Include files not found: %s' % module['include'],
-                    'Skip installing %s support' % module['name'],
-                    'Check your CFLAGS environment variable')
-                err = True
-            elif not check_library(compiler,
-                                   libraries=module['libraries'],
-                                   library_dirs=settings['library_dirs']):
-                utils.print_warning(
-                    'Cannot link libraries: %s' % module['libraries'],
-                    'Skip installing %s support' % module['name'],
-                    'Check your LDFLAGS environment variable')
-                err = True
-            elif('check_method' in module and
-                 not module['check_method'](compiler, settings)):
-                err = True
+        err = False
+        if not check_library(compiler,
+                             includes=module['include'],
+                             include_dirs=settings['include_dirs']):
+            utils.print_warning(
+                'Include files not found: %s' % module['include'],
+                'Skip installing %s support' % module['name'],
+                'Check your CFLAGS environment variable')
+            err = True
+        elif not check_library(compiler,
+                               libraries=module['libraries'],
+                               library_dirs=settings['library_dirs']):
+            utils.print_warning(
+                'Cannot link libraries: %s' % module['libraries'],
+                'Skip installing %s support' % module['name'],
+                'Check your LDFLAGS environment variable')
+            err = True
+        elif('check_method' in module and
+             not module['check_method'](compiler, settings)):
+            err = True
 
-            if err:
-                if module['name'] == 'cuda':
-                    raise Exception('Your CUDA environment is invalid. '
-                                    'Please check above error log.')
-                else:
-                    # Other modules are optional. They are skipped.
-                    continue
+        if err:
+            if module['name'] == 'opencl':
+                raise Exception('Your OpenCL environment is invalid. '
+                                'Please check above error log.')
+            else:
+                # Other modules are optional. They are skipped.
+                continue
 
         s = settings.copy()
-        if not no_cuda:
-            s['libraries'] = module['libraries']
-
-        if module['name'] == 'cusolver':
-            compile_args = s.setdefault('extra_compile_args', [])
-            link_args = s.setdefault('extra_link_args', [])
-            # openmp is required for cusolver
-            if compiler.compiler_type == 'unix' and sys.platform != 'darwin':
-                # In mac environment, openmp is not required.
-                compile_args.append('-fopenmp')
-                link_args.append('-fopenmp')
-            elif compiler.compiler_type == 'msvc':
-                compile_args.append('/openmp')
-
-        if not no_cuda and module['name'] == 'thrust':
-            if build.get_nvcc_path() is None:
-                utils.print_warning(
-                    'Cannot find nvcc in PATH.',
-                    'Skip installing thrust support.')
-                continue
+        s['libraries'] = module['libraries']
 
         for f in module['file']:
             name = module_extension_name(f)
-            sources = module_extension_sources(f, use_cython, no_cuda)
+            sources = module_extension_sources(f, use_cython)
             extension = setuptools.Extension(name, sources, **s)
             ret.append(extension)
 
@@ -302,29 +185,23 @@ def make_extensions(options, compiler, use_cython):
 
 
 def parse_args():
-    cupy_profile = '--cupy-profile' in sys.argv
-    if cupy_profile:
-        sys.argv.remove('--cupy-profile')
-    cupy_coverage = '--cupy-coverage' in sys.argv
-    if cupy_coverage:
-        sys.argv.remove('--cupy-coverage')
-    no_cuda = '--cupy-no-cuda' in sys.argv
-    if no_cuda:
-        sys.argv.remove('--cupy-no-cuda')
+    clpy_profile = '--clpy-profile' in sys.argv
+    if clpy_profile:
+        sys.argv.remove('--clpy-profile')
+    clpy_coverage = '--clpy-coverage' in sys.argv
+    if clpy_coverage:
+        sys.argv.remove('--clpy-coverage')
 
     arg_options = {
-        'profile': cupy_profile,
-        'linetrace': cupy_coverage,
-        'annotate': cupy_coverage,
-        'no_cuda': no_cuda,
+        'profile': clpy_profile,
+        'linetrace': clpy_coverage,
+        'annotate': clpy_coverage,
     }
-    if check_readthedocs_environment():
-        arg_options['no_cuda'] = True
     return arg_options
 
 
-cupy_setup_options = parse_args()
-print('Options:', cupy_setup_options)
+clpy_setup_options = parse_args()
+print('Options:', clpy_setup_options)
 
 try:
     import Cython
@@ -359,11 +236,11 @@ def check_extensions(extensions):
                     'Please install Cython %s. ' % required_cython_version +
                     'Please also check the version of Cython.\n' +
                     'See ' +
-                    'https://docs-cupy.chainer.org/en/stable/install.html')
+                    'https://docs-clpy.chainer.org/en/stable/install.html')
 
 
 def get_ext_modules(use_cython=False):
-    arg_options = cupy_setup_options
+    arg_options = clpy_setup_options
 
     # We need to call get_config_vars to initialize _config_vars in distutils
     # see #1849
@@ -376,139 +253,6 @@ def get_ext_modules(use_cython=False):
     return extensions
 
 
-def _nvcc_gencode_options(cuda_version):
-    """Returns NVCC GPU code generation options."""
-
-    # The arch_list specifies virtual architectures, such as 'compute_61', and
-    # real architectures, such as 'sm_61', for which the CUDA input files are
-    # to be compiled.
-    #
-    # The syntax of an entry of the list is
-    #
-    #     entry ::= virtual_arch | (virtual_arch, real_arch)
-    #
-    # where virtual_arch is a string which means a virtual architecture and
-    # real_arch is a string which means a real architecture.
-    #
-    # If a virtual architecture is supplied, NVCC generates a PTX code for the
-    # virtual architecture. If a pair of a virtual architecture and a real
-    # architecture is supplied, NVCC generates a PTX code for the virtual
-    # architecture as well as a cubin code for the real architecture.
-    #
-    # For example, making NVCC generate a PTX code for 'compute_60' virtual
-    # architecture, the arch_list has an entry of 'compute_60'.
-    #
-    #     arch_list = ['compute_60']
-    #
-    # For another, making NVCC generate a PTX code for 'compute_61' virtual
-    # architecture and a cubin code for 'sm_61' real architecture, the
-    # arch_list has an entry of ('compute_61', 'sm_61').
-    #
-    #     arch_list = [('compute_61', 'sm_61')]
-
-    arch_list = ['compute_30', 'compute_50']
-    if cuda_version >= 8000:
-        arch_list += ['compute_60']
-
-    options = []
-    for arch in arch_list:
-        if type(arch) is tuple:
-            virtual_arch, real_arch = arch
-            options.append('--generate-code=arch={},code={},{}'.format(
-                virtual_arch, real_arch, virtual_arch))
-        else:
-            options.append('--generate-code=arch={},code={}'.format(
-                arch, arch))
-
-    if sys.argv == ['setup.py', 'develop']:
-        return []
-    else:
-        return options
-
-
-class _UnixCCompiler(unixccompiler.UnixCCompiler):
-    src_extensions = list(unixccompiler.UnixCCompiler.src_extensions)
-    src_extensions.append('.cu')
-
-    def _compile(self, obj, src, ext, cc_args, extra_postargs, pp_opts):
-        # For sources other than CUDA C ones, just call the super class method.
-        if os.path.splitext(src)[1] != '.cu':
-            return unixccompiler.UnixCCompiler._compile(
-                self, obj, src, ext, cc_args, extra_postargs, pp_opts)
-
-        # For CUDA C source files, compile them with NVCC.
-        _compiler_so = self.compiler_so
-        try:
-            nvcc_path = build.get_nvcc_path()
-            base_opts = build.get_compiler_base_options()
-            self.set_executable('compiler_so', nvcc_path)
-
-            cuda_version = build.get_cuda_version()
-            postargs = _nvcc_gencode_options(cuda_version) + [
-                '-O2', '--compiler-options="-fPIC"']
-            print('NVCC options:', postargs)
-
-            return unixccompiler.UnixCCompiler._compile(
-                self, obj, src, ext, base_opts + cc_args, postargs, pp_opts)
-        finally:
-            self.compiler_so = _compiler_so
-
-
-class _MSVCCompiler(msvccompiler.MSVCCompiler):
-    _cu_extensions = ['.cu']
-
-    src_extensions = list(unixccompiler.UnixCCompiler.src_extensions)
-    src_extensions.extend(_cu_extensions)
-
-    def _compile_cu(self, sources, output_dir=None, macros=None,
-                    include_dirs=None, debug=0, extra_preargs=None,
-                    extra_postargs=None, depends=None):
-        # Compile CUDA C files, mainly derived from UnixCCompiler._compile().
-
-        macros, objects, extra_postargs, pp_opts, _build = \
-            self._setup_compile(output_dir, macros, include_dirs, sources,
-                                depends, extra_postargs)
-
-        compiler_so = build.get_nvcc_path()
-        cc_args = self._get_cc_args(pp_opts, debug, extra_preargs)
-        cuda_version = build.get_cuda_version()
-        postargs = _nvcc_gencode_options(cuda_version) + ['-O2']
-        postargs += ['-Xcompiler', '/MD']
-        print('NVCC options:', postargs)
-
-        for obj in objects:
-            try:
-                src, ext = _build[obj]
-            except KeyError:
-                continue
-            try:
-                self.spawn(compiler_so + cc_args + [src, '-o', obj] + postargs)
-            except errors.DistutilsExecError as e:
-                raise errors.CompileError(e.message)
-
-        return objects
-
-    def compile(self, sources, **kwargs):
-        # Split CUDA C sources and others.
-        cu_sources = []
-        other_sources = []
-        for source in sources:
-            if os.path.splitext(source)[1] == '.cu':
-                cu_sources.append(source)
-            else:
-                other_sources.append(source)
-
-        # Compile source files other than CUDA C ones.
-        other_objects = msvccompiler.MSVCCompiler.compile(
-            self, other_sources, **kwargs)
-
-        # Compile CUDA C sources.
-        cu_objects = self._compile_cu(cu_sources, **kwargs)
-
-        # Return compiled object filenames.
-        return other_objects + cu_objects
-
-
 class sdist_with_cython(sdist.sdist):
 
     """Custom `sdist` command with cyhonizing."""
@@ -517,7 +261,7 @@ class sdist_with_cython(sdist.sdist):
         if not cython_available:
             raise RuntimeError('Cython is required to make sdist.')
         ext_modules = get_ext_modules(True)  # get .pyx modules
-        cythonize(ext_modules, cupy_setup_options)
+        cythonize(ext_modules, clpy_setup_options)
         sdist.sdist.__init__(self, *args, **kwargs)
 
 
@@ -526,25 +270,8 @@ class custom_build_ext(build_ext.build_ext):
     """Custom `build_ext` command to include CUDA C source files."""
 
     def run(self):
-        if build.get_nvcc_path() is not None:
-            def wrap_new_compiler(func):
-                def _wrap_new_compiler(*args, **kwargs):
-                    try:
-                        return func(*args, **kwargs)
-                    except errors.DistutilsPlatformError:
-                        if not sys.platform == 'win32':
-                            CCompiler = _UnixCCompiler
-                        else:
-                            CCompiler = _MSVCCompiler
-                        return CCompiler(
-                            None, kwargs['dry_run'], kwargs['force'])
-                return _wrap_new_compiler
-            ccompiler.new_compiler = wrap_new_compiler(ccompiler.new_compiler)
-            # Intentionally causes DistutilsPlatformError in
-            # ccompiler.new_compiler() function to hook.
-            self.compiler = 'nvidia'
         if cython_available:
             ext_modules = get_ext_modules(True)  # get .pyx modules
-            cythonize(ext_modules, cupy_setup_options)
+            cythonize(ext_modules, clpy_setup_options)
         check_extensions(self.extensions)
         build_ext.build_ext.run(self)

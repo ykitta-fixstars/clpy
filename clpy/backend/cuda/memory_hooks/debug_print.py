@@ -1,6 +1,6 @@
 import sys
 
-from cupy.cuda import memory_hook
+from clpy.cuda import memory_hook
 
 
 class DebugPrintHook(memory_hook.MemoryHook):
@@ -15,12 +15,12 @@ class DebugPrintHook(memory_hook.MemoryHook):
 
         Code example::
 
-            >>> import cupy
-            >>> from cupy.cuda import memory_hooks
+            >>> import clpy
+            >>> from clpy.cuda import memory_hooks
             >>>
-            >>> cupy.cuda.set_allocator(cupy.cuda.MemoryPool().malloc)
+            >>> clpy.cuda.set_allocator(clpy.cuda.MemoryPool().malloc)
             >>> with memory_hooks.DebugPrintHook():
-            ...     x = cupy.array([1, 2, 3])
+            ...     x = clpy.array([1, 2, 3])
             ...     del x  # doctest:+SKIP
 
         Output example::
@@ -35,7 +35,7 @@ class DebugPrintHook(memory_hook.MemoryHook):
         ``size`` is the requested memory size to allocate, and
         ``mem_size`` is the rounded memory size to be allocated, and
         ``mem_ptr`` is the memory pointer, and
-        ``pmem_id`` is cupy.cuda.memory.PooledMemory object ID.
+        ``pmem_id`` is clpy.cuda.memory.PooledMemory object ID.
 
     Attributes:
         file: Output file_like object that redirect to.

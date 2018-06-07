@@ -8,20 +8,20 @@ import matplotlib.pyplot as plt
 import numpy as np
 import six
 
-import cupy
+import clpy
 
 
 @contextlib.contextmanager
 def timer(message):
-    cupy.cuda.Stream.null.synchronize()
+    clpy.backend.Stream.null.synchronize()
     start = time.time()
     yield
-    cupy.cuda.Stream.null.synchronize()
+    clpy.backend.Stream.null.synchronize()
     end = time.time()
     print('%s:  %f sec' % (message, end - start))
 
 
-_fit_calc_distances = cupy.ElementwiseKernel(
+_fit_calc_distances = clpy.ElementwiseKernel(
     'S data, raw S centers, int32 n_clusters, int32 dim', 'raw S dist',
     '''
     for (int j = 0; j < n_clusters; j++){
@@ -33,7 +33,7 @@ _fit_calc_distances = cupy.ElementwiseKernel(
     ''',
     'calc_distances'
 )
-_fit_calc_center = cupy.ElementwiseKernel(
+_fit_calc_center = clpy.ElementwiseKernel(
     'S data, T label, int32 dim', 'raw S centers, raw S group',
     '''
     int cent_ind[] = {label, i % dim};
@@ -46,7 +46,7 @@ _fit_calc_center = cupy.ElementwiseKernel(
 
 def fit(X, n_clusters, max_iter, use_custom_kernel):
     assert X.ndim == 2
-    xp = cupy.get_array_module(X)
+    xp = clpy.get_array_module(X)
     pred = xp.zeros(len(X), dtype=np.int32)
     initial_indexes = np.random.choice(len(X), n_clusters,
                                        replace=False).astype(np.int32)
@@ -85,13 +85,13 @@ def fit(X, n_clusters, max_iter, use_custom_kernel):
 
 
 def draw(X, n_clusters, centers, pred, output):
-    xp = cupy.get_array_module(X)
+    xp = clpy.get_array_module(X)
     for i in six.moves.range(n_clusters):
         labels = X[pred == i]
-        if xp == cupy:
+        if xp == clpy:
             labels = labels.get()
         plt.scatter(labels[:, 0], labels[:, 1], c=np.random.rand(3))
-    if xp == cupy:
+    if xp == clpy:
         centers = centers.get()
     plt.scatter(centers[:, 0], centers[:, 1], s=120, marker='s',
                 facecolors='y', edgecolors='k')
@@ -108,8 +108,8 @@ def run(gpuid, n_clusters, num, max_iter, use_custom_kernel, output):
             centers, pred = fit(X_train, n_clusters, max_iter,
                                 use_custom_kernel)
 
-    with cupy.cuda.Device(gpuid):
-        X_train = cupy.asarray(X_train)
+    with clpy.backend.Device(gpuid):
+        X_train = clpy.asarray(X_train)
         with timer(' GPU '):
             for i in range(repeat):
                 centers, pred = fit(X_train, n_clusters, max_iter,

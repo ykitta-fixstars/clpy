@@ -1,5 +1,7 @@
 #pragma once
 
+// TODO: Implement common functions in OpenCL C
+#if 0
 // math
 #ifndef M_PI
 #define M_PI 3.1415926535897932384626433832795
@@ -276,193 +278,206 @@ __device__ int isinf(float16 x) {return x.isinf();}
 __device__ int isfinite(float16 x) {return x.isfinite();}
 __device__ int signbit(float16 x) {return x.signbit();}
 
-// CArray
-#define CUPY_FOR(i, n) \
-    for (ptrdiff_t i = blockIdx.x * blockDim.x + threadIdx.x; \
-         i < (n); \
-         i += blockDim.x * gridDim.x)
+#endif
 
-template <typename T, int _ndim>
-class CArray {
-public:
-  static const int ndim = _ndim;
-private:
-  T* data_;
-  ptrdiff_t size_;
-  ptrdiff_t shape_[ndim];
-  ptrdiff_t strides_[ndim];
+#define CREATE_CINDXER(_NDIM) \
+typedef struct { \
+  size_t size_; \
+  size_t shape_[_NDIM]; \
+  size_t index_[_NDIM]; \
+} CIndexer_##_NDIM; \
+\
+static size_t size_CIndexer_##_NDIM(const CIndexer_##_NDIM * const __restrict__ _ind) { \
+  return _ind->size_; \
+} \
+\
+static void set_CIndexer_##_NDIM(CIndexer_##_NDIM * const __restrict__ _ind, const size_t i) { \
+  size_t a = i; \
+  for (size_t dim = _NDIM - 1; dim > 0; --dim) { \
+    const size_t s = _ind->shape_[dim]; \
+    (_ind->index_)[dim] = a % s; \
+    a /= s; \
+  } \
+  _ind->index_[0] = a; \
+}
 
-public:
-  __device__ int size() const {
-    return size_;
-  }
+typedef struct {
+  size_t size_;
+} CIndexer_0;
+static size_t size_CIndexer_0(const CIndexer_0 * const __restrict__ _ind) {
+  return _ind->size_;
+}
+static void set_CIndexer_0(CIndexer_0 * const __restrict__ _ind, const size_t i) {
+}
 
-  __device__ const ptrdiff_t* shape() const {
-    return shape_;
-  }
+typedef struct {
+  size_t size_;
+  size_t shape_;
+  size_t index_;
+} CIndexer_1;
+static size_t size_CIndexer_1(const CIndexer_1 * const __restrict__ _ind) {
+  return _ind->size_;
+}
+static void set_CIndexer_1(CIndexer_1 * const __restrict__ _ind, const size_t i) {
+  _ind->index_ = i;
+}
 
-  __device__ const ptrdiff_t* strides() const {
-    return strides_;
-  }
+// CIndexr_0 is defined above
+// CIndexr_1 is defined above
+CREATE_CINDXER(2)
+CREATE_CINDXER(3)
+CREATE_CINDXER(4)
+CREATE_CINDXER(5)
+CREATE_CINDXER(6)
+CREATE_CINDXER(7)
+CREATE_CINDXER(8)
+CREATE_CINDXER(9)
+CREATE_CINDXER(10)
+CREATE_CINDXER(11)
+CREATE_CINDXER(12)
+CREATE_CINDXER(13)
+CREATE_CINDXER(14)
+CREATE_CINDXER(15)
 
-  template <typename Int>
-  __device__ T& operator[](const Int (&idx)[ndim]) {
-    return const_cast<T&>(const_cast<const CArray&>(*this)[idx]);
-  }
 
-  template <typename Int>
-  __device__ const T& operator[](const Int (&idx)[ndim]) const {
-    const char* ptr = reinterpret_cast<const char*>(data_);
-    for (int dim = 0; dim < ndim; ++dim) {
-      ptr += static_cast<ptrdiff_t>(strides_[dim]) * idx[dim];
-    }
-    return reinterpret_cast<const T&>(*ptr);
-  }
+#define CREATE_CARRAY(_NDIM) \
+typedef struct { \
+  size_t offset; \
+  size_t shape_[_NDIM]; \
+  size_t strides_[_NDIM]; \
+} CArray_##_NDIM; \
+static size_t get_CArrayIndexRaw_##_NDIM(const CArray_##_NDIM* const __restrict__ info, const ptrdiff_t idx[_NDIM]) { \
+  size_t offset = info->offset; \
+  for (size_t dim = 0; dim < _NDIM; dim++) { \
+    offset += info->strides_[dim] * (size_t)idx[dim]; \
+  } \
+  return offset; \
+} \
+static size_t get_CArrayIndex_##_NDIM(const CArray_##_NDIM* const __restrict__ info, const CIndexer_##_NDIM* const __restrict__ _ind) { \
+  return get_CArrayIndexRaw_##_NDIM(info, _ind->index_); \
+} \
+size_t get_CArrayIndexI_##_NDIM(const CArray_##_NDIM* const __restrict__ info, const size_t i) { \
+  size_t offset = info->offset; \
+  size_t ii = i; \
+  for (size_t dim = _NDIM - 1; dim > 0; --dim) { \
+    offset += info->strides_[dim] * (ii % info->shape_[dim]); \
+    ii /=  info->shape_[dim]; \
+  } \
+  offset += info->strides_[0] * ii; \
+  return offset; \
+}
 
-  __device__ T& operator[](ptrdiff_t i) {
-    return const_cast<T&>(const_cast<const CArray&>(*this)[i]);
-  }
+typedef struct {
+  size_t offset;
+} CArray_0;
+static size_t get_CArrayIndexRaw_0(const CArray_0* const __restrict__ info, const ptrdiff_t idx) {
+  return info->offset;
+}
+static size_t get_CArrayIndex_0(const CArray_0* const __restrict__ info, const CIndexer_0* const __restrict__ _ind) {
+  return get_CArrayIndexRaw_0(info, 0);
+}
+static size_t get_CArrayIndexI_0(const CArray_0* const __restrict__ info, const size_t i) {
+  return info->offset;
+}
 
-  __device__ const T& operator[](ptrdiff_t i) const {
-    const char* ptr = reinterpret_cast<const char*>(data_);
-    for (int dim = ndim; --dim > 0; ) {
-      ptr += static_cast<ptrdiff_t>(strides_[dim]) * (i % shape_[dim]);
-      i /= shape_[dim];
-    }
-    if (ndim > 0) {
-      ptr += static_cast<ptrdiff_t>(strides_[0]) * i;
-    }
+typedef struct {
+  size_t offset;
+  size_t shape_;
+  size_t strides_;
+} CArray_1;
+static size_t get_CArrayIndexRaw_1(const CArray_1* const __restrict__ info, const ptrdiff_t idx) {
+  return info->strides_ * (size_t)idx + info->offset;
+}
+static size_t get_CArrayIndex_1(const CArray_1* const __restrict__ info, const CIndexer_1* const __restrict__ _ind) {
+  return get_CArrayIndexRaw_1(info, _ind->index_);
+}
+static size_t get_CArrayIndexI_1(const CArray_1* const __restrict__ info, const size_t i) {
+  return info->strides_ * i + info->offset;
+}
 
-    return reinterpret_cast<const T&>(*ptr);
-  }
-};
+// CArray_0 is defined above
+// CArray_1 is defined above
+CREATE_CARRAY(2)
+CREATE_CARRAY(3)
+CREATE_CARRAY(4)
+CREATE_CARRAY(5)
+CREATE_CARRAY(6)
+CREATE_CARRAY(7)
+CREATE_CARRAY(8)
+CREATE_CARRAY(9)
+CREATE_CARRAY(10)
+CREATE_CARRAY(11)
+CREATE_CARRAY(12)
+CREATE_CARRAY(13)
+CREATE_CARRAY(14)
+CREATE_CARRAY(15)
 
-template <typename T>
-class CArray<T, 0> {
-private:
-  T* data_;
-  ptrdiff_t size_;
 
-public:
-  static const int ndim = 0;
-
-  __device__ int size() const {
-    return size_;
-  }
-
-  __device__ const ptrdiff_t* shape() const {
-    return NULL;
-  }
-
-  __device__ const ptrdiff_t* strides() const {
-    return NULL;
-  }
-
-  template <typename U>
-  __device__ T& operator[](const U&) {
-    return *data_;
-  }
-
-  template <typename U>
-  __device__ T operator[](const U&) const {
-    return *data_;
-  }
-};
-
-template <int _ndim>
-class CIndexer {
-public:
-  static const int ndim = _ndim;
-private:
-  ptrdiff_t size_;
-  ptrdiff_t shape_[ndim];
-  ptrdiff_t index_[ndim];
-
-  typedef ptrdiff_t index_t[ndim];
-
-public:
-  __device__ ptrdiff_t size() const {
-    return size_;
-  }
-
-  __device__ void set(ptrdiff_t i) {
-    // ndim == 0 case uses partial template specialization
-    if (ndim == 1) {
-      index_[0] = i;
-      return;
-    }
-    if (size_ > 1LL << 31) {
-      // 64-bit division is very slow on GPU
-      size_t a = static_cast<size_t>(i);
-      for (int dim = ndim; --dim > 0; ) {
-        size_t s = static_cast<size_t>(shape_[dim]);
-        index_[dim] = a % s;
-        a /= s;
-      }
-      index_[0] = a;
-    } else {
-      unsigned int a = static_cast<unsigned int>(i);
-      for (int dim = ndim; --dim > 0; ) {
-        unsigned int s = static_cast<unsigned int>(shape_[dim]);
-        index_[dim] = a % s;
-        a /= s;
-      }
-      index_[0] = a;
-    }
-  }
-
-  __device__ const index_t& get() const {
-    return index_;
-  }
-};
-
-template <>
-class CIndexer<0> {
-private:
-  ptrdiff_t size_;
-
-public:
-  static const int ndim = 0;
-
-  __device__ int size() const {
-    return size_;
-  }
-
-  __device__ void set(ptrdiff_t i) {
-  }
-
-  __device__ const ptrdiff_t* get() const {
-    return NULL;
-  }
-};
-
-__device__ int _floor_divide(int x, int y) {
+static char _floor_divide_c(const char x, const char y) {
   if (y == 0) return 0;
-  int q = x / y;
+  const char q = x / y;
   return q - (((x < 0) != (y < 0)) && q * y != x);
 }
 
-__device__ long long _floor_divide(long long x, long long y) {
+static short _floor_divide_s(const short x, const short y) {
   if (y == 0) return 0;
-  long long q = x / y;
+  const short q = x / y;
   return q - (((x < 0) != (y < 0)) && q * y != x);
 }
 
-__device__ unsigned _floor_divide(unsigned x, unsigned y) {
+static int _floor_divide_i(const int x, const int y) {
+  if (y == 0) return 0;
+  const int q = x / y;
+  return q - (((x < 0) != (y < 0)) && q * y != x);
+}
+
+static long _floor_divide_l(const long x, const long y) {
+  if (y == 0) return 0;
+  const long q = x / y;
+  return q - (((x < 0) != (y < 0)) && q * y != x);
+}
+
+static uchar _floor_divide_C(const uchar x, const uchar y) {
   if (y == 0) return 0;
   return x / y;
 }
 
-__device__ unsigned long long _floor_divide(
-    unsigned long long x, unsigned long long y) {
+static ushort _floor_divide_S(const ushort x, const ushort y) {
   if (y == 0) return 0;
   return x / y;
 }
 
-__device__ float _floor_divide(float x, float y) {
+static uint _floor_divide_I(const uint x, const uint y) {
+  if (y == 0) return 0;
+  return x / y;
+}
+
+static ulong _floor_divide_L(const ulong x, const ulong y) {
+  if (y == 0) return 0;
+  return x / y;
+}
+
+static float _floor_divide_f(const float x, const float y) {
   return floor(x / y);
 }
 
-__device__ double _floor_divide(double x, double y) {
+static double _floor_divide_d(const double x, const double y) {
   return floor(x / y);
 }
+
+// atomic operation
+static void atomicAdd(__global float* x, float y)
+{
+  union {
+    float f;
+    uint u;
+  } p, old_value, new_value;
+
+  old_value.f = *x;
+  do {
+    new_value = old_value;
+    p.f = old_value.f + y;
+    old_value.u = atomic_cmpxchg((__global uint*)x, new_value.u, p.u);
+  } while ( new_value.u != old_value.u );
+}
+// TODO(yoriyuki.kitta): Add another types implementation

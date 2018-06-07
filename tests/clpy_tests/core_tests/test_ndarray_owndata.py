@@ -1,7 +1,7 @@
 import unittest
 
-from cupy import core
-from cupy import testing
+from clpy import core
+from clpy import testing
 
 
 @testing.gpu

@@ -3,9 +3,9 @@ import collections
 import numpy
 import six
 
-import cupy
-from cupy import core
-from cupy import internal
+import clpy
+from clpy import core
+from clpy import internal
 
 
 matmul = core.matmul
@@ -20,12 +20,12 @@ def dot(a, b, out=None):
     unique axis as an axis to take dot product over.
 
     Args:
-        a (cupy.ndarray): The left argument.
-        b (cupy.ndarray): The right argument.
-        out (cupy.ndarray): Output array.
+        a (clpy.ndarray): The left argument.
+        b (clpy.ndarray): The right argument.
+        out (clpy.ndarray): Output array.
 
     Returns:
-        cupy.ndarray: The dot product of ``a`` and ``b``.
+        clpy.ndarray: The dot product of ``a`` and ``b``.
 
     .. seealso:: :func:`numpy.dot`
 
@@ -41,11 +41,11 @@ def vdot(a, b):
     product of these vectors.
 
     Args:
-        a (cupy.ndarray): The first argument.
-        b (cupy.ndarray): The second argument.
+        a (clpy.ndarray): The first argument.
+        b (clpy.ndarray): The second argument.
 
     Returns:
-        cupy.ndarray: Zero-dimensional array of the dot product result.
+        clpy.ndarray: Zero-dimensional array of the dot product result.
 
     .. seealso:: :func:`numpy.vdot`
 
@@ -64,11 +64,11 @@ def inner(a, b):
     It uses the last axis of each argument to take sum product.
 
     Args:
-        a (cupy.ndarray): The first argument.
-        b (cupy.ndarray): The second argument.
+        a (clpy.ndarray): The first argument.
+        b (clpy.ndarray): The second argument.
 
     Returns:
-        cupy.ndarray: The inner product of ``a`` and ``b``.
+        clpy.ndarray: The inner product of ``a`` and ``b``.
 
     .. seealso:: :func:`numpy.inner`
 
@@ -76,7 +76,7 @@ def inner(a, b):
     a_ndim = a.ndim
     b_ndim = b.ndim
     if a_ndim == 0 or b_ndim == 0:
-        return cupy.multiply(a, b)
+        return clpy.multiply(a, b)
 
     a_axis = a_ndim - 1
     b_axis = b_ndim - 1
@@ -85,9 +85,9 @@ def inner(a, b):
         raise ValueError('Axis dimension mismatch')
 
     if a_axis:
-        a = cupy.rollaxis(a, a_axis, 0)
+        a = clpy.rollaxis(a, a_axis, 0)
     if b_axis:
-        b = cupy.rollaxis(b, b_axis, 0)
+        b = clpy.rollaxis(b, b_axis, 0)
 
     ret_shape = a.shape[1:] + b.shape[1:]
 
@@ -105,12 +105,12 @@ def outer(a, b, out=None):
     product of these vectors.
 
     Args:
-        a (cupy.ndarray): The first argument.
-        b (cupy.ndarray): The second argument.
-        out (cupy.ndarray): Output array.
+        a (clpy.ndarray): The first argument.
+        b (clpy.ndarray): The second argument.
+        out (clpy.ndarray): Output array.
 
     Returns:
-        cupy.ndarray: 2-D array of the outer product of ``a`` and ``b``.
+        clpy.ndarray: 2-D array of the outer product of ``a`` and ``b``.
 
     .. seealso:: :func:`numpy.outer`
 
@@ -138,18 +138,18 @@ def tensordot(a, b, axes=2):
     are treated as one axis by reshaping.
 
     Args:
-        a (cupy.ndarray): The first argument.
-        b (cupy.ndarray): The second argument.
+        a (clpy.ndarray): The first argument.
+        b (clpy.ndarray): The second argument.
         axes:
             - If it is an integer, then ``axes`` axes at the last of ``a`` and
               the first of ``b`` are used.
             - If it is a pair of sequences of integers, then these two
               sequences specify the list of axes for ``a`` and ``b``. The
               corresponding axes are paired for sum-product.
-        out (cupy.ndarray): Output array.
+        out (clpy.ndarray): Output array.
 
     Returns:
-        cupy.ndarray: The tensor dot product of ``a`` and ``b`` along the
+        clpy.ndarray: The tensor dot product of ``a`` and ``b`` along the
         axes specified by ``axes``.
 
     .. seealso:: :func:`numpy.tensordot`
@@ -160,7 +160,7 @@ def tensordot(a, b, axes=2):
     if a_ndim == 0 or b_ndim == 0:
         if axes != 0 and axes != ((), ()):
             raise ValueError('An input is zero-dim while axes has dimensions')
-        return cupy.multiply(a, b)
+        return clpy.multiply(a, b)
 
     if isinstance(axes, collections.Sequence):
         if len(axes) != 2:
@@ -205,11 +205,11 @@ def kron(a, b):
     """Returns the kronecker product of two arrays.
 
     Args:
-        a (~cupy.ndarray): The first argument.
-        b (~cupy.ndarray): The second argument.
+        a (~clpy.ndarray): The first argument.
+        b (~clpy.ndarray): The second argument.
 
     Returns:
-        ~cupy.ndarray: Output array.
+        ~clpy.ndarray: Output array.
 
     .. seealso:: :func:`numpy.kron`
 
@@ -217,7 +217,7 @@ def kron(a, b):
     a_ndim = a.ndim
     b_ndim = b.ndim
     if a_ndim == 0 or b_ndim == 0:
-        return cupy.multiply(a, b)
+        return clpy.multiply(a, b)
 
     ndim = b_ndim
     a_shape = a.shape

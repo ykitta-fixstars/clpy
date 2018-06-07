@@ -3,8 +3,8 @@
 """Thin wrapper of CUBLAS."""
 cimport cython
 
-from cupy.cuda cimport driver
-from cupy.cuda cimport runtime
+from clpy.cuda cimport driver
+from clpy.cuda cimport runtime
 
 
 ###############################################################################

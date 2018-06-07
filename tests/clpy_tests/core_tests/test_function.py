@@ -2,14 +2,14 @@ import unittest
 
 import numpy
 
-import cupy
-from cupy.cuda import compiler
-from cupy import testing
+import clpy
+# from clpy.cuda import compiler
+from clpy import testing
 
 
-def _compile_func(kernel_name, code):
-    mod = compiler.compile_with_cache(code)
-    return mod.get_function(kernel_name)
+# def _compile_func(kernel_name, code):
+#     mod = compiler.compile_with_cache(code)
+#     return mod.get_function(kernel_name)
 
 
 @testing.gpu
@@ -24,11 +24,11 @@ extern "C" __global__ void test_kernel(const double* a, double b, double* x) {
 '''
 
         a_cpu = numpy.arange(24, dtype=numpy.float64).reshape((4, 6))
-        a = cupy.array(a_cpu)
+        a = clpy.array(a_cpu)
         b = float(2)
-        x = cupy.empty_like(a)
+        x = clpy.empty_like(a)
 
-        func = _compile_func('test_kernel', code)
+        func = _compile_func('test_kernel', code)  # NOQA
 
         func.linear_launch(a.size, (a, b, x))
 
@@ -44,11 +44,11 @@ extern "C" __global__ void test_kernel(const double* a, double b, double* x) {
 '''
 
         a_cpu = numpy.arange(24, dtype=numpy.float64).reshape((4, 6))
-        a = cupy.array(a_cpu)
+        a = clpy.array(a_cpu)
         b = numpy.float64(2)
-        x = cupy.empty_like(a)
+        x = clpy.empty_like(a)
 
-        func = _compile_func('test_kernel', code)
+        func = _compile_func('test_kernel', code)  # NOQA
 
         func.linear_launch(a.size, (a, b, x))
 

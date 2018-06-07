@@ -6,14 +6,14 @@ cimport cython
 import numpy
 from libcpp.vector cimport vector
 
-from cupy.cuda cimport common
+from clpy.cuda cimport common
 
 
 ###############################################################################
 # Extern
 ###############################################################################
 
-cdef extern from "../cuda/cupy_thrust.h" namespace "cupy::thrust":
+cdef extern from "../cuda/cupy_thrust.h" namespace "clpy::thrust":
     void _sort[T](void *, size_t *, const vector.vector[ptrdiff_t]&)
     void _lexsort[T](size_t *, void *, size_t, size_t)
     void _argsort[T](size_t *, void *, void *, const vector.vector[ptrdiff_t]&)

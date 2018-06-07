@@ -1,6 +1,6 @@
 import numpy
 
-import cupy
+import clpy
 
 
 def diag(v, k=0):
@@ -13,25 +13,25 @@ def diag(v, k=0):
             diagonal.
 
     Returns:
-        cupy.ndarray: If ``v`` indicates a 1-D array, then it returns a 2-D
+        clpy.ndarray: If ``v`` indicates a 1-D array, then it returns a 2-D
         array with the specified diagonal filled by ``v``. If ``v`` indicates a
         2-D array, then it returns the specified diagonal of ``v``. In latter
-        case, if ``v`` is a :class:`cupy.ndarray` object, then its view is
+        case, if ``v`` is a :class:`clpy.ndarray` object, then its view is
         returned.
 
     .. seealso:: :func:`numpy.diag`
 
     """
-    if isinstance(v, cupy.ndarray):
+    if isinstance(v, clpy.ndarray):
         if v.ndim == 1:
             size = v.size + abs(k)
-            ret = cupy.zeros((size, size), dtype=v.dtype)
+            ret = clpy.zeros((size, size), dtype=v.dtype)
             ret.diagonal(k)[:] = v
             return ret
         else:
             return v.diagonal(k)
     else:
-        return cupy.array(numpy.diag(v, k))
+        return clpy.array(numpy.diag(v, k))
 
 
 def diagflat(v, k=0):
@@ -39,16 +39,16 @@ def diagflat(v, k=0):
 
     Args:
         v (array-like): Array or array-like object.
-        k (int): Index of diagonals. See :func:`cupy.diag` for detail.
+        k (int): Index of diagonals. See :func:`clpy.diag` for detail.
 
     Returns:
-        cupy.ndarray: A 2-D diagonal array with the diagonal copied from ``v``.
+        clpy.ndarray: A 2-D diagonal array with the diagonal copied from ``v``.
 
     """
-    if isinstance(v, cupy.ndarray):
-        return cupy.diag(v.ravel(), k)
+    if isinstance(v, clpy.ndarray):
+        return clpy.diag(v.ravel(), k)
     else:
-        return cupy.diag(numpy.ndarray(v).ravel(), k)
+        return clpy.diag(numpy.ndarray(v).ravel(), k)
 
 
 # TODO(okuta): Implement tri

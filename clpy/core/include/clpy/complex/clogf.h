@@ -45,8 +45,8 @@
 
 #pragma once
 
-#include <cupy/complex/complex.h>
-#include <cupy/complex/math_private.h>
+#include <clpy/complex/complex.h>
+#include <clpy/complex/math_private.h>
 
 namespace thrust {
 namespace detail {

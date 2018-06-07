@@ -14,7 +14,7 @@ There are four differences compared to the original C API.
 cimport cpython
 cimport cython
 
-from cupy.cuda cimport driver
+from clpy.cuda cimport driver
 
 cdef class PointerAttributes:
 

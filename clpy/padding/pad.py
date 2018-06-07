@@ -1,7 +1,7 @@
 import numpy
 import six
 
-import cupy
+import clpy
 
 
 def _prepend_const(narray, pad_amount, value, axis=-1):
@@ -9,7 +9,7 @@ def _prepend_const(narray, pad_amount, value, axis=-1):
         return narray
     padshape = tuple(x if i != axis else pad_amount
                      for i, x in enumerate(narray.shape))
-    return cupy.concatenate((cupy.full(padshape, value, narray.dtype),
+    return clpy.concatenate((clpy.full(padshape, value, narray.dtype),
                              narray), axis=axis)
 
 
@@ -18,8 +18,8 @@ def _append_const(narray, pad_amount, value, axis=-1):
         return narray
     padshape = tuple(x if i != axis else pad_amount
                      for i, x in enumerate(narray.shape))
-    return cupy.concatenate((narray,
-                             cupy.full(padshape, value, narray.dtype)),
+    return clpy.concatenate((narray,
+                             clpy.full(padshape, value, narray.dtype)),
                             axis=axis)
 
 
@@ -65,7 +65,7 @@ def pad(array, pad_width, mode, **keywords):
             ((before, after),) yields same before and after pad for each axis.
             (pad,) or int is a shortcut for before = after = pad width for all
             axes.
-            You cannot specify ``cupy.ndarray`` .
+            You cannot specify ``clpy.ndarray`` .
         mode (str):
             'constant'
                 Pads with a constant values.
@@ -78,10 +78,10 @@ def pad(array, pad_width, mode, **keywords):
             axis.
             (constant,) or int is a shortcut for before = after = constant for
             all axes.
-            Default is 0. You cannot specify ``cupy.ndarray`` .
+            Default is 0. You cannot specify ``clpy.ndarray`` .
 
     Returns:
-        cupy.ndarray:
+        clpy.ndarray:
         Padded array of rank equal to ``array`` with shape increased according
         to ``pad_width`` .
 
@@ -90,7 +90,7 @@ def pad(array, pad_width, mode, **keywords):
     """
     if not numpy.asarray(pad_width).dtype.kind == 'i':
         raise TypeError('pad_width must be of integral type.')
-    narray = cupy.array(array)
+    narray = clpy.array(array)
     pad_width = _validate_lengths(narray, pad_width)
     allowed_keywords = {
         'constant': ['constant_values'],

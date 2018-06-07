@@ -1,4 +1,4 @@
-from cupy import core
+from clpy import core
 
 logical_and = core.create_comparison(
     'logical_and', '&&',
@@ -19,9 +19,9 @@ logical_or = core.create_comparison(
 
 
 logical_not = core.create_ufunc(
-    'cupy_logical_not',
+    'clpy_logical_not',
     ('?->?', 'b->?', 'B->?', 'h->?', 'H->?', 'i->?', 'I->?', 'l->?', 'L->?',
-     'q->?', 'Q->?', 'e->?', 'f->?', 'd->?'),
+     'q->?', 'Q->?', 'f->?', 'd->?'),
     'out0 = !in0',
     doc='''Computes the logical NOT of an array.
 
@@ -31,9 +31,9 @@ logical_not = core.create_ufunc(
 
 
 logical_xor = core.create_ufunc(
-    'cupy_logical_xor',
+    'clpy_logical_xor',
     ('??->?', 'bb->?', 'BB->?', 'hh->?', 'HH->?', 'ii->?', 'II->?', 'll->?',
-     'LL->?', 'qq->?', 'QQ->?', 'ee->?', 'ff->?', 'dd->?'),
+     'LL->?', 'qq->?', 'QQ->?', 'ff->?', 'dd->?'),
     'out0 = !in0 != !in1',
     doc='''Computes the logical XOR of two arrays.
 

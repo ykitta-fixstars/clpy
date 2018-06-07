@@ -1,7 +1,7 @@
 from libcpp cimport vector
-from cupy.cuda cimport memory
+from clpy.backend cimport memory
 
-from cupy.cuda.function cimport CPointer
+from clpy.backend.function cimport CPointer
 
 
 cdef class ndarray:
@@ -71,4 +71,10 @@ cdef class Indexer:
         readonly Py_ssize_t size
         readonly tuple shape
 
-    cdef CPointer get_pointer(self)
+cdef class CArray:
+    cdef:
+        readonly tuple stride
+
+cdef class Size_t:
+    cdef:
+        readonly object val

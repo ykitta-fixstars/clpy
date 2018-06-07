@@ -4,7 +4,7 @@ import argparse
 import math
 import os
 
-import cupy as cp
+import clpy as cp
 import numpy as np
 
 from utils import benchmark
@@ -64,7 +64,7 @@ def main():
     print('start benchmarking')
     print('')
 
-    with cp.cuda.Device(args.gpu):
+    with cp.backend.Device(args.gpu):
         A = cp.random.uniform(
             low=-1., high=1., size=(args.m, args.k)).astype(cp.float32)
         B = cp.random.uniform(

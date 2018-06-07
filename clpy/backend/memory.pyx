@@ -9,32 +9,39 @@ import weakref
 
 from fastrlock cimport rlock
 
-from cupy.cuda import driver
-from cupy.cuda import runtime
+# from clpy.backend import driver
+# from clpy.backend import runtime
 
-from cupy.cuda cimport device
-from cupy.cuda cimport memory_hook
-from cupy.cuda cimport runtime
+from clpy.backend cimport device
+# from clpy.backend cimport memory_hook
+# from clpy.backend cimport runtime
 
+import clpy.backend.opencl
+cimport clpy.backend.opencl.utility
+import clpy.backend.opencl.env
+cimport clpy.backend.opencl.env
+from clpy.backend.opencl.types cimport cl_mem, cl_event
 
 thread_local = threading.local()
 
+subbuffer_alignment = clpy.backend.opencl.utility.GetDeviceMemBaseAddrAlign(clpy.backend.opencl.env.get_primary_device()) // 8
 
 cdef inline _ensure_context(int device_id):
 
     """Ensure that CUcontext bound to the calling host thread exists.
 
-    See discussion on https://github.com/cupy/cupy/issues/72 for details.
+    See discussion on https://github.com/clpy/clpy/issues/72 for details.
     """
 
     if not hasattr(thread_local, 'seen_devices'):
         thread_local.seen_devices = set()
     if device_id not in thread_local.seen_devices:
-        try:
-            driver.ctxGetCurrent()
-        except driver.CUDADriverError:
-            # Call Runtime API to establish context on this host thread.
-            runtime.memGetInfo()
+        raise NotImplementedError("clpy does not support this")
+#        try:
+#            driver.ctxGetCurrent()
+#        except driver.CUDADriverError:
+#            # Call Runtime API to establish context on this host thread.
+#            runtime.memGetInfo()
         thread_local.seen_devices.add(device_id)
 
 
@@ -46,6 +53,10 @@ class OutOfMemoryError(MemoryError):
         super(OutOfMemoryError, self).__init__(msg)
 
 
+cdef void ReleaseMemObjectHelper(Buf buf):
+    clpy.backend.opencl.api.ReleaseMemObject(buf.ptr)
+
+
 class Memory(object):
 
     """Memory allocation on a CUDA device.
@@ -53,7 +64,7 @@ class Memory(object):
     This class provides an RAII interface of the CUDA memory allocation.
 
     Args:
-        ~Memory.device (cupy.cuda.Device): Device whose memory the pointer
+        ~Memory.device (clpy.cuda.Device): Device whose memory the pointer
             refers to.
         ~Memory.size (int): Size of the memory allocation in bytes.
 
@@ -62,18 +73,24 @@ class Memory(object):
     def __init__(self, Py_ssize_t size):
         self.size = size
         self.device = None
-        self.ptr = 0
+        self.buf = Buf()
         if size > 0:
             self.device = device.Device()
-            self.ptr = runtime.malloc(size)
+            self.buf = Buf(<size_t>clpy.backend.opencl.api.CreateBuffer(
+                clpy.backend.opencl.env.get_context(),
+                clpy.backend.opencl.api.MEM_READ_WRITE,
+                size,
+                <void*>NULL)
+                )
 
     def __del__(self):
-        if self.ptr:
-            runtime.free(self.ptr)
+        if not self.buf.isNull():
+            ReleaseMemObjectHelper(self.buf)
 
     def __int__(self):
         """Returns the pointer value to the head of the allocation."""
-        return self.ptr
+        raise NotImplementedError("clpy does not support this")
+#        return self.ptr
 
 
 class ManagedMemory(Memory):
@@ -84,7 +101,7 @@ class ManagedMemory(Memory):
     allocation.
 
     Args:
-        device (cupy.cuda.Device): Device whose memory the pointer refers to.
+        device (clpy.cuda.Device): Device whose memory the pointer refers to.
         size (int): Size of the memory allocation in bytes.
 
     """
@@ -95,26 +112,29 @@ class ManagedMemory(Memory):
         self.ptr = 0
         if size > 0:
             self.device = device.Device()
-            self.ptr = runtime.mallocManaged(size)
+            raise NotImplementedError("clpy does not support this")
+#            self.ptr = runtime.mallocManaged(size)
 
     def prefetch(self, stream):
         """(experimental) Prefetch memory.
 
         Args:
-            stream (cupy.cuda.Stream): CUDA stream.
+            stream (clpy.cuda.Stream): CUDA stream.
         """
-        runtime.memPrefetchAsync(self.ptr, self.size, self.device.id,
-                                 stream.ptr)
+        raise NotImplementedError("clpy does not support this")
+#        runtime.memPrefetchAsync(self.ptr, self.size, self.device.id,
+#                                 stream.ptr)
 
     def advise(self, int advise, device.Device device):
         """(experimental) Advise about the usage of this memory.
 
         Args:
             advics (int): Advise to be applied for this memory.
-            device (cupy.cuda.Device): Device to apply the advice for.
+            device (clpy.cuda.Device): Device to apply the advice for.
 
         """
-        runtime.memAdvise(self.ptr, self.size, advise, device.id)
+        raise NotImplementedError("clpy does not support this")
+#        runtime.memAdvise(self.ptr, self.size, advise, device.id)
 
 
 cdef set _peer_access_checked = set()
@@ -125,17 +145,31 @@ cpdef _set_peer_access(int device, int peer):
 
     if device_pair in _peer_access_checked:
         return
-    cdef int can_access = runtime.deviceCanAccessPeer(device, peer)
-    _peer_access_checked.add(device_pair)
-    if not can_access:
-        return
+    raise NotImplementedError("clpy does not support this")
+#    cdef int can_access = runtime.deviceCanAccessPeer(device, peer)
+#    _peer_access_checked.add(device_pair)
+#    if not can_access:
+#        return
+#
+#    cdef int current = runtime.getDevice()
+#    runtime.setDevice(device)
+#    try:
+#        runtime.deviceEnablePeerAccess(peer)
+#    finally:
+#        runtime.setDevice(current)
 
-    cdef int current = runtime.getDevice()
-    runtime.setDevice(device)
-    try:
-        runtime.deviceEnablePeerAccess(peer)
-    finally:
-        runtime.setDevice(current)
+cdef class Buf:
+    def __init__(self, size_t ptr=0):
+        if ptr == 0:
+            self.ptr = NULL
+        else:
+            self.ptr = <cl_mem>ptr
+
+    cpdef size_t get(self):
+        return <size_t>self.ptr
+
+    def isNull(self):
+        return self.ptr == NULL
 
 cdef class Chunk:
 
@@ -151,7 +185,7 @@ cdef class Chunk:
         size (int): Chunk size in bytes.
 
     Attributes:
-        device (cupy.cuda.Device): Device whose memory the pointer refers to.
+        device (clpy.cuda.Device): Device whose memory the pointer refers to.
         mem (Memory): The device memory buffer.
         ptr (int): Memory address.
         offset (int): An offset bytes from the head of the buffer.
@@ -161,10 +195,10 @@ cdef class Chunk:
     """
 
     def __init__(self, mem, Py_ssize_t offset, Py_ssize_t size):
-        assert mem.ptr > 0 or offset == 0
+        assert not mem.buf.isNull() or offset == 0
         self.mem = mem
         self.device = mem.device
-        self.ptr = mem.ptr + offset
+        self.buf = mem.buf
         self.offset = offset
         self.size = size
         self.prev = None
@@ -183,21 +217,26 @@ cdef class MemoryPointer:
             pointer refers.
 
     Attributes:
-        ~MemoryPointer.device (cupy.cuda.Device): Device whose memory the
+        ~MemoryPointer.device (clpy.cuda.Device): Device whose memory the
             pointer refers to.
         mem (Memory): The device memory buffer.
         ptr (int): Pointer to the place within the buffer.
     """
 
     def __init__(self, mem, Py_ssize_t offset):
-        assert mem.ptr > 0 or offset == 0
+        assert (not mem.buf.isNull()) or offset == 0
         self.mem = mem
+        self.offset = offset
         self.device = mem.device
-        self.ptr = mem.ptr + offset
+        if offset == mem.size:
+            self.buf = Buf()  # Not to make any error without access
+        else:
+            self.buf = mem.buf
 
     def __int__(self):
         """Returns the pointer value."""
-        return self.ptr
+        raise NotImplementedError("clpy does not support this")
+        # return self.ptr
 
     def __add__(x, y):
         """Adds an offset to the pointer."""
@@ -209,15 +248,15 @@ cdef class MemoryPointer:
         else:
             self = <MemoryPointer?>y
             offset = <Py_ssize_t?>x
-        assert self.ptr > 0 or offset == 0
-        return MemoryPointer(self.mem,
-                             self.ptr - self.mem.ptr + offset)
+
+        return MemoryPointer(self.mem, self.offset + offset)
 
     def __iadd__(self, Py_ssize_t offset):
         """Adds an offset to the pointer in place."""
-        assert self.ptr > 0 or offset == 0
-        self.ptr += offset
-        return self
+        raise NotImplementedError("clpy does not support this")
+#        assert self.ptr > 0 or offset == 0
+#        self.ptr += offset
+#        return self
 
     def __sub__(self, offset):
         """Subtracts an offset from the pointer."""
@@ -231,28 +270,34 @@ cdef class MemoryPointer:
         """Copies a memory sequence from a (possibly different) device.
 
         Args:
-            src (cupy.cuda.MemoryPointer): Source memory pointer.
+            src (clpy.cuda.MemoryPointer): Source memory pointer.
             size (int): Size of the sequence in bytes.
 
         """
         if size > 0:
-            _set_peer_access(src.device.id, self.device.id)
-            runtime.memcpy(self.ptr, src.ptr, size,
-                           runtime.memcpyDefault)
+            clpy.backend.opencl.api.EnqueueCopyBuffer(
+                command_queue=clpy.backend.opencl.env.get_command_queue(),
+                src_buffer=src.buf.ptr,
+                dst_buffer=self.buf.ptr,
+                src_offset=src.cl_mem_offset(),
+                dst_offset=self.cl_mem_offset(),
+                cb=size,
+                num_events_in_wait_list=0,
+                event_wait_list=<cl_event*>NULL,
+                event=<cl_event*>NULL)
 
     cpdef copy_from_device_async(self, MemoryPointer src, size_t size, stream):
         """Copies a memory from a (possibly different) device asynchronously.
 
         Args:
-            src (cupy.cuda.MemoryPointer): Source memory pointer.
+            src (clpy.cuda.MemoryPointer): Source memory pointer.
             size (int): Size of the sequence in bytes.
-            stream (cupy.cuda.Stream): CUDA stream.
+            stream (clpy.cuda.Stream): CUDA stream.
 
         """
         if size > 0:
-            _set_peer_access(src.device.id, self.device.id)
-            runtime.memcpyAsync(self.ptr, src.ptr, size,
-                                runtime.memcpyDefault, stream.ptr)
+            # TODO(LWisteria): Impelment async
+            self.copy_from_device(src, size)
 
     cpdef copy_from_host(self, mem, size_t size):
         """Copies a memory sequence from the host memory.
@@ -262,9 +307,18 @@ cdef class MemoryPointer:
             size (int): Size of the sequence in bytes.
 
         """
+        cdef size_t host_ptr = mem.value
         if size > 0:
-            runtime.memcpy(self.ptr, mem.value, size,
-                           runtime.memcpyHostToDevice)
+            clpy.backend.opencl.api.EnqueueWriteBuffer(
+                    command_queue=clpy.backend.opencl.env.get_command_queue(),
+                    buffer=self.buf.ptr,
+                    blocking_write=clpy.backend.opencl.api.BLOCKING,
+                    offset=self.cl_mem_offset(),
+                    cb=size,
+                    host_ptr=<void*>host_ptr,
+                    num_events_in_wait_list=0,
+                    event_wait_list=<cl_event*>NULL,
+                    event=<cl_event*>NULL)
 
     cpdef copy_from_host_async(self, mem, size_t size, stream):
         """Copies a memory sequence from the host memory asynchronously.
@@ -273,22 +327,22 @@ cdef class MemoryPointer:
             mem (ctypes.c_void_p): Source memory pointer. It must be a pinned
                 memory.
             size (int): Size of the sequence in bytes.
-            stream (cupy.cuda.Stream): CUDA stream.
+            stream (clpy.cuda.Stream): CUDA stream.
 
         """
         if size > 0:
-            runtime.memcpyAsync(self.ptr, mem.value, size,
-                                runtime.memcpyHostToDevice, stream.ptr)
+            # TODO(LWisteria): Impelment async
+            self.copy_from_host(mem, size)
 
     cpdef copy_from(self, mem, size_t size):
         """Copies a memory sequence from a (possibly different) device or host.
 
         This function is a useful interface that selects appropriate one from
-        :meth:`~cupy.cuda.MemoryPointer.copy_from_device` and
-        :meth:`~cupy.cuda.MemoryPointer.copy_from_host`.
+        :meth:`~clpy.cuda.MemoryPointer.copy_from_device` and
+        :meth:`~clpy.cuda.MemoryPointer.copy_from_host`.
 
         Args:
-            mem (ctypes.c_void_p or cupy.cuda.MemoryPointer): Source memory
+            mem (ctypes.c_void_p or clpy.cuda.MemoryPointer): Source memory
                 pointer.
             size (int): Size of the sequence in bytes.
 
@@ -302,14 +356,14 @@ cdef class MemoryPointer:
         """Copies a memory sequence from an arbitrary place asynchronously.
 
         This function is a useful interface that selects appropriate one from
-        :meth:`~cupy.cuda.MemoryPointer.copy_from_device_async` and
-        :meth:`~cupy.cuda.MemoryPointer.copy_from_host_async`.
+        :meth:`~clpy.cuda.MemoryPointer.copy_from_device_async` and
+        :meth:`~clpy.cuda.MemoryPointer.copy_from_host_async`.
 
         Args:
-            mem (ctypes.c_void_p or cupy.cuda.MemoryPointer): Source memory
+            mem (ctypes.c_void_p or clpy.cuda.MemoryPointer): Source memory
                 pointer.
             size (int): Size of the sequence in bytes.
-            stream (cupy.cuda.Stream): CUDA stream.
+            stream (clpy.cuda.Stream): CUDA stream.
 
         """
         if isinstance(mem, MemoryPointer):
@@ -325,9 +379,18 @@ cdef class MemoryPointer:
             size (int): Size of the sequence in bytes.
 
         """
+        cdef size_t host_ptr = mem.value
         if size > 0:
-            runtime.memcpy(mem.value, self.ptr, size,
-                           runtime.memcpyDeviceToHost)
+            clpy.backend.opencl.api.EnqueueReadBuffer(
+                    command_queue=clpy.backend.opencl.env.get_command_queue(),
+                    buffer=self.buf.ptr,
+                    blocking_read=clpy.backend.opencl.api.BLOCKING,
+                    offset=self.cl_mem_offset(),
+                    cb=size,
+                    host_ptr=<void*>host_ptr,
+                    num_events_in_wait_list=0,
+                    event_wait_list=<cl_event*>NULL,
+                    event=<cl_event*>NULL)
 
     cpdef copy_to_host_async(self, mem, size_t size, stream):
         """Copies a memory sequence to the host memory asynchronously.
@@ -336,12 +399,12 @@ cdef class MemoryPointer:
             mem (ctypes.c_void_p): Target memory pointer. It must be a pinned
                 memory.
             size (int): Size of the sequence in bytes.
-            stream (cupy.cuda.Stream): CUDA stream.
+            stream (clpy.cuda.Stream): CUDA stream.
 
         """
         if size > 0:
-            runtime.memcpyAsync(mem.value, self.ptr, size,
-                                runtime.memcpyDeviceToHost, stream.ptr)
+            # TODO(LWisteria): Impelment async
+            self.copy_to_host(mem, size)
 
     cpdef memset(self, int value, size_t size):
         """Fills a memory sequence by constant byte value.
@@ -352,7 +415,8 @@ cdef class MemoryPointer:
 
         """
         if size > 0:
-            runtime.memset(self.ptr, value, size)
+            raise NotImplementedError("clpy does not support this")
+#            runtime.memset(self.ptr, value, size)
 
     cpdef memset_async(self, int value, size_t size, stream):
         """Fills a memory sequence by constant byte value asynchronously.
@@ -360,12 +424,18 @@ cdef class MemoryPointer:
         Args:
             value (int): Value to fill.
             size (int): Size of the sequence in bytes.
-            stream (cupy.cuda.Stream): CUDA stream.
+            stream (clpy.cuda.Stream): CUDA stream.
 
         """
         if size > 0:
-            runtime.memsetAsync(self.ptr, value, size, stream.ptr)
+            # TODO(LWisteria): Impelment async
+            self.memset(value, size)
 
+    cpdef Py_ssize_t cl_mem_offset(self):
+        cdef Py_ssize_t ret = self.offset
+        if (isinstance(self.mem, PooledMemory)):
+            ret = ret + self.mem.offset
+        return ret
 
 cpdef MemoryPointer _malloc(Py_ssize_t size):
     mem = Memory(size)
@@ -391,7 +461,7 @@ cpdef MemoryPointer malloc_managed(Py_ssize_t size):
         size (int): Size of the memory allocation in bytes.
 
     Returns:
-        ~cupy.cuda.MemoryPointer: Pointer to the allocated buffer.
+        ~clpy.cuda.MemoryPointer: Pointer to the allocated buffer.
     """
     mem = ManagedMemory(size)
     return MemoryPointer(mem, 0)
@@ -403,13 +473,13 @@ cdef object _current_allocator = _malloc
 cpdef MemoryPointer alloc(Py_ssize_t size):
     """Calls the current allocator.
 
-    Use :func:`~cupy.cuda.set_allocator` to change the current allocator.
+    Use :func:`~clpy.cuda.set_allocator` to change the current allocator.
 
     Args:
         size (int): Size of the memory allocation.
 
     Returns:
-        ~cupy.cuda.MemoryPointer: Pointer to the allocated buffer.
+        ~clpy.cuda.MemoryPointer: Pointer to the allocated buffer.
 
     """
     return _current_allocator(size)
@@ -420,7 +490,7 @@ cpdef set_allocator(allocator=_malloc):
 
     Args:
         allocator (function): CuPy memory allocator. It must have the same
-            interface as the :func:`cupy.cuda.alloc` function, which takes the
+            interface as the :func:`clpy.cuda.alloc` function, which takes the
             buffer size as an argument and returns the device buffer of that
             size.
 
@@ -440,9 +510,10 @@ class PooledMemory(Memory):
 
     def __init__(self, Chunk chunk, pool):
         self.device = chunk.device
-        self.ptr = chunk.ptr
+        self.buf = chunk.buf
         self.size = chunk.size
         self.pool = pool
+        self.offset = chunk.offset
 
     def free(self):
         """Frees the memory buffer and returns it to the memory pool.
@@ -451,38 +522,37 @@ class PooledMemory(Memory):
         buffer to the memory pool for reuse.
 
         """
-        cdef Py_ssize_t ptr
-        ptr = self.ptr
-        if ptr == 0:
+        buf = self.buf
+        if buf.isNull():
             return
-        self.ptr = 0
         pool = self.pool()
         if pool is None:
             return
 
-        hooks = None
-        # to avoid error at exit
-        hooks = memory_hook.get_memory_hooks()
-        size = self.size
-        if hooks:
-            device_id = self.device.id
-            pmem_id = id(self)
-            hooks_values = hooks.values()  # avoid six for performance
-            for hook in hooks_values:
-                hook.free_preprocess(device_id=device_id,
-                                     mem_size=size,
-                                     mem_ptr=ptr,
-                                     pmem_id=pmem_id)
-            try:
-                pool.free(ptr, size)
-            finally:
-                for hook in hooks_values:
-                    hook.free_postprocess(device_id=device_id,
-                                          mem_size=size,
-                                          mem_ptr=ptr,
-                                          pmem_id=pmem_id)
-        else:
-            pool.free(ptr, size)
+        pool.free(buf, self.size, self.offset)
+#        hooks = None
+#        # to avoid error at exit
+#        hooks = memory_hook.get_memory_hooks()
+#        size = self.size
+#        if hooks:
+#            device_id = self.device.id
+#            pmem_id = id(self)
+#            hooks_values = hooks.values()  # avoid six for performance
+#            for hook in hooks_values:
+#                hook.free_preprocess(device_id=device_id,
+#                                     mem_size=size,
+#                                     mem_ptr=ptr,
+#                                     pmem_id=pmem_id)
+#            try:
+#                pool.free(ptr, size)
+#            finally:
+#                for hook in hooks_values:
+#                    hook.free_postprocess(device_id=device_id,
+#                                          mem_size=size,
+#                                          mem_ptr=ptr,
+#                                          pmem_id=pmem_id)
+#        else:
+#            pool.free(ptr, size)
 
     __del__ = free
 
@@ -498,10 +568,10 @@ cdef class SingleDeviceMemoryPool:
       are not split and retry the allocation.
     """
 
-    def __init__(self, allocator=_malloc):
-        # cudaMalloc() is aligned to at least 512 bytes
-        # cf. https://gist.github.com/sonots/41daaa6432b1c8b27ef782cd14064269
-        self._allocation_unit_size = 512
+    def __init__(self, allocator=None):
+        if allocator is None:
+            allocator = _malloc
+        self._allocation_unit_size = subbuffer_alignment
         self._initial_bins_size = 1024
         self._in_use = {}
         self._free = [None] * self._initial_bins_size
@@ -563,55 +633,57 @@ cdef class SingleDeviceMemoryPool:
         return merged
 
     cpdef MemoryPointer _alloc(self, Py_ssize_t rounded_size):
-        hooks = memory_hook.get_memory_hooks()
-        if hooks:
-            memptr = None
-            device_id = self._device_id
-            hooks_values = hooks.values()  # avoid six for performance
-            for hook in hooks_values:
-                hook.alloc_preprocess(device_id=device_id,
-                                      mem_size=rounded_size)
-            try:
-                memptr = self._allocator(rounded_size)
-            finally:
-                for hook in hooks_values:
-                    mem_ptr = memptr.ptr if memptr is not None else 0
-                    hook.alloc_postprocess(device_id=device_id,
-                                           mem_size=rounded_size,
-                                           mem_ptr=mem_ptr)
-            return memptr
-        else:
-            return self._allocator(rounded_size)
+         return self._allocator(rounded_size)
+#        hooks = memory_hook.get_memory_hooks()
+#        if hooks:
+#            memptr = None
+#            device_id = self._device_id
+#            hooks_values = hooks.values()  # avoid six for performance
+#            for hook in hooks_values:
+#                hook.alloc_preprocess(device_id=device_id,
+#                                      mem_size=rounded_size)
+#            try:
+#                memptr = self._allocator(rounded_size)
+#            finally:
+#                for hook in hooks_values:
+#                    mem_ptr = memptr.ptr if memptr is not None else 0
+#                    hook.alloc_postprocess(device_id=device_id,
+#                                           mem_size=rounded_size,
+#                                           mem_ptr=mem_ptr)
+#            return memptr
+#        else:
+#            return self._allocator(rounded_size)
 
     cpdef MemoryPointer malloc(self, Py_ssize_t size):
         rounded_size = self._round_size(size)
-        hooks = memory_hook.get_memory_hooks()
-        if hooks:
-            memptr = None
-            device_id = self._device_id
-            hooks_values = hooks.values()  # avoid six for performance
-            for hook in hooks_values:
-                hook.malloc_preprocess(device_id=device_id,
-                                       size=size,
-                                       mem_size=rounded_size)
-            try:
-                memptr = self._malloc(rounded_size)
-            finally:
-                if memptr is None:
-                    mem_ptr = 0
-                    pmem_id = 0
-                else:
-                    mem_ptr = memptr.ptr
-                    pmem_id = id(memptr.mem)
-                for hook in hooks_values:
-                    hook.malloc_postprocess(device_id=device_id,
-                                            size=size,
-                                            mem_size=rounded_size,
-                                            mem_ptr=mem_ptr,
-                                            pmem_id=pmem_id)
-            return memptr
-        else:
-            return self._malloc(rounded_size)
+        return self._malloc(rounded_size)
+#        hooks = memory_hook.get_memory_hooks()
+#        if hooks:
+#            memptr = None
+#            device_id = self._device_id
+#            hooks_values = hooks.values()  # avoid six for performance
+#            for hook in hooks_values:
+#                hook.malloc_preprocess(device_id=device_id,
+#                                       size=size,
+#                                       mem_size=rounded_size)
+#            try:
+#                memptr = self._malloc(rounded_size)
+#            finally:
+#                if memptr is None:
+#                    mem_ptr = 0
+#                    pmem_id = 0
+#                else:
+#                    mem_ptr = memptr.ptr
+#                    pmem_id = id(memptr.mem)
+#                for hook in hooks_values:
+#                    hook.malloc_postprocess(device_id=device_id,
+#                                            size=size,
+#                                            mem_size=rounded_size,
+#                                            mem_ptr=mem_ptr,
+#                                            pmem_id=pmem_id)
+#            return memptr
+#        else:
+#            return self._malloc(rounded_size)
 
     cpdef MemoryPointer _malloc(self, Py_ssize_t size):
         cdef set free_list = None
@@ -637,35 +709,36 @@ cdef class SingleDeviceMemoryPool:
                     rlock.unlock_fastrlock(self._free_lock)
 
         if chunk is not None:
-            _ensure_context(self._device_id)
+#            _ensure_context(self._device_id) # TODO(LWisteria): need on OpenCL?
             chunk, remaining = self._split(chunk, size)
         else:
             # cudaMalloc if a cache is not found
-            try:
-                mem = self._alloc(size).mem
-            except runtime.CUDARuntimeError as e:
-                if e.status != runtime.errorMemoryAllocation:
-                    raise
-                self.free_all_blocks()
-                try:
-                    mem = self._alloc(size).mem
-                except runtime.CUDARuntimeError as e:
-                    if e.status != runtime.errorMemoryAllocation:
-                        raise
-                    gc.collect()
-                    try:
-                        mem = self._alloc(size).mem
-                    except runtime.CUDARuntimeError as e:
-                        if e.status != runtime.errorMemoryAllocation:
-                            raise
-                        else:
-                            total = size + self.total_bytes()
-                            raise OutOfMemoryError(size, total)
+            mem = self._alloc(size).mem
+#            try:
+#                mem = self._alloc(size).mem
+#            except runtime.CUDARuntimeError as e:
+#                if e.status != runtime.errorMemoryAllocation:
+#                    raise
+#                self.free_all_blocks()
+#                try:
+#                    mem = self._alloc(size).mem
+#                except runtime.CUDARuntimeError as e:
+#                    if e.status != runtime.errorMemoryAllocation:
+#                        raise
+#                    gc.collect()
+#                    try:
+#                        mem = self._alloc(size).mem
+#                    except runtime.CUDARuntimeError as e:
+#                        if e.status != runtime.errorMemoryAllocation:
+#                            raise
+#                        else:
+#                            total = size + self.total_bytes()
+#                            raise OutOfMemoryError(size, total)
             chunk = Chunk(mem, 0, size)
 
         try:
             rlock.lock_fastrlock(self._in_use_lock, -1, True)
-            self._in_use[chunk.ptr] = chunk
+            self._in_use[(chunk.buf, chunk.offset)] = chunk
         finally:
             rlock.unlock_fastrlock(self._in_use_lock)
         if remaining:
@@ -681,14 +754,14 @@ cdef class SingleDeviceMemoryPool:
         pmem = PooledMemory(chunk, self._weakref)
         return MemoryPointer(pmem, 0)
 
-    cpdef free(self, size_t ptr, Py_ssize_t size):
+    cpdef free(self, Buf buf, Py_ssize_t size, Py_ssize_t offset):
         cdef set free_list = None
         cdef Chunk chunk
         cdef int index
 
         try:
             rlock.lock_fastrlock(self._in_use_lock, -1, True)
-            chunk = self._in_use.pop(ptr, None)
+            chunk = self._in_use.pop((buf, offset), None)
         finally:
             rlock.unlock_fastrlock(self._in_use_lock)
         if chunk is None:
@@ -845,7 +918,7 @@ cdef class MemoryPool(object):
             size (int): Size of the memory buffer to allocate in bytes.
 
         Returns:
-            ~cupy.cuda.MemoryPointer: Pointer to the allocated buffer.
+            ~clpy.cuda.MemoryPointer: Pointer to the allocated buffer.
 
         """
         mp = <SingleDeviceMemoryPool>self._pools[device.get_device_id()]

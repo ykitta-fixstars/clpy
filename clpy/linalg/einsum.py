@@ -5,14 +5,14 @@ import string
 import numpy
 import six
 
-import cupy
+import clpy
 
 
 def calc_single_view(ioperand, subscript):
-    """Calculates 'ii->i' by cupy.diagonal if needed.
+    """Calculates 'ii->i' by clpy.diagonal if needed.
 
     Args:
-        ioperand (cupy.ndarray): Array to be calculated diagonal.
+        ioperand (clpy.ndarray): Array to be calculated diagonal.
         subscript (str):
             Specifies the subscripts. If the same label appears
             more than once, calculate diagonal for those axes.
@@ -43,16 +43,16 @@ def calc_single_view(ioperand, subscript):
                                  ' ({1} != {2})'.format(label, shape_a,
                                                         shape_b))
             result = result.diagonal(0, axis, axes_to_diag[0])
-            result = cupy.rollaxis(result, -1, axes_to_diag[0])
+            result = clpy.rollaxis(result, -1, axes_to_diag[0])
             subscript = subscript[:axis] + subscript[axis + 1:]
     return result, subscript
 
 
 def calc_summed_view(ioperand, input_subscript, output_subscript):
-    """Calculates 'i->' by cupy.sum if needed.
+    """Calculates 'i->' by clpy.sum if needed.
 
     Args:
-        ioperand (cupy.ndarray): Array to be summed.
+        ioperand (clpy.ndarray): Array to be summed.
         input_subscript (str): Specifies the subscripts for input array.
         output_subscript (str):
             Specifies the subscripts for output array. If one label exists in
@@ -83,10 +83,10 @@ def calc_summed_view(ioperand, input_subscript, output_subscript):
 
 
 def calc_transposed_view(ioperand, input_subscript, output_subscript):
-    """Calculates 'ij->ji' by cupy.transpose if needed.
+    """Calculates 'ij->ji' by clpy.transpose if needed.
 
     Args:
-        ioperand (cupy.ndarray): Array to be transpose.
+        ioperand (clpy.ndarray): Array to be transpose.
         input_subscript (str): Specifies the subscripts for input arrays.
         output_subscript (str):
             Specifies the subscripts for output arrays. If input does not
@@ -106,7 +106,7 @@ def calc_transposed_view(ioperand, input_subscript, output_subscript):
 
 
 def calc_combined_view(ioperands, subscripts):
-    """Calculates 'i,j->ij' by cupy.tensordot.
+    """Calculates 'i,j->ij' by clpy.tensordot.
 
     Args:
         ioperands (sequence of arrays): Arrays to be combined.
@@ -116,7 +116,7 @@ def calc_combined_view(ioperands, subscripts):
     result = ioperands[0]
     for ioperand in ioperands[1:]:
         # TODO(fukatani): add up at here if enable.
-        result = cupy.tensordot(result, ioperand, axes=0)
+        result = clpy.tensordot(result, ioperand, axes=0)
     return result, ''.join(subscripts)
 
 
@@ -148,7 +148,7 @@ def einsum(*operands):
         operands (sequence of arrays): These are the arrays for the operation.
 
     Returns:
-        cupy.ndarray:
+        clpy.ndarray:
             The calculation based on the Einstein summation convention.
 
     .. seealso:: :func:`numpy.einsum`
@@ -165,11 +165,11 @@ def einsum(*operands):
     ioperands = operands[1:]
 
     if not isinstance(subscripts, str):
-        raise TypeError('Current cupy einsum support only string subscripts')
+        raise TypeError('Current clpy einsum support only string subscripts')
 
     # TODO(fukatani): Support '...'
     if '.' in subscripts:
-        raise TypeError('Current cupy einsum does not support \'...\' '
+        raise TypeError('Current clpy einsum does not support \'...\' '
                         'ellipsis')
 
     subscripts = subscripts.replace(' ', '')
@@ -182,10 +182,10 @@ def einsum(*operands):
     converted_inputs = []
     dtype = numpy.result_type(*ioperands)
     for a in ioperands:
-        if isinstance(a, cupy.ndarray):
+        if isinstance(a, clpy.ndarray):
             converted_inputs.append(a.astype(dtype))
         else:
-            converted_inputs.append(cupy.asarray(a, dtype=dtype))
+            converted_inputs.append(clpy.asarray(a, dtype=dtype))
 
     match = re.match('^([a-zA-Z,]+)(->[a-zA-Z]*)?$', subscripts)
     if not match:

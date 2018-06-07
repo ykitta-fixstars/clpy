@@ -1,24 +1,22 @@
-import cupy
-import numpy
+import numpy  # NOQA
 
-if cupy.cuda.thrust_enabled:
-    from cupy.cuda import thrust
+import clpy  # NOQA
 
 
 def sort(a, axis=-1):
     """Returns a sorted copy of an array with a stable sorting algorithm.
 
     Args:
-        a (cupy.ndarray): Array to be sorted.
+        a (clpy.ndarray): Array to be sorted.
         axis (int or None): Axis along which to sort. Default is -1, which
             means sort along the last axis. If None is supplied, the array is
             flattened before sorting.
 
     Returns:
-        cupy.ndarray: Array of the same type and shape as ``a``.
+        clpy.ndarray: Array of the same type and shape as ``a``.
 
     .. note::
-       For its implementation reason, ``cupy.sort`` currently does not support
+       For its implementation reason, ``clpy.sort`` currently does not support
        ``kind`` and ``order`` parameters that ``numpy.sort`` does
        support.
 
@@ -38,15 +36,15 @@ def lexsort(keys):
     """Perform an indirect sort using an array of keys.
 
     Args:
-        keys (cupy.ndarray): ``(k, N)`` array containing ``k`` ``(N,)``-shaped
+        keys (clpy.ndarray): ``(k, N)`` array containing ``k`` ``(N,)``-shaped
             arrays. The ``k`` different "rows" to be sorted. The last row is
             the primary sort key.
 
     Returns:
-        cupy.ndarray: Array of indices that sort the keys.
+        clpy.ndarray: Array of indices that sort the keys.
 
     .. note::
-        For its implementation reason, ``cupy.lexsort`` currently supports only
+        For its implementation reason, ``clpy.lexsort`` currently supports only
         keys with their rank of one or two and does not support ``axis``
         parameter that ``numpy.lexsort`` supports.
 
@@ -56,11 +54,11 @@ def lexsort(keys):
 
     # TODO(takagi): Support axis argument.
 
-    if not cupy.cuda.thrust_enabled:
-        raise RuntimeError('Thrust is needed to use cupy.lexsort. Please '
-                           'install CUDA Toolkit with Thrust then reinstall '
-                           'CuPy after uninstalling it.')
+    # if not clpy.cuda.thrust_enabled:
+    raise NotImplementedError("clpy does not support this")
 
+
+'''
     if keys.ndim == ():
         # as numpy.lexsort() raises
         raise TypeError('need sequence of keys with len > 0 in lexsort')
@@ -73,28 +71,29 @@ def lexsort(keys):
         raise NotImplementedError('Keys with the rank of three or more is not '
                                   'supported in lexsort')
 
-    idx_array = cupy.ndarray(keys._shape[1:], dtype=numpy.intp)
+    idx_array = clpy.ndarray(keys._shape[1:], dtype=numpy.intp)
     k = keys._shape[0]
     n = keys._shape[1]
     thrust.lexsort(keys.dtype, idx_array.data.ptr, keys.data.ptr, k, n)
 
     return idx_array
+'''
 
 
 def argsort(a, axis=-1):
     """Returns the indices that would sort an array with a stable sorting.
 
     Args:
-        a (cupy.ndarray): Array to sort.
+        a (clpy.ndarray): Array to sort.
         axis (int or None): Axis along which to sort. Default is -1, which
             means sort along the last axis. If None is supplied, the array is
             flattened before sorting.
 
     Returns:
-        cupy.ndarray: Array of indices that sort ``a``.
+        clpy.ndarray: Array of indices that sort ``a``.
 
     .. note::
-        For its implementation reason, ``cupy.argsort`` does not support
+        For its implementation reason, ``clpy.argsort`` does not support
         ``kind`` and ``order`` parameters.
 
     .. seealso:: :func:`numpy.argsort`
@@ -107,14 +106,14 @@ def msort(a):
     """Returns a copy of an array sorted along the first axis.
 
     Args:
-        a (cupy.ndarray): Array to be sorted.
+        a (clpy.ndarray): Array to be sorted.
 
     Returns:
-        cupy.ndarray: Array of the same type and shape as ``a``.
+        clpy.ndarray: Array of the same type and shape as ``a``.
 
     .. note:
-        ``cupy.msort(a)``, the CuPy counterpart of ``numpy.msort(a)``, is
-        equivalent to ``cupy.sort(a, axis=0)``.
+        ``clpy.msort(a)``, the CuPy counterpart of ``numpy.msort(a)``, is
+        equivalent to ``clpy.sort(a, axis=0)``.
 
     .. seealso:: :func:`numpy.msort`
 
@@ -136,7 +135,7 @@ def partition(a, kth, axis=-1):
     than or equal to the elements after the new k-th element.
 
     Args:
-        a (cupy.ndarray): Array to be sorted.
+        a (clpy.ndarray): Array to be sorted.
         kth (int or sequence of ints): Element index to partition by. If
             supplied with a sequence of k-th it will partition all elements
             indexed by k-th of them into their sorted position at once.
@@ -145,11 +144,11 @@ def partition(a, kth, axis=-1):
             flattened before sorting.
 
     Returns:
-        cupy.ndarray: Array of the same type and shape as ``a``.
+        clpy.ndarray: Array of the same type and shape as ``a``.
 
     .. note::
-       For its implementation reason, :func:`cupy.partition` fully sorts the
-       given array as :func:`cupy.sort` does. It also does not support
+       For its implementation reason, :func:`clpy.partition` fully sorts the
+       given array as :func:`clpy.sort` does. It also does not support
        ``kind`` and ``order`` parameters that :func:`numpy.partition` supports.
 
     .. seealso:: :func:`numpy.partition`
@@ -168,7 +167,7 @@ def argpartition(a, kth, axis=-1):
     """Returns the indices that would partially sort an array.
 
     Args:
-        a (cupy.ndarray): Array to be sorted.
+        a (clpy.ndarray): Array to be sorted.
         kth (int or sequence of ints): Element index to partition by. If
             supplied with a sequence of k-th it will partition all elements
             indexed by k-th of them into their sorted position at once.
@@ -177,11 +176,11 @@ def argpartition(a, kth, axis=-1):
             flattened before sorting.
 
     Returns:
-        cupy.ndarray: Array of the same type and shape as ``a``.
+        clpy.ndarray: Array of the same type and shape as ``a``.
 
     .. note::
-        For its implementation reason, `cupy.argpartition` fully sorts the
-        given array as `cupy.argsort` does. It also does not support ``kind``
+        For its implementation reason, `clpy.argpartition` fully sorts the
+        given array as `clpy.argsort` does. It also does not support ``kind``
         and ``order`` parameters that ``numpy.argpartition`` supports.
 
     .. seealso:: :func:`numpy.argpartition`

@@ -1,4 +1,4 @@
-from cupy.cuda import runtime
+# from clpy.backend import runtime
 
 
 class Event(object):
@@ -10,50 +10,55 @@ class Event(object):
 
     Args:
         block (bool): If ``True``, the event blocks on the
-            :meth:`~cupy.cuda.Event.synchronize` method.
+            :meth:`~clpy.cuda.Event.synchronize` method.
         disable_timing (bool): If ``True``, the event does not prepare the
             timing data.
         interprocess (bool): If ``True``, the event can be passed to other
             processes.
 
     Attributes:
-        ptr (cupy.cuda.runtime.Stream): Raw stream handle. It can be passed to
+        ptr (clpy.cuda.runtime.Stream): Raw stream handle. It can be passed to
             the CUDA Runtime API via ctypes.
 
     """
 
     def __init__(self, block=False, disable_timing=False, interprocess=False):
         self.ptr = 0
+        raise NotImplementedError("clpy does not supoort this")
 
-        if interprocess and not disable_timing:
-            raise ValueError('Timing must be disabled for interprocess events')
-        flag = ((block and runtime.eventBlockingSync) |
-                (disable_timing and runtime.eventDisableTiming) |
-                (interprocess and runtime.eventInterprocess))
-        self.ptr = runtime.eventCreateWithFlags(flag)
+        # if interprocess and not disable_timing:
+        #     raise ValueError(
+        #         'Timing must be disabled for interprocess events')
+        # flag = ((block and runtime.eventBlockingSync) |
+        #         (disable_timing and runtime.eventDisableTiming) |
+        #         (interprocess and runtime.eventInterprocess))
+        # self.ptr = runtime.eventCreateWithFlags(flag)
 
     def __del__(self):
         if self.ptr:
-            runtime.eventDestroy(self.ptr)
+            raise NotImplementedError("clpy does not supoort this")
+            # runtime.eventDestroy(self.ptr)
 
     @property
     def done(self):
         """True if the event is done."""
-        return runtime.eventQuery(self.ptr) == 0  # cudaSuccess
+        raise NotImplementedError("clpy does not supoort this")
+        # return runtime.eventQuery(self.ptr) == 0  # cudaSuccess
 
     def record(self, stream=None):
         """Records the event to a stream.
 
         Args:
-            stream (cupy.cuda.Stream): CUDA stream to record event. The null
+            stream (clpy.cuda.Stream): CUDA stream to record event. The null
                 stream is used by default.
 
-        .. seealso:: :meth:`cupy.cuda.Stream.record`
+        .. seealso:: :meth:`clpy.cuda.Stream.record`
 
         """
         if stream is None:
             stream = Stream.null
-        runtime.eventRecord(self.ptr, stream.ptr)
+        raise NotImplementedError("clpy does not supoort this")
+        # runtime.eventRecord(self.ptr, stream.ptr)
 
     def synchronize(self):
         """Synchronizes all device work to the event.
@@ -62,7 +67,8 @@ class Event(object):
         thread until the event is done.
 
         """
-        runtime.eventSynchronize(self.ptr)
+        raise NotImplementedError("clpy does not supoort this")
+        # runtime.eventSynchronize(self.ptr)
 
 
 def get_elapsed_time(start_event, end_event):
@@ -76,7 +82,8 @@ def get_elapsed_time(start_event, end_event):
         float: Elapsed time in milliseconds.
 
     """
-    return runtime.eventElapsedTime(start_event.ptr, end_event.ptr)
+    raise NotImplementedError("clpy does not supoort this")
+    # return runtime.eventElapsedTime(start_event.ptr, end_event.ptr)
 
 
 class Stream(object):
@@ -94,7 +101,7 @@ class Stream(object):
             the NULL stream.
 
     Attributes:
-        ptr (cupy.cuda.runtime.Stream): Raw stream handle. It can be passed to
+        ptr (clpy.cuda.runtime.Stream): Raw stream handle. It can be passed to
             the CUDA Runtime API via ctypes.
 
     """
@@ -105,22 +112,29 @@ class Stream(object):
         if null:
             self.ptr = 0
         elif non_blocking:
-            self.ptr = runtime.streamCreateWithFlags(runtime.streamNonBlocking)
+            raise NotImplementedError("clpy does not supoort this")
+            # self.ptr = runtime.streamCreateWithFlags(
+            #     runtime.streamNonBlocking)
         else:
-            self.ptr = runtime.streamCreate()
+            raise NotImplementedError("clpy does not supoort this")
+            # self.ptr = runtime.streamCreate()
 
     def __del__(self):
         if self.ptr:
-            runtime.streamDestroy(self.ptr)
+            raise NotImplementedError("clpy does not supoort this")
+            # runtime.streamDestroy(self.ptr)
 
     @property
     def done(self):
         """True if all work on this stream has been done."""
-        return runtime.streamQuery(self.ptr) == 0  # cudaSuccess
+        raise NotImplementedError("clpy does not supoort this")
+        # return runtime.streamQuery(self.ptr) == 0  # cudaSuccess
 
     def synchronize(self):
         """Waits for the stream completing all queued work."""
-        runtime.streamSynchronize(self.ptr)
+        # TODO(LWisteria): Implement async/multi-commandqueue operation
+        pass
+        # runtime.streamSynchronize(self.ptr)
 
     def add_callback(self, callback, arg):
         """Adds a callback that is called when all queued work is done.
@@ -134,24 +148,26 @@ class Stream(object):
         """
         def f(stream, status, dummy):
             callback(self, status, arg)
-        runtime.streamAddCallback(self.ptr, f, 0)
+        raise NotImplementedError("clpy does not supoort this")
+        # runtime.streamAddCallback(self.ptr, f, 0)
 
     def record(self, event=None):
         """Records an event on the stream.
 
         Args:
-            event (None or cupy.cuda.Event): CUDA event. If ``None``, then a
+            event (None or clpy.cuda.Event): CUDA event. If ``None``, then a
                 new plain event is created and used.
 
         Returns:
-            cupy.cuda.Event: The recorded event.
+            clpy.cuda.Event: The recorded event.
 
-        .. seealso:: :meth:`cupy.cuda.Event.record`
+        .. seealso:: :meth:`clpy.cuda.Event.record`
 
         """
         if event is None:
             event = Event()
-        runtime.eventRecord(event.ptr, self.ptr)
+        raise NotImplementedError("clpy does not supoort this")
+        # runtime.eventRecord(event.ptr, self.ptr)
         return event
 
     def wait_event(self, event):
@@ -160,10 +176,11 @@ class Stream(object):
         The future work on this stream will be done after the event.
 
         Args:
-            event (cupy.cuda.Event): CUDA event.
+            event (clpy.cuda.Event): CUDA event.
 
         """
-        runtime.streamWaitEvent(self.ptr, event.ptr)
+        raise NotImplementedError("clpy does not supoort this")
+        # runtime.streamWaitEvent(self.ptr, event.ptr)
 
 
 Stream.null = Stream(null=True)

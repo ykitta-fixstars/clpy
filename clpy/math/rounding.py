@@ -1,5 +1,5 @@
-from cupy import core
-from cupy.math import ufunc
+from clpy import core
+from clpy.math import ufunc
 
 # TODO(okuta): Implement around
 
@@ -9,7 +9,7 @@ from cupy.math import ufunc
 
 
 rint = ufunc.create_math_ufunc(
-    'rint', 1, 'cupy_rint',
+    'rint', 1, 'clpy_rint',
     '''Rounds each element of an array to the nearest integer.
 
     .. seealso:: :data:`numpy.rint`
@@ -18,7 +18,7 @@ rint = ufunc.create_math_ufunc(
 
 
 floor = ufunc.create_math_ufunc(
-    'floor', 1, 'cupy_floor',
+    'floor', 1, 'clpy_floor',
     '''Rounds each element of an array to its floor integer.
 
     .. seealso:: :data:`numpy.floor`
@@ -27,7 +27,7 @@ floor = ufunc.create_math_ufunc(
 
 
 ceil = ufunc.create_math_ufunc(
-    'ceil', 1, 'cupy_ceil',
+    'ceil', 1, 'clpy_ceil',
     '''Rounds each element of an array to its ceiling integer.
 
     .. seealso:: :data:`numpy.ceil`
@@ -36,7 +36,7 @@ ceil = ufunc.create_math_ufunc(
 
 
 trunc = ufunc.create_math_ufunc(
-    'trunc', 1, 'cupy_trunc',
+    'trunc', 1, 'clpy_trunc',
     '''Rounds each element of an array towards zero.
 
     .. seealso:: :data:`numpy.trunc`
@@ -45,7 +45,7 @@ trunc = ufunc.create_math_ufunc(
 
 
 fix = core.create_ufunc(
-    'cupy_fix', ('e->e', 'f->f', 'd->d'),
+    'clpy_fix', ('f->f', 'd->d'),
     'out0 = (in0 >= 0.0) ? floor(in0): ceil(in0)',
     doc='''If given value x is positive, it return floor(x).
     Else, it return ceil(x).

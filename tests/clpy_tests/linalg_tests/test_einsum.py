@@ -2,8 +2,8 @@ import unittest
 
 import numpy
 
-import cupy
-from cupy import testing
+import clpy
+from clpy import testing
 
 
 class TestEinSumError(unittest.TestCase):
@@ -11,98 +11,98 @@ class TestEinSumError(unittest.TestCase):
     # '...' ellipsis is not supported.
     def test_not_supported_ellipsis(self):
         with self.assertRaises(TypeError):
-            cupy.einsum('...', 0)
+            clpy.einsum('...', 0)
 
-    @testing.numpy_cupy_raises()
+    @testing.numpy_clpy_raises()
     def test_no_arguments(self, xp):
         xp.einsum()
 
-    @testing.numpy_cupy_raises()
+    @testing.numpy_clpy_raises()
     def test_one_argument(self, xp):
         xp.einsum('')
 
-    @testing.numpy_cupy_raises()
+    @testing.numpy_clpy_raises()
     def test_not_string_subject(self, xp):
         xp.einsum(0, 0)
 
-    @testing.numpy_cupy_raises()
+    @testing.numpy_clpy_raises()
     def test_bad_argument(self, xp):
         xp.einsum('', 0, bad_arg=0)
 
-    @testing.numpy_cupy_raises()
+    @testing.numpy_clpy_raises()
     def test_too_many_operands1(self, xp):
         xp.einsum('', 0, 0)
 
-    @testing.numpy_cupy_raises()
+    @testing.numpy_clpy_raises()
     def test_too_many_operands2(self, xp):
         xp.einsum('i,j', xp.array([0, 0]), xp.array([0, 0]), xp.array([0, 0]))
 
-    @testing.numpy_cupy_raises()
+    @testing.numpy_clpy_raises()
     def test_too_few_operands1(self, xp):
         xp.einsum(',', 0)
 
-    @testing.numpy_cupy_raises()
+    @testing.numpy_clpy_raises()
     def test_many_dimension1(self, xp):
         xp.einsum('i', 0)
 
-    @testing.numpy_cupy_raises()
+    @testing.numpy_clpy_raises()
     def test_many_dimension2(self, xp):
         xp.einsum('ij', xp.array([0, 0]))
 
-    @testing.numpy_cupy_raises()
+    @testing.numpy_clpy_raises()
     def test_too_few_dimension(self, xp):
         xp.einsum('i->i', xp.arange(6).reshape(2, 3))
 
-    @testing.numpy_cupy_raises()
+    @testing.numpy_clpy_raises()
     def test_invalid_char1(self, xp):
         xp.einsum('i%', xp.array([0, 0]))
 
-    @testing.numpy_cupy_raises()
+    @testing.numpy_clpy_raises()
     def test_invalid_char2(self, xp):
         xp.einsum('j$', xp.array([0, 0]))
 
-    @testing.numpy_cupy_raises()
+    @testing.numpy_clpy_raises()
     def test_invalid_char3(self, xp):
         xp.einsum('i->&', xp.array([0, 0]))
 
     # output subscripts must appear in inumpy.t
-    @testing.numpy_cupy_raises()
+    @testing.numpy_clpy_raises()
     def test_invalid_output_subscripts1(self, xp):
         xp.einsum('i->ij', xp.array([0, 0]))
 
     # output subscripts may only be specified once
-    @testing.numpy_cupy_raises()
+    @testing.numpy_clpy_raises()
     def test_invalid_output_subscripts2(self, xp):
         xp.einsum('ij->jij', xp.array([[0, 0], [0, 0]]))
 
     # output subscripts must not incrudes comma
-    @testing.numpy_cupy_raises()
+    @testing.numpy_clpy_raises()
     def test_invalid_output_subscripts3(self, xp):
         xp.einsum('ij->i,j', xp.array([[0, 0], [0, 0]]))
 
     # dimensions much match when being collapsed
-    @testing.numpy_cupy_raises()
+    @testing.numpy_clpy_raises()
     def test_invalid_diagonal1(self, xp):
         xp.einsum('ii', xp.arange(6).reshape(2, 3))
 
-    @testing.numpy_cupy_raises()
+    @testing.numpy_clpy_raises()
     def test_invalid_diagonal2(self, xp):
         xp.einsum('ii->', xp.arange(6).reshape(2, 3))
 
     # invalid -> operator
-    @testing.numpy_cupy_raises()
+    @testing.numpy_clpy_raises()
     def test_invalid_arrow1(self, xp):
         xp.einsum('i-i', xp.array([0, 0]))
 
-    @testing.numpy_cupy_raises()
+    @testing.numpy_clpy_raises()
     def test_invalid_arrow2(self, xp):
         xp.einsum('i>i', xp.array([0, 0]))
 
-    @testing.numpy_cupy_raises()
+    @testing.numpy_clpy_raises()
     def test_invalid_arrow3(self, xp):
         xp.einsum('i->->i', xp.array([0, 0]))
 
-    @testing.numpy_cupy_raises()
+    @testing.numpy_clpy_raises()
     def test_invalid_arrow4(self, xp):
         xp.einsum('i-', xp.array([0, 0]))
 
@@ -129,7 +129,7 @@ class TestEinSumUnaryOperation(unittest.TestCase):
     skip_dtypes = (numpy.bool_, numpy.int8, numpy.uint8)
 
     @testing.for_all_dtypes(no_complex=True)
-    @testing.numpy_cupy_allclose()
+    @testing.numpy_clpy_allclose()
     def test_einsum_unary(self, xp, dtype):
         if dtype in self.skip_dtypes:
             return xp.array([])
@@ -160,7 +160,7 @@ class TestEinSumBinaryOperation(unittest.TestCase):
     skip_dtypes = (numpy.bool_, numpy.int8, numpy.uint8)
 
     @testing.for_all_dtypes_combination(['dtype_a', 'dtype_b'])
-    @testing.numpy_cupy_allclose()
+    @testing.numpy_clpy_allclose()
     def test_einsum_binary(self, xp, dtype_a, dtype_b):
         if self.skip_overflow and (dtype_a in self.skip_dtypes or
                                    dtype_b in self.skip_dtypes):
@@ -172,14 +172,14 @@ class TestEinSumBinaryOperation(unittest.TestCase):
 
 class TestEinSumBinaryOperationWithScalar(unittest.TestCase):
     @testing.for_all_dtypes()
-    @testing.numpy_cupy_allclose()
+    @testing.numpy_clpy_allclose()
     def test_scalar_1(self, xp, dtype):
         shape_a = (2,)
         a = testing.shaped_arange(shape_a, xp, dtype)
         return xp.asarray(xp.einsum(',i->', 3, a))
 
     @testing.for_all_dtypes()
-    @testing.numpy_cupy_allclose()
+    @testing.numpy_clpy_allclose()
     def test_scalar_2(self, xp, dtype):
         shape_a = (2,)
         a = testing.shaped_arange(shape_a, xp, dtype)
@@ -198,7 +198,7 @@ class TestEinSumTernaryOperation(unittest.TestCase):
     skip_dtypes = (numpy.bool_, numpy.int8, numpy.uint8)
 
     @testing.for_all_dtypes(no_complex=True)
-    @testing.numpy_cupy_allclose(contiguous_check=False)
+    @testing.numpy_clpy_allclose(contiguous_check=False)
     def test_einsum_ternary(self, xp, dtype):
         if self.skip_overflow and dtype in self.skip_dtypes:
             return xp.array([])

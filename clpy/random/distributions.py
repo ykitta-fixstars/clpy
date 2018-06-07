@@ -1,6 +1,7 @@
-import cupy
-from cupy import core
-from cupy.random import generator
+import clpy
+from clpy import core
+from clpy.random import generator
+import numpy
 
 
 # TODO(beam2d): Implement many distributions
@@ -37,7 +38,7 @@ def gumbel(loc=0.0, scale=1.0, size=None, dtype=float):
             :class:`numpy.float64` types are allowed.
 
     Returns:
-        cupy.ndarray: Samples drawn from the Gumbel destribution.
+        clpy.ndarray: Samples drawn from the Gumbel destribution.
 
     .. seealso:: :func:`numpy.random.gumbel`
     """
@@ -62,7 +63,7 @@ def lognormal(mean=0.0, sigma=1.0, size=None, dtype=float):
             :class:`numpy.float64` types are allowed.
 
     Returns:
-        cupy.ndarray: Samples drawn from the log normal distribution.
+        clpy.ndarray: Samples drawn from the log normal distribution.
 
     .. seealso:: :func:`numpy.random.lognormal`
 
@@ -84,22 +85,30 @@ def normal(loc=0.0, scale=1.0, size=None, dtype=float):
             :class:`numpy.float64` types are allowed.
 
     Returns:
-        cupy.ndarray: Normally distributed samples.
+        clpy.ndarray: Normally distributed samples.
 
     .. seealso:: :func:`numpy.random.normal`
 
     """
-    rs = generator.get_random_state()
-    x = rs.normal(0, 1, size, dtype)
-    cupy.multiply(x, scale, out=x)
-    cupy.add(x, loc, out=x)
+    if isinstance(loc, clpy.ndarray):
+        loc = loc.get()
+    if isinstance(scale, clpy.ndarray):
+        scale = scale.get()
+    x_cpu = numpy.random.normal(loc=loc, scale=scale, size=size).astype(dtype)
+    x = clpy.ndarray(x_cpu.shape, dtype=dtype)
+    x.set(x_cpu)
+    # TODO(LWisteria): implement by OpenCL
+    # rs = generator.get_random_state()
+    # x = rs.normal(0, 1, size, dtype)
+    # clpy.multiply(x, scale, out=x)
+    # clpy.add(x, loc, out=x)
     return x
 
 
 def standard_normal(size=None, dtype=float):
     """Returns an array of samples drawn from the standard normal distribution.
 
-    This is a variant of :func:`cupy.random.randn`.
+    This is a variant of :func:`clpy.random.randn`.
 
     Args:
         size (int or tuple of ints): The shape of the array. If ``None``, a
@@ -107,7 +116,7 @@ def standard_normal(size=None, dtype=float):
         dtype: Data type specifier.
 
     Returns:
-        cupy.ndarray: Samples drawn from the standard normal distribution.
+        clpy.ndarray: Samples drawn from the standard normal distribution.
 
     .. seealso:: :func:`numpy.random.standard_normal`
 
@@ -129,7 +138,7 @@ def uniform(low=0.0, high=1.0, size=None, dtype=float):
         dtype: Data type specifier.
 
     Returns:
-        cupy.ndarray: Samples drawn from the uniform distribution.
+        clpy.ndarray: Samples drawn from the uniform distribution.
 
     .. seealso:: :func:`numpy.random.uniform`
 

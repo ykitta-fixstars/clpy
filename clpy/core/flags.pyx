@@ -16,7 +16,7 @@ class Flags(object):
         elif name == 'OWNDATA':
             return self.owndata
         else:
-            raise KeyError('%s is not defined for cupy.ndarray.flags' % name)
+            raise KeyError('%s is not defined for clpy.ndarray.flags' % name)
 
     def __repr__(self):
         t = '  %s : %s'

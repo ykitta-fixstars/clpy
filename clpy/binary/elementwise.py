@@ -1,4 +1,4 @@
-from cupy import core
+from clpy import core
 
 
 bitwise_and = core.bitwise_and

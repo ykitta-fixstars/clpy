@@ -1,6 +1,6 @@
 import unittest
 
-from cupy import testing
+from clpy import testing
 
 
 @testing.gpu
@@ -9,7 +9,7 @@ class TestComparison(unittest.TestCase):
     _multiprocess_can_split_ = True
 
     @testing.for_all_dtypes(no_complex=True)
-    @testing.numpy_cupy_allclose(atol=1e-5)
+    @testing.numpy_clpy_allclose(atol=1e-5)
     def check_binary(self, name, xp, dtype):
         a = testing.shaped_arange((2, 3), xp, dtype)
         b = testing.shaped_reverse_arange((2, 3), xp, dtype)

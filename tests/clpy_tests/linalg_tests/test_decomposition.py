@@ -3,14 +3,14 @@ import unittest
 import numpy
 import six
 
-import cupy
-from cupy import cuda
-from cupy import testing
-from cupy.testing import condition
+import clpy
+from clpy import backend
+from clpy import testing
+from clpy.testing import condition
 
 
 @unittest.skipUnless(
-    cuda.cusolver_enabled, 'Only cusolver in CUDA 8.0 is supported')
+    backend.cusolver_enabled, 'Only cusolver in CUDA 8.0 is supported')
 @testing.gpu
 class TestCholeskyDecomposition(unittest.TestCase):
 
@@ -19,7 +19,7 @@ class TestCholeskyDecomposition(unittest.TestCase):
     @testing.for_dtypes([
         numpy.int32, numpy.int64, numpy.uint32, numpy.uint64,
         numpy.float32, numpy.float64])
-    @testing.numpy_cupy_allclose(atol=1e-3)
+    @testing.numpy_clpy_allclose(atol=1e-3)
     def check_L(self, array, xp, dtype):
         a = xp.asarray(array, dtype=dtype)
         return xp.linalg.cholesky(a)
@@ -37,7 +37,7 @@ class TestCholeskyDecomposition(unittest.TestCase):
     'mode': ['r', 'raw', 'complete', 'reduced'],
 }))
 @unittest.skipUnless(
-    cuda.cusolver_enabled, 'Only cusolver in CUDA 8.0 is supported')
+    backend.cusolver_enabled, 'Only cusolver in CUDA 8.0 is supported')
 @testing.gpu
 class TestQRDecomposition(unittest.TestCase):
 
@@ -46,16 +46,16 @@ class TestQRDecomposition(unittest.TestCase):
     @testing.for_float_dtypes(no_float16=True)
     def check_mode(self, array, mode, dtype):
         a_cpu = numpy.asarray(array, dtype=dtype)
-        a_gpu = cupy.asarray(array, dtype=dtype)
+        a_gpu = clpy.asarray(array, dtype=dtype)
         result_cpu = numpy.linalg.qr(a_cpu, mode=mode)
-        result_gpu = cupy.linalg.qr(a_gpu, mode=mode)
+        result_gpu = clpy.linalg.qr(a_gpu, mode=mode)
         if isinstance(result_cpu, tuple):
             for b_cpu, b_gpu in six.moves.zip(result_cpu, result_gpu):
                 self.assertEqual(b_cpu.dtype, b_gpu.dtype)
-                cupy.testing.assert_allclose(b_cpu, b_gpu, atol=1e-4)
+                clpy.testing.assert_allclose(b_cpu, b_gpu, atol=1e-4)
         else:
             self.assertEqual(result_cpu.dtype, result_gpu.dtype)
-            cupy.testing.assert_allclose(result_cpu, result_gpu, atol=1e-4)
+            clpy.testing.assert_allclose(result_cpu, result_gpu, atol=1e-4)
 
     @testing.fix_random()
     @condition.repeat(3, 10)
@@ -70,7 +70,7 @@ class TestQRDecomposition(unittest.TestCase):
 }))
 @testing.fix_random()
 @unittest.skipUnless(
-    cuda.cusolver_enabled, 'Only cusolver in CUDA 8.0 is supported')
+    backend.cusolver_enabled, 'Only cusolver in CUDA 8.0 is supported')
 @testing.gpu
 class TestSVD(unittest.TestCase):
 
@@ -79,17 +79,17 @@ class TestSVD(unittest.TestCase):
     @testing.for_float_dtypes(no_float16=True)
     def check_usv(self, array, dtype):
         a_cpu = numpy.asarray(array, dtype=dtype)
-        a_gpu = cupy.asarray(array, dtype=dtype)
+        a_gpu = clpy.asarray(array, dtype=dtype)
         result_cpu = numpy.linalg.svd(a_cpu, full_matrices=self.full_matrices)
-        result_gpu = cupy.linalg.svd(a_gpu, full_matrices=self.full_matrices)
+        result_gpu = clpy.linalg.svd(a_gpu, full_matrices=self.full_matrices)
         self.assertEqual(len(result_cpu), len(result_gpu))
         for b_cpu, b_gpu in zip(result_cpu, result_gpu):
             # Use abs to support an inverse vector
-            cupy.testing.assert_allclose(
-                numpy.abs(b_cpu), cupy.abs(b_gpu), atol=1e-4)
+            clpy.testing.assert_allclose(
+                numpy.abs(b_cpu), clpy.abs(b_gpu), atol=1e-4)
 
     @testing.for_float_dtypes(no_float16=True)
-    @testing.numpy_cupy_allclose(atol=1e-4)
+    @testing.numpy_clpy_allclose(atol=1e-4)
     def check_singular(self, array, xp, dtype):
         a = xp.asarray(array, dtype=dtype)
         result = xp.linalg.svd(
@@ -98,7 +98,7 @@ class TestSVD(unittest.TestCase):
 
     def check_rank2(self, array):
         with self.assertRaises(numpy.linalg.LinAlgError):
-            cupy.linalg.svd(array, full_matrices=self.full_matrices)
+            clpy.linalg.svd(array, full_matrices=self.full_matrices)
 
     @condition.repeat(3, 10)
     def test_svd(self):
@@ -114,5 +114,5 @@ class TestSVD(unittest.TestCase):
 
     @condition.repeat(3, 10)
     def test_rank2(self):
-        self.check_rank2(cupy.random.randn(2, 3, 4).astype(numpy.float32))
-        self.check_rank2(cupy.random.randn(1, 2, 3, 4).astype(numpy.float64))
+        self.check_rank2(clpy.random.randn(2, 3, 4).astype(numpy.float32))
+        self.check_rank2(clpy.random.randn(1, 2, 3, 4).astype(numpy.float64))

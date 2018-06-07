@@ -5,7 +5,7 @@ Wrapper for NCCL: Optimized primiteive for collective multi-GPU communication
 """
 cimport cython
 
-from cupy.cuda cimport driver
+from clpy.cuda cimport driver
 
 cdef extern from "cupy_nccl.h":
     ctypedef struct ncclComm:

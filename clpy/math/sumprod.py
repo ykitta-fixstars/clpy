@@ -1,22 +1,22 @@
 import numpy
 import six
 
-from cupy import core
+from clpy import core
 
 
 def sum(a, axis=None, dtype=None, out=None, keepdims=False):
     """Returns the sum of an array along given axes.
 
     Args:
-        a (cupy.ndarray): Array to take sum.
+        a (clpy.ndarray): Array to take sum.
         axis (int or sequence of ints): Axes along which the sum is taken.
         dtype: Data type specifier.
-        out (cupy.ndarray): Output array.
+        out (clpy.ndarray): Output array.
         keepdims (bool): If ``True``, the specified axes are remained as axes
             of length one.
 
     Returns:
-        cupy.ndarray: The result array.
+        clpy.ndarray: The result array.
 
     .. seealso:: :func:`numpy.sum`
 
@@ -29,15 +29,15 @@ def prod(a, axis=None, dtype=None, out=None, keepdims=False):
     """Returns the product of an array along given axes.
 
     Args:
-        a (cupy.ndarray): Array to take product.
+        a (clpy.ndarray): Array to take product.
         axis (int or sequence of ints): Axes along which the product is taken.
         dtype: Data type specifier.
-        out (cupy.ndarray): Output array.
+        out (clpy.ndarray): Output array.
         keepdims (bool): If ``True``, the specified axes are remained as axes
             of length one.
 
     Returns:
-        cupy.ndarray: The result array.
+        clpy.ndarray: The result array.
 
     .. seealso:: :func:`numpy.prod`
 
@@ -132,14 +132,14 @@ def cumsum(a, axis=None, dtype=None, out=None):
     """Returns the cumulative sum of an array along a given axis.
 
     Args:
-        a (cupy.ndarray): Input array.
+        a (clpy.ndarray): Input array.
         axis (int): Axis along which the cumulative sum is taken. If it is not
         specified, the input is flattened.
         dtype: Data type specifier.
-        out (cupy.ndarray): Output array.
+        out (clpy.ndarray): Output array.
 
     Returns:
-        cupy.ndarray: The result array.
+        clpy.ndarray: The result array.
 
     .. seealso:: :func:`numpy.cumsum`
 
@@ -175,14 +175,14 @@ def cumprod(a, axis=None, dtype=None, out=None):
     """Returns the cumulative product of an array along a given axis.
 
     Args:
-        a (cupy.ndarray): Input array.
+        a (clpy.ndarray): Input array.
         axis (int): Axis along which the cumulative product is taken. If it is
         not specified, the input is flattened.
         dtype: Data type specifier.
-        out (cupy.ndarray): Output array.
+        out (clpy.ndarray): Output array.
 
     Returns:
-        cupy.ndarray: The result array.
+        clpy.ndarray: The result array.
 
     .. seealso:: :func:`numpy.cumprod`
 

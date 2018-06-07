@@ -9,21 +9,21 @@ import matplotlib.pyplot as plt
 import numpy as np
 import six
 
-import cupy
+import clpy
 
 
 @contextlib.contextmanager
 def timer(message):
-    cupy.cuda.Stream.null.synchronize()
+    clpy.backend.Stream.null.synchronize()
     start = time.time()
     yield
-    cupy.cuda.Stream.null.synchronize()
+    clpy.backend.Stream.null.synchronize()
     end = time.time()
     print('%s:  %f sec' % (message, end - start))
 
 
 def estimate_log_prob(X, inv_cov, means):
-    xp = cupy.get_array_module(X)
+    xp = clpy.get_array_module(X)
     n_features = X.shape[1]
     log_det = xp.sum(xp.log(inv_cov), axis=1)
     precisions = inv_cov ** 2
@@ -33,7 +33,7 @@ def estimate_log_prob(X, inv_cov, means):
 
 
 def m_step(X, resp):
-    xp = cupy.get_array_module(X)
+    xp = clpy.get_array_module(X)
     nk = xp.sum(resp, axis=0)
     means = xp.dot(resp.T, X) / nk[:, None]
     X2 = xp.dot(resp.T, X * X) / nk[:, None]
@@ -42,7 +42,7 @@ def m_step(X, resp):
 
 
 def e_step(X, inv_cov, means, weights):
-    xp = cupy.get_array_module(X)
+    xp = clpy.get_array_module(X)
     weighted_log_prob = estimate_log_prob(X, inv_cov, means) + \
         xp.log(weights)
     log_prob_norm = xp.log(xp.sum(xp.exp(weighted_log_prob), axis=1))
@@ -51,7 +51,7 @@ def e_step(X, inv_cov, means, weights):
 
 
 def train_gmm(X, max_iter, tol, means, covariances):
-    xp = cupy.get_array_module(X)
+    xp = clpy.get_array_module(X)
     lower_bound = -np.infty
     converged = False
     weights = xp.array([0.5, 0.5], dtype=np.float32)
@@ -75,14 +75,14 @@ def train_gmm(X, max_iter, tol, means, covariances):
 
 
 def predict(X, inv_cov, means, weights):
-    xp = cupy.get_array_module(X)
+    xp = clpy.get_array_module(X)
     log_prob = estimate_log_prob(X, inv_cov, means)
     return (log_prob + xp.log(weights)).argmax(axis=1)
 
 
 def calc_acc(X_train, y_train, X_test, y_test, max_iter, tol, means,
              covariances):
-    xp = cupy.get_array_module(X_train)
+    xp = clpy.get_array_module(X_train)
     inv_cov, means, weights, cov = \
         train_gmm(X_train, max_iter, tol, means, covariances)
     y_train_pred = predict(X_train, inv_cov, means, weights)
@@ -95,13 +95,13 @@ def calc_acc(X_train, y_train, X_test, y_test, max_iter, tol, means,
 
 
 def draw(X, pred, means, covariances, output):
-    xp = cupy.get_array_module(X)
+    xp = clpy.get_array_module(X)
     for i in six.moves.range(2):
         labels = X[pred == i]
-        if xp is cupy:
+        if xp is clpy:
             labels = labels.get()
         plt.scatter(labels[:, 0], labels[:, 1], c=np.random.rand(3))
-    if xp is cupy:
+    if xp is clpy:
         means = means.get()
         covariances = covariances.get()
     plt.scatter(means[:, 0], means[:, 1], s=120, marker='s', facecolors='y',
@@ -147,13 +147,13 @@ def run(gpuid, num, dim, max_iter, tol, output):
             calc_acc(X_train, y_train, X_test, y_test, max_iter, tol,
                      means, covariances)
 
-    with cupy.cuda.Device(gpuid):
-        X_train_gpu = cupy.array(X_train)
-        y_train_gpu = cupy.array(y_train)
-        y_test_gpu = cupy.array(y_test)
-        X_test_gpu = cupy.array(X_test)
-        means = cupy.array(means)
-        covariances = cupy.array(covariances)
+    with clpy.backend.Device(gpuid):
+        X_train_gpu = clpy.array(X_train)
+        y_train_gpu = clpy.array(y_train)
+        y_test_gpu = clpy.array(y_test)
+        X_test_gpu = clpy.array(X_test)
+        means = clpy.array(means)
+        covariances = clpy.array(covariances)
         print('Running GPU...')
         with timer(' GPU '):
             y_test_pred, means, cov = \

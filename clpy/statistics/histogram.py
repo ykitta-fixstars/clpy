@@ -1,6 +1,6 @@
 import numpy
 
-import cupy
+import clpy
 
 
 # TODO(okuta): Implement histogram
@@ -16,14 +16,14 @@ def bincount(x, weights=None, minlength=None):
     """Count number of occurrences of each value in array of non-negative ints.
 
     Args:
-        x (cupy.ndarray): Input array.
-        weights (cupy.ndarray): Weights array which has the same shape as
+        x (clpy.ndarray): Input array.
+        weights (clpy.ndarray): Weights array which has the same shape as
             ``x``.
         minlength (int): A minimum number of bins for the output array.
 
     Returns:
-        cupy.ndarray: The result of binning the input array. The length of
-            output is equal to ``max(cupy.max(x) + 1, minlength)``.
+        clpy.ndarray: The result of binning the input array. The length of
+            output is equal to ``max(clpy.max(x) + 1, minlength)``.
 
     .. seealso:: :func:`numpy.bincount`
 
@@ -43,14 +43,14 @@ def bincount(x, weights=None, minlength=None):
         if minlength < 0:
             raise ValueError('minlength must be non-negative')
 
-    size = int(cupy.max(x)) + 1
+    size = int(clpy.max(x)) + 1
     if minlength is not None:
         size = max(size, minlength)
 
     if weights is None:
         # atomicAdd for int64 is not provided
-        b = cupy.zeros((size,), dtype=cupy.int32)
-        cupy.ElementwiseKernel(
+        b = clpy.zeros((size,), dtype=clpy.int32)
+        clpy.ElementwiseKernel(
             'S x', 'raw U bin',
             'atomicAdd(&bin[x], 1)',
             'bincount_kernel'
@@ -58,13 +58,13 @@ def bincount(x, weights=None, minlength=None):
         b = b.astype(numpy.intp)
     else:
         # atomicAdd for float64 is not provided
-        b = cupy.zeros((size,), dtype=cupy.float32)
-        cupy.ElementwiseKernel(
+        b = clpy.zeros((size,), dtype=clpy.float32)
+        clpy.ElementwiseKernel(
             'S x, T w', 'raw U bin',
             'atomicAdd(&bin[x], w)',
             'bincount_with_weight_kernel'
         )(x, weights, b)
-        b = b.astype(cupy.float64)
+        b = b.astype(clpy.float64)
 
     return b
 

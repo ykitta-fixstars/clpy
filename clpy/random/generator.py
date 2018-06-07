@@ -1,6 +1,6 @@
 import atexit
 import binascii
-import functools
+# import functools
 import operator
 import os
 import time
@@ -8,10 +8,10 @@ import time
 import numpy
 import six
 
-import cupy
-from cupy import core
-from cupy import cuda
-from cupy.cuda import curand
+import clpy
+from clpy import backend
+from clpy import core
+# from clpy.backend import curand
 
 
 class RandomState(object):
@@ -22,39 +22,41 @@ class RandomState(object):
     state is available only on the device which has been current at the
     initialization of the instance.
 
-    Functions of :mod:`cupy.random` use global instances of this class.
+    Functions of :mod:`clpy.random` use global instances of this class.
     Different instances are used for different devices. The global state for
     the current device can be obtained by the
-    :func:`cupy.random.get_random_state` function.
+    :func:`clpy.random.get_random_state` function.
 
     Args:
         seed (None or int): Seed of the random number generator. See the
-            :meth:`~cupy.random.RandomState.seed` method for detail.
+            :meth:`~clpy.random.RandomState.seed` method for detail.
         method (int): Method of the random number generator. Following values
             are available::
 
-               cupy.cuda.curand.CURAND_RNG_PSEUDO_DEFAULT
-               cupy.cuda.curand.CURAND_RNG_XORWOW
-               cupy.cuda.curand.CURAND_RNG_MRG32K3A
-               cupy.cuda.curand.CURAND_RNG_MTGP32
-               cupy.cuda.curand.CURAND_RNG_MT19937
-               cupy.cuda.curand.CURAND_RNG_PHILOX4_32_10
+               clpy.cuda.curand.CURAND_RNG_PSEUDO_DEFAULT
+               clpy.cuda.curand.CURAND_RNG_XORWOW
+               clpy.cuda.curand.CURAND_RNG_MRG32K3A
+               clpy.cuda.curand.CURAND_RNG_MTGP32
+               clpy.cuda.curand.CURAND_RNG_MT19937
+               clpy.cuda.curand.CURAND_RNG_PHILOX4_32_10
 
     """
 
-    def __init__(self, seed=None, method=curand.CURAND_RNG_PSEUDO_DEFAULT):
-        self._generator = curand.createGenerator(method)
-        self.seed(seed)
+    def __init__(self, seed=None, method=None):
+        self.seed_value = seed
+        self.seed_array = None
 
     def __del__(self):
         # When createGenerator raises an error, _generator is not initialized
-        if hasattr(self, '_generator'):
-            curand.destroyGenerator(self._generator)
+        pass
+        # if hasattr(self, '_generator'):
+        #     curand.destroyGenerator(self._generator)
 
     def set_stream(self, stream=None):
-        if stream is None:
-            stream = cuda.Stream()
-        curand.setStream(self._generator, stream.ptr)
+        raise NotImplementedError
+        # if stream is None:
+        #     stream = backend.Stream()
+        # curand.setStream(self._generator, stream.ptr)
 
     def _generate_normal(self, func, size, dtype, *args):
         # curand functions below don't support odd size.
@@ -62,14 +64,15 @@ class RandomState(object):
         # * curand.generateNormalDouble
         # * curand.generateLogNormal
         # * curand.generateLogNormalDouble
+        raise NotImplementedError
         size = core.get_size(size)
         element_size = six.moves.reduce(operator.mul, size, 1)
         if element_size % 2 == 0:
-            out = cupy.empty(size, dtype=dtype)
+            out = clpy.empty(size, dtype=dtype)
             func(self._generator, out.data.ptr, out.size, *args)
             return out
         else:
-            out = cupy.empty((element_size + 1,), dtype=dtype)
+            out = clpy.empty((element_size + 1,), dtype=dtype)
             func(self._generator, out.data.ptr, out.size, *args)
             return out[:element_size].reshape(size)
 
@@ -79,40 +82,43 @@ class RandomState(object):
         """Returns an array of samples drawn from a log normal distribution.
 
         .. seealso::
-            :func:`cupy.random.lognormal` for full documentation,
+            :func:`clpy.random.lognormal` for full documentation,
             :meth:`numpy.random.RandomState.lognormal`
 
         """
-        dtype = _check_and_get_dtype(dtype)
-        if dtype.char == 'f':
-            func = curand.generateLogNormal
-        else:
-            func = curand.generateLogNormalDouble
-        return self._generate_normal(func, size, dtype, mean, sigma)
+        raise NotImplementedError
+        # dtype = _check_and_get_dtype(dtype)
+        # if dtype.char == 'f':
+        #     func = curand.generateLogNormal
+        # else:
+        #     func = curand.generateLogNormalDouble
+        # return self._generate_normal(func, size, dtype, mean, sigma)
 
     def normal(self, loc=0.0, scale=1.0, size=None, dtype=float):
         """Returns an array of normally distributed samples.
 
         .. seealso::
-            :func:`cupy.random.normal` for full documentation,
+            :func:`clpy.random.normal` for full documentation,
             :meth:`numpy.random.RandomState.normal`
 
         """
-        dtype = _check_and_get_dtype(dtype)
-        if dtype.char == 'f':
-            func = curand.generateNormal
-        else:
-            func = curand.generateNormalDouble
-        return self._generate_normal(func, size, dtype, loc, scale)
+        raise NotImplementedError
+        # dtype = _check_and_get_dtype(dtype)
+        # if dtype.char == 'f':
+        #     func = curand.generateNormal
+        # else:
+        #     func = curand.generateNormalDouble
+        # return self._generate_normal(func, size, dtype, loc, scale)
 
     def rand(self, *size, **kwarg):
         """Returns uniform random values over the interval ``[0, 1)``.
 
         .. seealso::
-            :func:`cupy.random.rand` for full documentation,
+            :func:`clpy.random.rand` for full documentation,
             :meth:`numpy.random.RandomState.rand`
 
         """
+        raise NotImplementedError
         dtype = kwarg.pop('dtype', float)
         if kwarg:
             raise TypeError('rand() got unexpected keyword arguments %s'
@@ -123,10 +129,11 @@ class RandomState(object):
         """Returns an array of standard normal random values.
 
         .. seealso::
-            :func:`cupy.random.randn` for full documentation,
+            :func:`clpy.random.randn` for full documentation,
             :meth:`numpy.random.RandomState.randn`
 
         """
+        raise NotImplementedError
         dtype = kwarg.pop('dtype', float)
         if kwarg:
             raise TypeError('randn() got unexpected keyword arguments %s'
@@ -134,24 +141,47 @@ class RandomState(object):
         return self.normal(size=size, dtype=dtype)
 
     _1m_kernel = core.ElementwiseKernel(
-        '', 'T x', 'x = 1 - x', 'cupy_random_1_minus_x')
+        '', 'T x', 'x = 1 - x', 'clpy_random_1_minus_x')
+
+    _init_kernel = core.ElementwiseKernel(
+        'T seed', 'T x',
+        'x = seed + get_CArrayIndex_1(&x_info, &_ind);', 'clpy_seed_init'
+    )
+
+    _lcg_kernel = core.ElementwiseKernel(
+        '', 'T x, U out',
+        '''
+        __const__ T A = 1664525;
+        __const__ T C = 1013904223;
+        __const__ T M = 2147483647;
+        x = (x * A + C)&M;
+        out = (U)(x)/(U)(M);
+        ''',
+        'clpy_lcg_kernel'
+    )
 
     def random_sample(self, size=None, dtype=float):
         """Returns an array of random values over the interval ``[0, 1)``.
 
         .. seealso::
-            :func:`cupy.random.random_sample` for full documentation,
+            :func:`clpy.random.random_sample` for full documentation,
             :meth:`numpy.random.RandomState.random_sample`
 
         """
         dtype = _check_and_get_dtype(dtype)
-        out = cupy.empty(size, dtype=dtype)
-        if dtype.char == 'f':
-            func = curand.generateUniform
-        else:
-            func = curand.generateUniformDouble
-        func(self._generator, out.data.ptr, out.size)
-        RandomState._1m_kernel(out)
+        out = clpy.empty(size, dtype=dtype)
+
+        if (not isinstance(self.seed_array, clpy.ndarray)
+                or self.seed_array.size != numpy.prod(size)):
+            self.seed_array = clpy.empty(size, "uint")
+            tmp_seed_array = clpy.empty(size, "uint")
+            tmp_seed_array.fill(self.seed_value)
+            RandomState._init_kernel(tmp_seed_array, self.seed_array)
+            # not to use similar number for the first generation
+            RandomState._lcg_kernel(self.seed_array, out)
+
+        RandomState._lcg_kernel(self.seed_array, out)
+
         return out
 
     def interval(self, mx, size):
@@ -162,7 +192,7 @@ class RandomState(object):
             size (None or int or tuple): Shape of the array or the scalar
                 returned.
         Returns:
-            int or cupy.ndarray: If ``None``, an :class:`cupy.ndarray` with
+            int or clpy.ndarray: If ``None``, an :class:`clpy.ndarray` with
             shape ``()`` is returned.
             If ``int``, 1-D array of length size is returned.
             If ``tuple``, multi-dimensional array with shape
@@ -173,63 +203,64 @@ class RandomState(object):
             If 0x80000000 :math:`\\leq` ``mx`` :math:`\\leq` 0xffffffff,
             a ``numpy.uint32`` array is returned.
         """
-        if size is None:
-            return self.interval(mx, 1).reshape(())
-        elif isinstance(size, int):
-            size = (size, )
+        raise NotImplementedError
+        # if size is None:
+        #     return self.interval(mx, 1).reshape(())
+        # elif isinstance(size, int):
+        #     size = (size, )
 
-        if mx == 0:
-            return cupy.zeros(size, dtype=numpy.int32)
+        # if mx == 0:
+        #     return clpy.zeros(size, dtype=numpy.int32)
 
-        if mx < 0:
-            raise ValueError(
-                'mx must be non-negative (actual: {})'.format(mx))
-        elif mx <= 0x7fffffff:
-            dtype = numpy.int32
-        elif mx <= 0xffffffff:
-            dtype = numpy.uint32
-        else:
-            raise ValueError(
-                'mx must be within uint32 range (actual: {})'.format(mx))
+        # if mx < 0:
+        #     raise ValueError(
+        #         'mx must be non-negative (actual: {})'.format(mx))
+        # elif mx <= 0x7fffffff:
+        #     dtype = numpy.int32
+        # elif mx <= 0xffffffff:
+        #     dtype = numpy.uint32
+        # else:
+        #     raise ValueError(
+        #         'mx must be within uint32 range (actual: {})'.format(mx))
 
-        mask = (1 << mx.bit_length()) - 1
-        mask = cupy.array(mask, dtype=dtype)
+        # mask = (1 << mx.bit_length()) - 1
+        # mask = clpy.array(mask, dtype=dtype)
 
-        n = functools.reduce(operator.mul, size, 1)
+        # n = functools.reduce(operator.mul, size, 1)
 
-        sample = cupy.empty((n,), dtype=dtype)
-        n_rem = n  # The number of remaining elements to sample
-        ret = None
-        while n_rem > 0:
-            curand.generate(
-                self._generator, sample.data.ptr, sample.size)
-            # Drop the samples that exceed the upper limit
-            sample &= mask
-            success = sample <= mx
+        # sample = clpy.empty((n,), dtype=dtype)
+        # n_rem = n  # The number of remaining elements to sample
+        # ret = None
+        # while n_rem > 0:
+        #     curand.generate(
+        #         self._generator, sample.data.ptr, sample.size)
+        #     # Drop the samples that exceed the upper limit
+        #     sample &= mask
+        #     success = sample <= mx
 
-            if ret is None:
-                # If the sampling has finished in the first iteration,
-                # just return the sample.
-                if success.all():
-                    n_rem = 0
-                    ret = sample
-                    break
+        #     if ret is None:
+        #         # If the sampling has finished in the first iteration,
+        #         # just return the sample.
+        #         if success.all():
+        #             n_rem = 0
+        #             ret = sample
+        #             break
 
-                # Allocate the return array.
-                ret = cupy.empty((n,), dtype=dtype)
+        #         # Allocate the return array.
+        #         ret = clpy.empty((n,), dtype=dtype)
 
-            n_succ = min(n_rem, int(success.sum()))
-            ret[n - n_rem:n - n_rem + n_succ] = sample[success][:n_succ]
-            n_rem -= n_succ
+        #     n_succ = min(n_rem, int(success.sum()))
+        #     ret[n - n_rem:n - n_rem + n_succ] = sample[success][:n_succ]
+        #     n_rem -= n_succ
 
-        assert n_rem == 0
-        return ret.reshape(size)
+        # assert n_rem == 0
+        # return ret.reshape(size)
 
     def seed(self, seed=None):
         """Resets the state of the random number generator with a seed.
 
         .. seealso::
-            :func:`cupy.random.seed` for full documentation,
+            :func:`clpy.random.seed` for full documentation,
             :meth:`numpy.random.RandomState.seed`
 
         """
@@ -242,27 +273,30 @@ class RandomState(object):
         else:
             seed = numpy.asarray(seed).astype(numpy.uint64, casting='safe')
 
-        curand.setPseudoRandomGeneratorSeed(self._generator, seed)
-        curand.setGeneratorOffset(self._generator, 0)
+        raise NotImplementedError
+        # curand.setPseudoRandomGeneratorSeed(self._generator, seed)
+        # curand.setGeneratorOffset(self._generator, 0)
 
     def standard_normal(self, size=None, dtype=float):
         """Returns samples drawn from the standard normal distribution.
 
         .. seealso::
-            :func:`cupy.random.standard_normal` for full documentation,
+            :func:`clpy.random.standard_normal` for full documentation,
             :meth:`numpy.random.RandomState.standard_normal`
 
         """
+        raise NotImplementedError
         return self.normal(size=size, dtype=dtype)
 
     def uniform(self, low=0.0, high=1.0, size=None, dtype=float):
         """Returns an array of uniformly-distributed samples over an interval.
 
         .. seealso::
-            :func:`cupy.random.uniform` for full documentation,
+            :func:`clpy.random.uniform` for full documentation,
             :meth:`numpy.random.RandomState.uniform`
 
         """
+        raise NotImplementedError
         dtype = numpy.dtype(dtype)
         rand = self.random_sample(size=size, dtype=dtype)
         return dtype.type(low) + rand * dtype.type(high - low)
@@ -271,20 +305,21 @@ class RandomState(object):
         """Returns an array of random values from a given 1-D array.
 
         .. seealso::
-            :func:`cupy.random.choice` for full document,
+            :func:`clpy.random.choice` for full document,
             :meth:`numpy.random.choice`
 
         """
+        raise NotImplementedError
         if a is None:
             raise ValueError('a must be 1-dimensional or an integer')
-        if isinstance(a, cupy.ndarray) and a.ndim == 0:
+        if isinstance(a, clpy.ndarray) and a.ndim == 0:
             raise NotImplementedError
         if isinstance(a, six.integer_types):
             a_size = a
             if a_size <= 0:
                 raise ValueError('a must be greater than 0')
         else:
-            a = cupy.array(a, copy=False)
+            a = clpy.array(a, copy=False)
             if a.ndim != 1:
                 raise ValueError('a must be 1-dimensional or an integer')
             else:
@@ -293,14 +328,14 @@ class RandomState(object):
                     raise ValueError('a must be non-empty')
 
         if p is not None:
-            p = cupy.array(p)
+            p = clpy.array(p)
             if p.ndim != 1:
                 raise ValueError('p must be 1-dimensional')
             if len(p) != a_size:
                 raise ValueError('a and p must have same size')
             if not (p >= 0).all():
                 raise ValueError('probabilities are not non-negative')
-            p_sum = cupy.sum(p).get()
+            p_sum = clpy.sum(p).get()
             if not numpy.allclose(p_sum, 1):
                 raise ValueError('probabilities do not sum to 1')
 
@@ -315,7 +350,7 @@ class RandomState(object):
                     'Cannot take a larger sample than population when '
                     '\'replace=False\'')
             if isinstance(a, six.integer_types):
-                indices = cupy.arange(a, dtype='l')
+                indices = clpy.arange(a, dtype='l')
             else:
                 indices = a.copy()
             self.shuffle(indices)
@@ -325,22 +360,22 @@ class RandomState(object):
             raise NotImplementedError
 
         if p is not None:
-            p = cupy.broadcast_to(p, (size, a_size))
-            index = cupy.argmax(cupy.log(p) +
-                                cupy.random.gumbel(size=(size, a_size)),
+            p = clpy.broadcast_to(p, (size, a_size))
+            index = clpy.argmax(clpy.log(p) +
+                                clpy.random.gumbel(size=(size, a_size)),
                                 axis=1)
             if not isinstance(shape, six.integer_types):
-                index = cupy.reshape(index, shape)
+                index = clpy.reshape(index, shape)
         else:
-            index = cupy.random.randint(0, a_size, size=shape)
+            index = clpy.random.randint(0, a_size, size=shape)
             # Align the dtype with NumPy
-            index = index.astype(cupy.int64, copy=False)
+            index = index.astype(clpy.int64, copy=False)
 
         if isinstance(a, six.integer_types):
             return index
 
         if index.ndim == 0:
-            return cupy.array(a[index], dtype=a.dtype)
+            return clpy.array(a[index], dtype=a.dtype)
 
         return a[index]
 
@@ -348,19 +383,20 @@ class RandomState(object):
         """Returns a shuffled array.
 
         .. seealso::
-            :func:`cupy.random.shuffle` for full document,
+            :func:`clpy.random.shuffle` for full document,
             :meth:`numpy.random.shuffle`
 
         """
-        if not isinstance(a, cupy.ndarray):
-            raise TypeError('The array must be cupy.ndarray')
+        raise NotImplementedError
+        # if not isinstance(a, clpy.ndarray):
+        #     raise TypeError('The array must be clpy.ndarray')
 
-        if a.ndim == 0:
-            raise TypeError('An array whose ndim is 0 is not supported')
+        # if a.ndim == 0:
+        #     raise TypeError('An array whose ndim is 0 is not supported')
 
-        sample = cupy.zeros((len(a)), dtype=numpy.int32)
-        curand.generate(self._generator, sample.data.ptr, sample.size)
-        a[:] = a[cupy.argsort(sample)]
+        # sample = clpy.zeros((len(a)), dtype=numpy.int32)
+        # curand.generate(self._generator, sample.data.ptr, sample.size)
+        # a[:] = a[clpy.argsort(sample)]
 
 
 def seed(seed=None):
@@ -403,12 +439,10 @@ def get_random_state():
         device.
 
     """
-    dev = cuda.Device()
+    dev = backend.Device()
     rs = _random_states.get(dev.id, None)
     if rs is None:
-        seed = os.getenv('CUPY_SEED')
-        if seed is None:
-            seed = os.getenv('CHAINER_SEED')
+        seed = int(time.mktime(time.localtime()))
         rs = RandomState(seed)
         rs = _random_states.setdefault(dev.id, rs)
     return rs
@@ -417,5 +451,5 @@ def get_random_state():
 def _check_and_get_dtype(dtype):
     dtype = numpy.dtype(dtype)
     if dtype.char not in ('f', 'd'):
-        raise TypeError('cupy.random only supports float32 and float64')
+        raise TypeError('clpy.random only supports float32 and float64')
     return dtype

@@ -3,7 +3,7 @@
 """Thin wrapper of cuRAND."""
 cimport cython
 
-from cupy.cuda cimport driver
+from clpy.cuda cimport driver
 
 
 ###############################################################################

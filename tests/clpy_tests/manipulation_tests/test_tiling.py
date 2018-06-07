@@ -1,6 +1,6 @@
 import unittest
 
-from cupy import testing
+from clpy import testing
 
 
 @testing.parameterize(
@@ -17,7 +17,7 @@ class TestRepeat(unittest.TestCase):
 
     _multiprocess_can_split_ = True
 
-    @testing.numpy_cupy_array_equal()
+    @testing.numpy_clpy_array_equal()
     def test_array_repeat(self, xp):
         x = testing.shaped_arange((2, 3, 4), xp)
         return xp.repeat(x, self.repeats, self.axis)
@@ -34,7 +34,7 @@ class TestRepeatFailure(unittest.TestCase):
 
     _multiprocess_can_split_ = True
 
-    @testing.numpy_cupy_raises()
+    @testing.numpy_clpy_raises()
     def test_repeat_failure(self, xp):
         x = testing.shaped_arange((2, 3, 4), xp)
         xp.repeat(x, -3)
@@ -53,7 +53,7 @@ class TestTile(unittest.TestCase):
 
     _multiprocess_can_split_ = True
 
-    @testing.numpy_cupy_array_equal()
+    @testing.numpy_clpy_array_equal()
     def test_array_tile(self, xp):
         x = testing.shaped_arange((2, 3, 4), xp)
         return xp.tile(x, self.reps)
@@ -68,7 +68,7 @@ class TestTileFailure(unittest.TestCase):
 
     _multiprocess_can_split_ = True
 
-    @testing.numpy_cupy_raises()
+    @testing.numpy_clpy_raises()
     def test_tile_failure(self, xp):
         x = testing.shaped_arange((2, 3, 4), xp)
         xp.tile(x, -3)

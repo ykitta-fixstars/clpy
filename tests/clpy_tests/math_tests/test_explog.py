@@ -2,7 +2,7 @@ import unittest
 
 import numpy
 
-from cupy import testing
+from clpy import testing
 
 
 @testing.gpu
@@ -11,7 +11,7 @@ class TestExplog(unittest.TestCase):
     _multiprocess_can_split_ = True
 
     @testing.for_all_dtypes()
-    @testing.numpy_cupy_allclose(atol=1e-5)
+    @testing.numpy_clpy_allclose(atol=1e-5)
     def check_unary(self, name, xp, dtype, no_complex=False):
         if no_complex:
             if numpy.dtype(dtype).kind == 'c':
@@ -20,7 +20,7 @@ class TestExplog(unittest.TestCase):
         return getattr(xp, name)(a)
 
     @testing.for_all_dtypes()
-    @testing.numpy_cupy_allclose(atol=1e-5)
+    @testing.numpy_clpy_allclose(atol=1e-5)
     def check_binary(self, name, xp, dtype, no_complex=False):
         if no_complex:
             if numpy.dtype(dtype).kind == 'c':

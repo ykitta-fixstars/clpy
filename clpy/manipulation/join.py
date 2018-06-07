@@ -1,5 +1,5 @@
-import cupy
-from cupy import core
+import clpy
+from clpy import core
 
 
 def column_stack(tup):
@@ -12,18 +12,18 @@ def column_stack(tup):
         tup (sequence of arrays): 1-D or 2-D arrays to be stacked.
 
     Returns:
-        cupy.ndarray: A new 2-D array of stacked columns.
+        clpy.ndarray: A new 2-D array of stacked columns.
 
     .. seealso:: :func:`numpy.column_stack`
 
     """
-    if any(not isinstance(a, cupy.ndarray) for a in tup):
-        raise TypeError('Only cupy arrays can be column stacked')
+    if any(not isinstance(a, clpy.ndarray) for a in tup):
+        raise TypeError('Only clpy arrays can be column stacked')
 
     lst = list(tup)
     for i, a in enumerate(lst):
         if a.ndim == 1:
-            a = a[:, cupy.newaxis]
+            a = a[:, clpy.newaxis]
             lst[i] = a
         elif a.ndim != 2:
             raise ValueError(
@@ -41,7 +41,7 @@ def concatenate(tup, axis=0):
         axis (int): The axis to join arrays along.
 
     Returns:
-        cupy.ndarray: Joined array.
+        clpy.ndarray: Joined array.
 
     .. seealso:: :func:`numpy.concatenate`
 
@@ -54,15 +54,15 @@ def dstack(tup):
 
     Args:
         tup (sequence of arrays): Arrays to be stacked. Each array is converted
-            by :func:`cupy.atleast_3d` before stacking.
+            by :func:`clpy.atleast_3d` before stacking.
 
     Returns:
-        cupy.ndarray: Stacked array.
+        clpy.ndarray: Stacked array.
 
     .. seealso:: :func:`numpy.dstack`
 
     """
-    return concatenate([cupy.atleast_3d(m) for m in tup], 2)
+    return concatenate([clpy.atleast_3d(m) for m in tup], 2)
 
 
 def hstack(tup):
@@ -76,12 +76,12 @@ def hstack(tup):
         tup (sequence of arrays): Arrays to be stacked.
 
     Returns:
-        cupy.ndarray: Stacked array.
+        clpy.ndarray: Stacked array.
 
     .. seealso:: :func:`numpy.hstack`
 
     """
-    arrs = [cupy.atleast_1d(a) for a in tup]
+    arrs = [clpy.atleast_1d(a) for a in tup]
     axis = 1
     if arrs[0].ndim == 1:
         axis = 0
@@ -97,15 +97,15 @@ def vstack(tup):
 
     Args:
         tup (sequence of arrays): Arrays to be stacked. Each array is converted
-            by :func:`cupy.atleast_2d` before stacking.
+            by :func:`clpy.atleast_2d` before stacking.
 
     Returns:
-        cupy.ndarray: Stacked array.
+        clpy.ndarray: Stacked array.
 
     .. seealso:: :func:`numpy.dstack`
 
     """
-    return concatenate([cupy.atleast_2d(m) for m in tup], 0)
+    return concatenate([clpy.atleast_2d(m) for m in tup], 0)
 
 
 def stack(tup, axis=0):
@@ -116,7 +116,7 @@ def stack(tup, axis=0):
         axis (int): Axis along which the arrays are stacked.
 
     Returns:
-        cupy.ndarray: Stacked array.
+        clpy.ndarray: Stacked array.
 
     .. seealso:: :func:`numpy.stack`
     """
@@ -124,7 +124,7 @@ def stack(tup, axis=0):
         if not (-x.ndim <= axis < x.ndim):
             raise core.core._AxisError(
                 'axis {} out of bounds [0, {})'.format(axis, x.ndim))
-    return concatenate([cupy.expand_dims(x, axis) for x in tup], axis)
+    return concatenate([clpy.expand_dims(x, axis) for x in tup], axis)
 
 
 def _get_positive_axis(ndim, axis):

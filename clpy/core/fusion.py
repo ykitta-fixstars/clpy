@@ -7,13 +7,13 @@ import warnings
 
 import numpy
 
-from cupy.core import core
-from cupy import creation
-from cupy import logic
-from cupy import math
-from cupy import sorting
-from cupy import statistics
-from cupy import util
+from clpy.core import core
+from clpy import creation
+from clpy import logic
+from clpy import math
+from clpy import sorting
+from clpy import statistics
+from clpy import util
 
 
 _thread_local = threading.local()
@@ -244,21 +244,23 @@ _kind_score = {
 _dtype_to_ctype = {
     numpy.dtype('float64'): 'double',
     numpy.dtype('float32'): 'float',
-    numpy.dtype('float16'): 'float16',
-    numpy.dtype('complex128'): 'complex<double>',
-    numpy.dtype('complex64'): 'complex<float>',
-    numpy.dtype('int64'): 'long long',
+    # numpy.dtype('float16'): 'half', # Extension type
+    # numpy.dtype('complex128'): 'complex<double>', # OpenCL does not support
+    # numpy.dtype('complex64'): 'complex<float>', # OpenCL does not support
+    numpy.dtype('int64'): 'long',
     numpy.dtype('int32'): 'int',
     numpy.dtype('int16'): 'short',
-    numpy.dtype('int8'): 'signed char',
-    numpy.dtype('uint64'): 'unsigned long long',
-    numpy.dtype('uint32'): 'unsigned int',
-    numpy.dtype('uint16'): 'unsigned short',
-    numpy.dtype('uint8'): 'unsigned char',
-    numpy.dtype('bool'): 'bool',
+    numpy.dtype('int8'): 'char',
+    numpy.dtype('uint64'): 'ulong',
+    numpy.dtype('uint32'): 'uint',
+    numpy.dtype('uint16'): 'ushort',
+    numpy.dtype('uint8'): 'uchar',
+    # OpenCL deos not support bool in kernel param
+    # but sizeof(numpy.bool) = 1 (same as uchar)
+    numpy.dtype('bool'): 'uchar',
 }
 
-_dtype_list = [numpy.dtype(_) for _ in '?bhilqBHILQefd']
+_dtype_list = [numpy.dtype(_) for _ in '?bhilqBHILQfd']
 
 
 def _const_to_str(val):
@@ -402,7 +404,9 @@ def _get_operation_code(op):
     code = ''.join('v%d_%d = v%d;\n' % (op.num, i, v.num)
                    for i, v in enumerate(op.in_vars))
     params = ['v%d_%d' % (op.num, i)
-              for i in six.moves.range(op.nin + op.nout)]
+              for i in six.moves.range(op.nin)]
+    params.extend(['&v%d_%d' % (op.num, i + op.nin)
+                   for i in six.moves.range(op.nout)])
     code += op.name + '(' + ', '.join(params) + ');\n'
     code += ''.join('v%d = v%d_%d;\n' %
                     (v.num, op.num, i + op.nin)
@@ -411,23 +415,39 @@ def _get_operation_code(op):
 
 
 def _get_submodule_code(op):
-    parameters = ', '.join('%s &%s' % (_dtype_to_ctype[t], name)
-                           for i, (name, t)
-                           in enumerate(zip(op.param_names, op.types)))
+    parameters = ['const %s %s' % (_dtype_to_ctype[t], name)
+                  for (name, t)
+                  in zip(op.param_names[:len(op.in_vars)],
+                         op.types[:len(op.in_vars)])]
+    out_get = []
+    out_set = []
+    for (name, t) in zip(op.param_names[len(op.in_vars):],
+                         op.types[len(op.in_vars):]):
+        t = _dtype_to_ctype[t]
+        parameters.append('%s* const __restrict__ %s_ptr' % (t, name))
+        out_get.append("{1} {0} = *{0}_ptr".format(name, t))
+        out_set.append("*{0}_ptr = {0}".format(name))
+    parameters = ', '.join(parameters)
+    out_get = ';\n'.join(out_get)
+    out_set = ';\n'.join(out_set)
     typedecl = ''.join(('typedef %s in%d_type;\n' % (_dtype_to_ctype[t], i))
                        for i, t in enumerate(op.types[:op.nin]))
     typedecl += ''.join(('typedef %s out%d_type;\n' % (_dtype_to_ctype[t], i))
                         for i, t in enumerate(op.types[op.nin:]))
     module_code = string.Template('''
-    __device__ void ${name}(${parameters}) {
+    void ${name}(${parameters}) {
       ${typedecl}
+      ${out_get};
       ${operation};
+      ${out_set};
     }
     ''').substitute(
         name=op.name,
         parameters=parameters,
         operation=op.operation,
-        typedecl=typedecl)
+        typedecl=typedecl,
+        out_get=out_get,
+        out_set=out_set)
     return module_code + '\n'
 
 
@@ -608,9 +628,9 @@ class Fusion(object):
                 self.name,
                 ', '.join(repr(type(_)) for _ in args)))
 
-        def is_cupy_data(a):
+        def is_clpy_data(a):
             return isinstance(a, (core.ndarray, numpy.generic))
-        if builtins.all(is_cupy_data(_) for _ in args):
+        if builtins.all(is_clpy_data(_) for _ in args):
             types = [_.dtype for _ in args]
             key = tuple(types)
             if key not in self._memo:
@@ -656,7 +676,7 @@ def fuse(*args, **kwargs):
         kernel_name (str): Name of the fused kernel function.
             If omitted, the name of the decorated function is used.
     """
-    util.experimental('cupy.core.fusion')
+    util.experimental('clpy.core.fusion')
 
     def wrapper(
             f, input_num=None, reduce=None, post_map=lambda x: x,
@@ -672,23 +692,23 @@ def fuse(*args, **kwargs):
 
 class ufunc(core.ufunc):
 
-    def __init__(self, fusion_op, cupy_op, numpy_op):
+    def __init__(self, fusion_op, clpy_op, numpy_op):
         self.name = fusion_op.name
         self.nin = fusion_op.nin
         self.nout = fusion_op.nout
         self.nargs = fusion_op.nargs
         self._ops = fusion_op._ops
         self._preamble = fusion_op._preamble
-        self.__doc__ = cupy_op.__doc__
+        self.__doc__ = clpy_op.__doc__
         self._params = fusion_op._params
         self._routine_cache = fusion_op._routine_cache
 
         self._fusion_op = fusion_op
-        self._cupy_op = cupy_op
+        self._clpy_op = clpy_op
         self._numpy_op = numpy_op
 
     def __repr__(self):
-        return repr(self._cupy_op)
+        return repr(self._clpy_op)
 
     def __call__(self, *args, **kwargs):
         in_fusion = getattr(_thread_local, 'in_fusion', False)
@@ -698,14 +718,14 @@ class ufunc(core.ufunc):
             elif builtins.any(isinstance(_, numpy.ndarray) for _ in args):
                 return self._numpy_op(*args, **kwargs)
 
-        return self._cupy_op(*args, **kwargs)
+        return self._clpy_op(*args, **kwargs)
 
     __doc__ = core.ufunc.__doc__
     __call__.__doc__ = core.ufunc.__call__.__doc__
 
 
-def _create_ufunc(cupy_ufunc, numpy_ufunc):
-    return ufunc(cupy_ufunc, cupy_ufunc, numpy_ufunc)
+def _create_ufunc(clpy_ufunc, numpy_ufunc):
+    return ufunc(clpy_ufunc, clpy_ufunc, numpy_ufunc)
 
 
 where = ufunc(sorting.search._where_ufunc,
@@ -809,16 +829,16 @@ fmin = _create_ufunc(math.misc.fmin, numpy.fmin)
 
 class reduction(object):
 
-    def __init__(self, cupy_op, numpy_op):
-        self._cupy_op = cupy_op
+    def __init__(self, clpy_op, numpy_op):
+        self._clpy_op = clpy_op
         self._numpy_op = numpy_op
-        self.__doc__ = cupy_op.__doc__
+        self.__doc__ = clpy_op.__doc__
 
     def __call__(self, *args, **kwargs):
         if builtins.any(type(_) == numpy.ndarray for _ in args):
             return self._numpy_op(*args, **kwargs)
         else:
-            return self._cupy_op(*args, **kwargs)
+            return self._clpy_op(*args, **kwargs)
 
 
 all = reduction(logic.truth.all, numpy.all)

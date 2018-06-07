@@ -1,6 +1,6 @@
 #pragma once
 
-#include <cupy/complex/complex.h>
+#include <clpy/complex/complex.h>
 
 using thrust::complex;
 using thrust::conj;

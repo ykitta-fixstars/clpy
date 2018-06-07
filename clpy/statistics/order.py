@@ -1,7 +1,7 @@
 import warnings
 
-from cupy import core
-from cupy.logic import content
+from clpy import core
+from clpy.logic import content
 
 
 def amin(a, axis=None, out=None, keepdims=False, dtype=None):
@@ -13,16 +13,16 @@ def amin(a, axis=None, out=None, keepdims=False, dtype=None):
        NaN.
 
     Args:
-        a (cupy.ndarray): Array to take the minimum.
+        a (clpy.ndarray): Array to take the minimum.
         axis (int): Along which axis to take the minimum. The flattened array
             is used by default.
-        out (cupy.ndarray): Output array.
+        out (clpy.ndarray): Output array.
         keepdims (bool): If ``True``, the axis is remained as an axis of
             size one.
         dtype: Data type specifier.
 
     Returns:
-        cupy.ndarray: The minimum of ``a``, along the axis if specified.
+        clpy.ndarray: The minimum of ``a``, along the axis if specified.
 
     .. seealso:: :func:`numpy.amin`
 
@@ -40,16 +40,16 @@ def amax(a, axis=None, out=None, keepdims=False, dtype=None):
        NaN.
 
     Args:
-        a (cupy.ndarray): Array to take the maximum.
+        a (clpy.ndarray): Array to take the maximum.
         axis (int): Along which axis to take the maximum. The flattened array
             is used by default.
-        out (cupy.ndarray): Output array.
+        out (clpy.ndarray): Output array.
         keepdims (bool): If ``True``, the axis is remained as an axis of
             size one.
         dtype: Data type specifier.
 
     Returns:
-        cupy.ndarray: The maximum of ``a``, along the axis if specified.
+        clpy.ndarray: The maximum of ``a``, along the axis if specified.
 
     .. seealso:: :func:`numpy.amax`
 
@@ -65,15 +65,15 @@ def nanmin(a, axis=None, out=None, keepdims=False):
     is raised and NaN is returned.
 
     Args:
-        a (cupy.ndarray): Array to take the minimum.
+        a (clpy.ndarray): Array to take the minimum.
         axis (int): Along which axis to take the minimum. The flattened array
             is used by default.
-        out (cupy.ndarray): Output array.
+        out (clpy.ndarray): Output array.
         keepdims (bool): If ``True``, the axis is remained as an axis of
             size one.
 
     Returns:
-        cupy.ndarray: The minimum of ``a``, along the axis if specified.
+        clpy.ndarray: The minimum of ``a``, along the axis if specified.
 
     .. seealso:: :func:`numpy.nanmin`
 
@@ -91,15 +91,15 @@ def nanmax(a, axis=None, out=None, keepdims=False):
     is raised and NaN is returned.
 
     Args:
-        a (cupy.ndarray): Array to take the maximum.
+        a (clpy.ndarray): Array to take the maximum.
         axis (int): Along which axis to take the maximum. The flattened array
             is used by default.
-        out (cupy.ndarray): Output array.
+        out (clpy.ndarray): Output array.
         keepdims (bool): If ``True``, the axis is remained as an axis of
             size one.
 
     Returns:
-        cupy.ndarray: The maximum of ``a``, along the axis if specified.
+        clpy.ndarray: The maximum of ``a``, along the axis if specified.
 
     .. seealso:: :func:`numpy.nanmax`
 

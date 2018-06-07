@@ -2,8 +2,8 @@ import itertools
 import numpy
 import unittest
 
-import cupy
-from cupy import testing
+import clpy
+from clpy import testing
 
 
 @testing.gpu
@@ -12,13 +12,13 @@ class TestArithmetic(unittest.TestCase):
     _multiprocess_can_split_ = True
 
     @testing.for_all_dtypes()
-    @testing.numpy_cupy_allclose(atol=1e-5)
+    @testing.numpy_clpy_allclose(atol=1e-5)
     def check_unary(self, name, xp, dtype):
         a = testing.shaped_arange((2, 3), xp, dtype)
         return getattr(xp, name)(a)
 
     @testing.for_all_dtypes()
-    @testing.numpy_cupy_allclose(atol=1e-4)
+    @testing.numpy_clpy_allclose(atol=1e-4)
     def check_binary(self, name, xp, dtype, no_complex=False, no_bool=False):
         if no_complex and numpy.dtype(dtype).kind == 'c':
             return dtype(True)
@@ -29,27 +29,27 @@ class TestArithmetic(unittest.TestCase):
         return getattr(xp, name)(a, b)
 
     @testing.for_dtypes(['?', 'b', 'h', 'i', 'q', 'e', 'f', 'd', 'F', 'D'])
-    @testing.numpy_cupy_allclose(atol=1e-5)
+    @testing.numpy_clpy_allclose(atol=1e-5)
     def check_unary_negative(self, name, xp, dtype):
         a = xp.array([-3, -2, -1, 1, 2, 3], dtype=dtype)
         return getattr(xp, name)(a)
 
     @testing.for_dtypes(['?', 'b', 'h', 'i', 'q', 'e', 'f', 'd', 'F', 'D'])
-    @testing.numpy_cupy_allclose(atol=1e-4)
+    @testing.numpy_clpy_allclose(atol=1e-4)
     def check_binary_negative(self, name, xp, dtype):
         a = xp.array([-3, -2, -1, 1, 2, 3], dtype=dtype)
         b = xp.array([4, 3, 2, 1, -1, -2], dtype=dtype)
         return getattr(xp, name)(a, b)
 
     @testing.for_dtypes(['?', 'b', 'h', 'i', 'q', 'e', 'f', 'd'])
-    @testing.numpy_cupy_allclose(atol=1e-4)
+    @testing.numpy_clpy_allclose(atol=1e-4)
     def check_binary_negative_no_complex(self, name, xp, dtype):
         a = xp.array([-3, -2, -1, 1, 2, 3], dtype=dtype)
         b = xp.array([4, 3, 2, 1, -1, -2], dtype=dtype)
         return getattr(xp, name)(a, b)
 
     @testing.for_dtypes(['e', 'f', 'd'])
-    @testing.numpy_cupy_allclose(atol=1e-5)
+    @testing.numpy_clpy_allclose(atol=1e-5)
     def check_binary_negative_float(self, name, xp, dtype):
         a = xp.array([-3, -2, -1, 1, 2, 3], dtype=dtype)
         b = xp.array([4, 3, 2, 1, -1, -2], dtype=dtype)
@@ -57,10 +57,10 @@ class TestArithmetic(unittest.TestCase):
 
     def check_raises_with_numpy_input(self, nargs, name):
         # Check TypeError is raised if numpy.ndarray is given as input
-        func = getattr(cupy, name)
-        for input_xp_list in itertools.product(*[[numpy, cupy]] * nargs):
-            if all(xp is cupy for xp in input_xp_list):
-                # We don't test all-cupy-array inputs here
+        func = getattr(clpy, name)
+        for input_xp_list in itertools.product(*[[numpy, clpy]] * nargs):
+            if all(xp is clpy for xp in input_xp_list):
+                # We don't test all-clpy-array inputs here
                 continue
             arys = [xp.array([2, -3]) for xp in input_xp_list]
             with self.assertRaises(TypeError):
@@ -128,7 +128,7 @@ class TestArithmetic(unittest.TestCase):
             self.check_binary_negative_no_complex('fmod')
 
     @testing.for_float_dtypes()
-    @testing.numpy_cupy_allclose()
+    @testing.numpy_clpy_allclose()
     def test_modf(self, xp, dtype):
         a = xp.array([-2.5, -1.5, -0.5, 0, 0.5, 1.5, 2.5], dtype=dtype)
         b, c = xp.modf(a)

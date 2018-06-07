@@ -1,8 +1,8 @@
 import six
 import warnings
 
-import cupy
-from cupy import core
+import clpy
+from clpy import core
 
 
 zip_longest = six.moves.zip_longest
@@ -26,7 +26,7 @@ def _atleast_nd_helper(n, arys):
 
     res = []
     for a in arys:
-        if isinstance(a, cupy.ndarray):
+        if isinstance(a, clpy.ndarray):
             if a.ndim < n:
                 new_shape = _atleast_nd_shape_map[(n, a.ndim)](a.shape)
                 a = a.reshape(*new_shape)
@@ -44,7 +44,7 @@ def atleast_1d(*arys):
 
     Args:
         arys (tuple of arrays): Arrays to be converted. All arguments must be
-            :class:`cupy.ndarray` objects. Only zero-dimensional array is
+            :class:`clpy.ndarray` objects. Only zero-dimensional array is
             affected.
 
     Returns:
@@ -65,7 +65,7 @@ def atleast_2d(*arys):
 
     Args:
         arys (tuple of arrays): Arrays to be converted. All arguments must be
-            :class:`cupy.ndarray` objects.
+            :class:`clpy.ndarray` objects.
 
     Returns:
         If there are only one input, then it returns its converted version.
@@ -91,7 +91,7 @@ def atleast_3d(*arys):
 
     Args:
         arys (tuple of arrays): Arrays to be converted. All arguments must be
-            :class:`cupy.ndarray` objects.
+            :class:`clpy.ndarray` objects.
 
     Returns:
         If there are only one input, then it returns its converted version.
@@ -125,11 +125,11 @@ def broadcast_to(array, shape):
     """Broadcast an array to a given shape.
 
     Args:
-        array (cupy.ndarray): Array to broadcast.
+        array (clpy.ndarray): Array to broadcast.
         shape (tuple of int): The shape of the desired array.
 
     Returns:
-        cupy.ndarray: Broadcasted view.
+        clpy.ndarray: Broadcasted view.
 
     .. seealso:: :func:`numpy.broadcast_to`
 
@@ -141,11 +141,11 @@ def expand_dims(a, axis):
     """Expands given arrays.
 
     Args:
-        a (cupy.ndarray): Array to be expanded.
+        a (clpy.ndarray): Array to be expanded.
         axis (int): Position where new axis is to be inserted.
 
     Returns:
-        cupy.ndarray: The number of dimensions is one greater than that of
+        clpy.ndarray: The number of dimensions is one greater than that of
             the input array.
 
     .. seealso:: :func:`numpy.expand_dims`
@@ -169,13 +169,13 @@ def squeeze(a, axis=None):
     """Removes size-one axes from the shape of an array.
 
     Args:
-        a (cupy.ndarray): Array to be reshaped.
+        a (clpy.ndarray): Array to be reshaped.
         axis (int or tuple of ints): Axes to be removed. This function removes
             all size-one axes by default. If one of the specified axes is not
             of size one, an exception is raised.
 
     Returns:
-        cupy.ndarray: An array without (specified) size-one axes.
+        clpy.ndarray: An array without (specified) size-one axes.
 
     .. seealso:: :func:`numpy.squeeze`
 

@@ -4,8 +4,8 @@ import atexit
 import functools
 import warnings
 
-import cupy
-from cupy.cuda cimport device
+import clpy
+from clpy.backend cimport device
 
 
 cdef list _memos = []
@@ -30,8 +30,9 @@ def memoize(bint for_each_device=False):
         def ret(*args, **kwargs):
             cdef int id = -1
             cdef dict m = memo
-            if for_each_device:
-                id = device.get_device_id()
+            # TODO(LWisteria): implement me for multi device environment
+#            if for_each_device:
+#                id = device.get_device_id()
             arg_key = (id, args, frozenset(kwargs.items()))
             if arg_key in m:
                 result = m[arg_key]
@@ -59,7 +60,7 @@ def experimental(api_name):
     this function. When users call experimental APIs, :class:`FutureWarning`
     is issued.
     The presentation of :class:`FutureWarning` is disabled by setting
-    ``cupy.disable_experimental_warning`` to ``True``,
+    ``clpy.disable_experimental_warning`` to ``True``,
     which is ``False`` by default.
 
     The basic usage is to call it in the function or method we want to
@@ -85,10 +86,10 @@ def experimental(api_name):
 
     .. testcode::
 
-        from cupy import util
+        from clpy import util
 
         def f(x):
-            util.experimental('cupy.foo.bar.f')
+            util.experimental('clpy.foo.bar.f')
             # concrete implementation of f follows
 
         f(1)
@@ -96,7 +97,7 @@ def experimental(api_name):
     .. testoutput::
         :options: +ELLIPSIS, +NORMALIZE_WHITESPACE
 
-        ... FutureWarning: cupy.foo.bar.f is experimental. \
+        ... FutureWarning: clpy.foo.bar.f is experimental. \
 The interface can change in the future. ...
 
     We can also make a whole class experimental. In that case,
@@ -106,14 +107,14 @@ The interface can change in the future. ...
 
         class C():
             def __init__(self):
-              util.experimental('cupy.foo.C')
+              util.experimental('clpy.foo.C')
 
         C()
 
     .. testoutput::
         :options: +ELLIPSIS, +NORMALIZE_WHITESPACE
 
-        ... FutureWarning: cupy.foo.C is experimental. \
+        ... FutureWarning: clpy.foo.C is experimental. \
 The interface can change in the future. ...
 
     If we want to mark ``__init__`` method only, rather than class itself,
@@ -141,13 +142,13 @@ The interface can change in the future. ...
 
         def g(x, experimental_arg=None):
             if experimental_arg is not None:
-                util.experimental('experimental_arg of cupy.foo.g')
+                util.experimental('experimental_arg of clpy.foo.g')
 
     Args:
         api_name(str): The name of an API marked as experimental.
     """
 
-    if not cupy.disable_experimental_feature_warning:
+    if not clpy.disable_experimental_feature_warning:
         warnings.warn('{} is experimental. '
                       'The interface can change in the future.'.format(
                           api_name),

@@ -2,7 +2,7 @@ import unittest
 
 import numpy
 
-from cupy import testing
+from clpy import testing
 
 
 @testing.gpu
@@ -11,133 +11,133 @@ class TestSearch(unittest.TestCase):
     _multiprocess_can_split_ = True
 
     @testing.for_all_dtypes(no_complex=True)
-    @testing.numpy_cupy_allclose()
+    @testing.numpy_clpy_allclose()
     def test_argmax_all(self, xp, dtype):
         a = testing.shaped_random((2, 3), xp, dtype)
         return a.argmax()
 
     @testing.for_all_dtypes(no_complex=True)
-    @testing.numpy_cupy_allclose()
+    @testing.numpy_clpy_allclose()
     def test_external_argmax_all(self, xp, dtype):
         a = testing.shaped_random((2, 3), xp, dtype)
         return xp.argmax(a)
 
     @testing.for_all_dtypes(no_complex=True)
-    @testing.numpy_cupy_allclose(accept_error=ValueError)
+    @testing.numpy_clpy_allclose(accept_error=ValueError)
     def test_argmax_nan(self, xp, dtype):
         a = xp.array([float('nan'), -1, 1], dtype)
         return a.argmax()
 
     @testing.for_all_dtypes(no_complex=True)
-    @testing.numpy_cupy_allclose()
+    @testing.numpy_clpy_allclose()
     def test_argmax_axis_large(self, xp, dtype):
         a = testing.shaped_random((3, 1000), xp, dtype)
         return a.argmax(axis=0)
 
     @testing.for_all_dtypes(no_complex=True)
-    @testing.numpy_cupy_allclose()
+    @testing.numpy_clpy_allclose()
     def test_external_argmax_axis_large(self, xp, dtype):
         a = testing.shaped_random((3, 1000), xp, dtype)
         return xp.argmax(a, axis=0)
 
     @testing.for_all_dtypes(no_complex=True)
-    @testing.numpy_cupy_allclose()
+    @testing.numpy_clpy_allclose()
     def test_argmax_axis0(self, xp, dtype):
         a = testing.shaped_random((2, 3, 4), xp, dtype)
         return a.argmax(axis=0)
 
     @testing.for_all_dtypes(no_complex=True)
-    @testing.numpy_cupy_allclose()
+    @testing.numpy_clpy_allclose()
     def test_argmax_axis1(self, xp, dtype):
         a = testing.shaped_random((2, 3, 4), xp, dtype)
         return a.argmax(axis=1)
 
     @testing.for_all_dtypes(no_complex=True)
-    @testing.numpy_cupy_allclose()
+    @testing.numpy_clpy_allclose()
     def test_argmax_axis2(self, xp, dtype):
         a = testing.shaped_random((2, 3, 4), xp, dtype)
         return a.argmax(axis=2)
 
     @testing.for_all_dtypes(no_complex=True)
-    @testing.numpy_cupy_raises(accept_error=ValueError)
+    @testing.numpy_clpy_raises(accept_error=ValueError)
     def test_argmax_zero_size(self, xp, dtype):
         a = testing.shaped_random((0, 1), xp, dtype)
         return a.argmax()
 
     @testing.for_all_dtypes(no_complex=True)
-    @testing.numpy_cupy_raises(accept_error=ValueError)
+    @testing.numpy_clpy_raises(accept_error=ValueError)
     def test_argmax_zero_size_axis0(self, xp, dtype):
         a = testing.shaped_random((0, 1), xp, dtype)
         return a.argmax(axis=0)
 
     @testing.for_all_dtypes(no_complex=True)
-    @testing.numpy_cupy_allclose()
+    @testing.numpy_clpy_allclose()
     def test_argmax_zero_size_axis1(self, xp, dtype):
         a = testing.shaped_random((0, 1), xp, dtype)
         return a.argmax(axis=1)
 
     @testing.for_all_dtypes(no_complex=True)
-    @testing.numpy_cupy_allclose()
+    @testing.numpy_clpy_allclose()
     def test_argmin_all(self, xp, dtype):
         a = testing.shaped_random((2, 3), xp, dtype)
         return a.argmin()
 
     @testing.for_all_dtypes(no_complex=True)
-    @testing.numpy_cupy_allclose(accept_error=ValueError)
+    @testing.numpy_clpy_allclose(accept_error=ValueError)
     def test_argmin_nan(self, xp, dtype):
         a = xp.array([float('nan'), -1, 1], dtype)
         return a.argmin()
 
     @testing.for_all_dtypes(no_complex=True)
-    @testing.numpy_cupy_allclose()
+    @testing.numpy_clpy_allclose()
     def test_external_argmin_all(self, xp, dtype):
         a = testing.shaped_random((2, 3), xp, dtype)
         return xp.argmin(a)
 
     @testing.for_all_dtypes(no_complex=True)
-    @testing.numpy_cupy_allclose()
+    @testing.numpy_clpy_allclose()
     def test_argmin_axis_large(self, xp, dtype):
         a = testing.shaped_random((3, 1000), xp, dtype)
         return a.argmin(axis=0)
 
     @testing.for_all_dtypes(no_complex=True)
-    @testing.numpy_cupy_allclose()
+    @testing.numpy_clpy_allclose()
     def test_external_argmin_axis_large(self, xp, dtype):
         a = testing.shaped_random((3, 1000), xp, dtype)
         return xp.argmin(a, axis=0)
 
     @testing.for_all_dtypes(no_complex=True)
-    @testing.numpy_cupy_allclose()
+    @testing.numpy_clpy_allclose()
     def test_argmin_axis0(self, xp, dtype):
         a = testing.shaped_random((2, 3, 4), xp, dtype)
         return a.argmin(axis=0)
 
     @testing.for_all_dtypes(no_complex=True)
-    @testing.numpy_cupy_allclose()
+    @testing.numpy_clpy_allclose()
     def test_argmin_axis1(self, xp, dtype):
         a = testing.shaped_random((2, 3, 4), xp, dtype)
         return a.argmin(axis=1)
 
     @testing.for_all_dtypes(no_complex=True)
-    @testing.numpy_cupy_allclose()
+    @testing.numpy_clpy_allclose()
     def test_argmin_axis2(self, xp, dtype):
         a = testing.shaped_random((2, 3, 4), xp, dtype)
         return a.argmin(axis=2)
 
     @testing.for_all_dtypes(no_complex=True)
-    @testing.numpy_cupy_raises(accept_error=ValueError)
+    @testing.numpy_clpy_raises(accept_error=ValueError)
     def test_argmin_zero_size(self, xp, dtype):
         a = testing.shaped_random((0, 1), xp, dtype)
         return a.argmin()
 
     @testing.for_all_dtypes(no_complex=True)
-    @testing.numpy_cupy_raises(accept_error=ValueError)
+    @testing.numpy_clpy_raises(accept_error=ValueError)
     def test_argmin_zero_size_axis0(self, xp, dtype):
         a = testing.shaped_random((0, 1), xp, dtype)
         return a.argmin(axis=0)
 
     @testing.for_all_dtypes(no_complex=True)
-    @testing.numpy_cupy_allclose()
+    @testing.numpy_clpy_allclose()
     def test_argmin_zero_size_axis1(self, xp, dtype):
         a = testing.shaped_random((0, 1), xp, dtype)
         return a.argmin(axis=1)
@@ -154,7 +154,7 @@ class TestWhereTwoArrays(unittest.TestCase):
 
     @testing.for_all_dtypes_combination(
         names=['cond_type', 'x_type', 'y_type'], no_complex=True)
-    @testing.numpy_cupy_allclose()
+    @testing.numpy_clpy_allclose()
     def test_where_two_arrays(self, xp, cond_type, x_type, y_type):
         m = testing.shaped_random(self.cond_shape, xp, xp.bool_)
         # Almost all values of a matrix `shaped_random` makes are not zero.
@@ -175,7 +175,7 @@ class TestWhereTwoArrays(unittest.TestCase):
 class TestWhereCond(unittest.TestCase):
 
     @testing.for_all_dtypes(no_complex=True)
-    @testing.numpy_cupy_array_list_equal()
+    @testing.numpy_clpy_array_list_equal()
     def test_where_cond(self, xp, dtype):
         m = testing.shaped_random(self.cond_shape, xp, xp.bool_)
         cond = testing.shaped_random(self.cond_shape, xp, dtype) * m
@@ -185,7 +185,7 @@ class TestWhereCond(unittest.TestCase):
 @testing.gpu
 class TestWhereError(unittest.TestCase):
 
-    @testing.numpy_cupy_raises()
+    @testing.numpy_clpy_raises()
     def test_one_argument(self, xp):
         cond = testing.shaped_random((3, 4), xp, dtype=xp.bool_)
         x = testing.shaped_random((2, 3, 4), xp, xp.int32)
@@ -204,7 +204,7 @@ class TestWhereError(unittest.TestCase):
 class TestNonzero(unittest.TestCase):
 
     @testing.for_all_dtypes(no_complex=True)
-    @testing.numpy_cupy_array_list_equal()
+    @testing.numpy_clpy_array_list_equal()
     def test_nonzero(self, xp, dtype):
         array = xp.array(self.array, dtype=dtype)
         return xp.nonzero(array)
@@ -222,7 +222,7 @@ class TestNonzero(unittest.TestCase):
 class TestFlatNonzero(unittest.TestCase):
 
     @testing.for_all_dtypes(no_complex=True)
-    @testing.numpy_cupy_array_equal()
+    @testing.numpy_clpy_array_equal()
     def test_flatnonzero(self, xp, dtype):
         array = xp.array(self.array, dtype=dtype)
         return xp.flatnonzero(array)

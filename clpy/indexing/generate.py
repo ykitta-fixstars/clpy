@@ -6,16 +6,16 @@
 import numpy
 import six
 
-import cupy
-from cupy import core
-from cupy.creation import from_data
-from cupy.manipulation import join
+import clpy
+from clpy import core
+from clpy.creation import from_data
+from clpy.manipulation import join
 
 
 class AxisConcatenator(object):
     """Translates slice objects to concatenation along an axis.
 
-    For detailed documentation on usage, see :func:`cupy.r_`.
+    For detailed documentation on usage, see :func:`clpy.r_`.
     This implementation is partially borrowed from NumPy's one.
 
     """
@@ -93,7 +93,7 @@ class CClass(AxisConcatenator):
 c_ = CClass()
 """Translates slice objects to concatenation along the second axis.
 
-This is a CuPy object that corresponds to :func:`cupy.r_`, which is
+This is a CuPy object that corresponds to :func:`clpy.r_`, which is
 useful because of its common occurrence. In particular, arrays will be
 stacked along their last axis after being upgraded to at least 2-D with
 1's post-pended to the shape (column vectors made out of 1-D arrays).
@@ -106,15 +106,15 @@ Args:
     Not a function, so takes no parameters
 
 Returns:
-    cupy.ndarray: Joined array.
+    clpy.ndarray: Joined array.
 
 .. seealso:: :func:`numpy.c_`
 
 Examples
 --------
->>> a = cupy.array([[1, 2, 3]], dtype=np.int32)
->>> b = cupy.array([[4, 5, 6]], dtype=np.int32)
->>> cupy.c_[a, 0, 0, b]
+>>> a = clpy.array([[1, 2, 3]], dtype=np.int32)
+>>> b = clpy.array([[4, 5, 6]], dtype=np.int32)
+>>> clpy.c_[a, 0, 0, b]
 array([[1, 2, 3, 0, 0, 4, 5, 6]], dtype=int32)
 
 """
@@ -145,15 +145,15 @@ Args:
     Not a function, so takes no parameters
 
 Returns:
-    cupy.ndarray: Joined array.
+    clpy.ndarray: Joined array.
 
 .. seealso:: :func:`numpy.r_`
 
 Examples
 --------
->>> a = cupy.array([1, 2, 3], dtype=np.int32)
->>> b = cupy.array([4, 5, 6], dtype=np.int32)
->>> cupy.r_[a, 0, 0, b]
+>>> a = clpy.array([1, 2, 3], dtype=np.int32)
+>>> b = clpy.array([4, 5, 6], dtype=np.int32)
+>>> clpy.r_[a, 0, 0, b]
 array([1, 2, 3, 0, 0, 4, 5, 6], dtype=int32)
 
 """
@@ -176,7 +176,7 @@ def indices(dimensions, dtype=int):
 
     Examples
     --------
-    >>> grid = cupy.indices((2, 3))
+    >>> grid = clpy.indices((2, 3))
     >>> grid.shape
     (2, 2, 3)
     >>> grid[0]        # row indices
@@ -192,9 +192,9 @@ def indices(dimensions, dtype=int):
     dimensions = tuple(dimensions)
     N = len(dimensions)
     shape = (1,) * N
-    res = cupy.empty((N,) + dimensions, dtype=dtype)
+    res = clpy.empty((N,) + dimensions, dtype=dtype)
     for i, dim in enumerate(dimensions):
-        res[i] = cupy.arange(dim, dtype=dtype).reshape(
+        res[i] = clpy.arange(dim, dtype=dtype).reshape(
             shape[:i] + (dim,) + shape[i + 1:]
         )
     return res
@@ -209,7 +209,7 @@ def ix_(*args):
     N dimensions.
 
     Using `ix_` one can quickly construct index arrays that will index
-    the cross product. ``a[cupy.ix_([1,3],[2,5])]`` returns the array
+    the cross product. ``a[clpy.ix_([1,3],[2,5])]`` returns the array
     ``[[a[1,2] a[1,5]], [a[3,2] a[3,5]]]``.
 
     Args:
@@ -222,11 +222,11 @@ def ix_(*args):
 
     Examples
     --------
-    >>> a = cupy.arange(10).reshape(2, 5)
+    >>> a = clpy.arange(10).reshape(2, 5)
     >>> a
     array([[0, 1, 2, 3, 4],
            [5, 6, 7, 8, 9]])
-    >>> ixgrid = cupy.ix_([0,1], [2,4])
+    >>> ixgrid = clpy.ix_([0,1], [2,4])
     >>> ixgrid
     (array([[0],
            [1]]), array([[2, 4]]))
@@ -243,7 +243,7 @@ def ix_(*args):
         if new.size == 0:
             # Explicitly type empty arrays to avoid float default
             new = new.astype(numpy.intp)
-        if cupy.issubdtype(new.dtype, cupy.bool_):
+        if clpy.issubdtype(new.dtype, clpy.bool_):
             new, = new.nonzero()
         new = new.reshape((1,) * k + (new.size,) + (1,) * (nd - k - 1))
         out.append(new)

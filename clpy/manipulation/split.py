@@ -1,16 +1,16 @@
 import numpy
 
-from cupy import core
+from clpy import core
 
 
 def array_split(ary, indices_or_sections, axis=0):
     """Splits an array into multiple sub arrays along a given axis.
 
-    This function is almost equivalent to :func:`cupy.split`. The only
+    This function is almost equivalent to :func:`clpy.split`. The only
     difference is that this function allows an integer sections that does not
     evenly divide the axis.
 
-    .. seealso:: :func:`cupy.split` for more detail, :func:`numpy.array_split`
+    .. seealso:: :func:`clpy.split` for more detail, :func:`numpy.array_split`
 
     """
     return core.array_split(ary, indices_or_sections, axis)
@@ -21,7 +21,7 @@ def dsplit(ary, indices_or_sections):
 
     This is equivalent to ``split`` with ``axis=2``.
 
-    .. seealso:: :func:`cupy.split` for more detail, :func:`numpy.dsplit`
+    .. seealso:: :func:`clpy.split` for more detail, :func:`numpy.dsplit`
 
     """
     if ary.ndim <= 2:
@@ -35,7 +35,7 @@ def hsplit(ary, indices_or_sections):
     This is equivalent to ``split`` with ``axis=0`` if ``ary`` has one
     dimension, and otherwise that with ``axis=1``.
 
-    .. seealso:: :func:`cupy.split` for more detail, :func:`numpy.hsplit`
+    .. seealso:: :func:`clpy.split` for more detail, :func:`numpy.hsplit`
 
     """
     if ary.ndim == 0:
@@ -50,7 +50,7 @@ def split(ary, indices_or_sections, axis=0):
     """Splits an array into multiple sub arrays along a given axis.
 
     Args:
-        ary (cupy.ndarray): Array to split.
+        ary (clpy.ndarray): Array to split.
         indices_or_sections (int or sequence of ints): A value indicating how
             to divide the axis. If it is an integer, then is treated as the
             number of sections, and the axis is evenly divided. Otherwise,
@@ -83,7 +83,7 @@ def vsplit(ary, indices_or_sections):
 
     This is equivalent to ``split`` with ``axis=0``.
 
-    .. seealso:: :func:`cupy.split` for more detail, :func:`numpy.dsplit`
+    .. seealso:: :func:`clpy.split` for more detail, :func:`numpy.dsplit`
 
     """
     if ary.ndim <= 1:

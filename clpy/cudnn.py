@@ -4,10 +4,10 @@ import threading
 import numpy
 import six
 
-import cupy
-from cupy.core import internal
-from cupy import cuda
-from cupy.cuda import cudnn
+import clpy
+from clpy.core import internal
+from clpy import cuda
+from clpy.cuda import cudnn
 
 
 _cudnn_version = cudnn.getVersion()
@@ -72,7 +72,7 @@ def create_tensor_descriptor(arr, format=cudnn.CUDNN_TENSOR_NCHW):
     desc = Descriptor(cudnn.createTensorDescriptor(),
                       cudnn.destroyTensorDescriptor)
     if not arr.flags.c_contiguous:
-        raise ValueError('cupy.cudnn supports c-contiguous arrays only')
+        raise ValueError('clpy.cudnn supports c-contiguous arrays only')
     data_type = get_data_type(arr.dtype)
     if arr.ndim == 4:
         cudnn.setTensor4dDescriptor(desc.value, format, data_type, *arr.shape)
@@ -100,7 +100,7 @@ def create_tensor_nd_descriptor(arr):
     desc = Descriptor(cudnn.createTensorDescriptor(),
                       cudnn.destroyTensorDescriptor)
     if not arr.flags.c_contiguous:
-        raise ValueError('cupy.cudnn supports c-contiguous arrays only')
+        raise ValueError('clpy.cudnn supports c-contiguous arrays only')
     data_type = get_data_type(arr.dtype)
     shape = arr.shape
     key = (data_type, shape)
@@ -215,8 +215,8 @@ def _as4darray(arr):
 
 
 def activation_forward(x, mode):
-    x = cupy.ascontiguousarray(x)
-    y = cupy.empty_like(x)
+    x = clpy.ascontiguousarray(x)
+    y = clpy.empty_like(x)
 
     dtype = 'd' if x.dtype == 'd' else 'f'
     one = numpy.array(1, dtype=dtype).ctypes
@@ -235,10 +235,10 @@ def activation_forward(x, mode):
 
 
 def activation_backward(x, y, gy, mode):
-    x = cupy.ascontiguousarray(x)
-    gy = cupy.ascontiguousarray(gy)
+    x = clpy.ascontiguousarray(x)
+    gy = clpy.ascontiguousarray(gy)
 
-    gx = cupy.empty_like(x)
+    gx = clpy.empty_like(x)
     dtype = 'd' if x.dtype == 'd' else 'f'
     one = numpy.array(1, dtype=dtype).ctypes
     zero = numpy.array(0, dtype=dtype).ctypes
@@ -319,7 +319,7 @@ def get_rnn_lin_layer_bias_params(
 
 def create_dropout_states(handle):
     state_size = cudnn.dropoutGetStatesSize(handle)
-    return cupy.empty((state_size,), dtype='b')
+    return clpy.empty((state_size,), dtype='b')
 
 
 def create_spatial_transformer_descriptor(sampler_type, dtype, nb_dims, dim_A):

@@ -1,12 +1,10 @@
-import cupy
-from cupy import cuda
-from cupy.cuda import cublas
-from cupy.cuda import device
-
-if cuda.cusolver_enabled:
-    from cupy.cuda import cusolver
+import clpy  # NOQA
+from clpy import backend  # NOQA
+# from clpy.backend import cublas
+from clpy.backend import device  # NOQA
 
 
+'''
 def _syevd(a, UPLO, with_eigen_vector):
     if UPLO not in ('L', 'U'):
         raise ValueError("UPLO argument must be 'L' or 'U'")
@@ -23,8 +21,8 @@ def _syevd(a, UPLO, with_eigen_vector):
     v = a.astype(dtype, order='F', copy=True)
 
     m, lda = a.shape
-    w = cupy.empty(m, dtype)
-    dev_info = cupy.empty((), 'i')
+    w = clpy.empty(m, dtype)
+    dev_info = clpy.empty((), 'i')
     handle = device.Device().cusolver_handle
 
     if with_eigen_vector:
@@ -38,22 +36,23 @@ def _syevd(a, UPLO, with_eigen_vector):
         uplo = cublas.CUBLAS_FILL_MODE_UPPER
 
     if dtype == 'f':
-        buffer_size = cupy.cuda.cusolver.ssyevd_bufferSize
-        syevd = cupy.cuda.cusolver.ssyevd
+        buffer_size = clpy.cuda.cusolver.ssyevd_bufferSize
+        syevd = clpy.cuda.cusolver.ssyevd
     elif dtype == 'd':
-        buffer_size = cupy.cuda.cusolver.dsyevd_bufferSize
-        syevd = cupy.cuda.cusolver.dsyevd
+        buffer_size = clpy.cuda.cusolver.dsyevd_bufferSize
+        syevd = clpy.cuda.cusolver.dsyevd
     else:
         raise RuntimeError('Only float and double are supported')
 
     work_size = buffer_size(
         handle, jobz, uplo, m, v.data.ptr, lda, w.data.ptr)
-    work = cupy.empty(work_size, dtype)
+    work = clpy.empty(work_size, dtype)
     syevd(
         handle, jobz, uplo, m, v.data.ptr, lda,
         w.data.ptr, work.data.ptr, work_size, dev_info.data.ptr)
 
     return w.astype(ret_type, copy=False), v.astype(ret_type, copy=False)
+'''
 
 
 # TODO(okuta): Implement eig
@@ -74,21 +73,19 @@ def eigh(a, UPLO='L'):
        CUDA >=8.0 is required.
 
     Args:
-        a (cupy.ndarray): A symmetric 2-D square matrix.
+        a (clpy.ndarray): A symmetric 2-D square matrix.
         UPLO (str): Select from ``'L'`` or ``'U'``. It specifies which
             part of ``a`` is used. ``'L'`` uses the lower triangular part of
             ``a``, and ``'U'`` uses the upper triangular part of ``a``.
     Returns:
-        tuple of :class:`~cupy.ndarray`:
+        tuple of :class:`~clpy.ndarray`:
             Returns a tuple ``(w, v)``. ``w`` contains eigenvalues and
             ``v`` contains eigenvectors. ``v[:, i]`` is an eigenvector
             corresponding to an eigenvalue ``w[i]``.
 
     .. seealso:: :func:`numpy.linalg.eigh`
     """
-    if not cuda.cusolver_enabled:
-        raise RuntimeError('Current cupy only supports cusolver in CUDA 8.0')
-    return _syevd(a, UPLO, True)
+    raise NotImplementedError("clpy does not support this")
 
 
 # TODO(okuta): Implement eigvals
@@ -98,7 +95,7 @@ def eigvalsh(a, UPLO='L'):
     """Calculates eigenvalues of a symmetric matrix.
 
     This method calculates eigenvalues a given symmetric matrix.
-    Note that :func:`cupy.linalg.eigh` calculates both eigenvalues and
+    Note that :func:`clpy.linalg.eigh` calculates both eigenvalues and
     eigenvectors.
 
     .. note::
@@ -110,16 +107,14 @@ def eigvalsh(a, UPLO='L'):
        CUDA >=8.0 is required.
 
     Args:
-        a (cupy.ndarray): A symmetric 2-D square matrix.
+        a (clpy.ndarray): A symmetric 2-D square matrix.
         UPLO (str): Select from ``'L'`` or ``'U'``. It specifies which
             part of ``a`` is used. ``'L'`` uses the lower triangular part of
             ``a``, and ``'U'`` uses the upper triangular part of ``a``.
     Returns:
-        cupy.ndarray:
+        clpy.ndarray:
             Returns eigenvalues as a vector.
 
     .. seealso:: :func:`numpy.linalg.eigvalsh`
     """
-    if not cuda.cusolver_enabled:
-        raise RuntimeError('Current cupy only supports cusolver in CUDA 8.0')
-    return _syevd(a, UPLO, False)[0]
+    raise NotImplementedError("clpy does not support this")

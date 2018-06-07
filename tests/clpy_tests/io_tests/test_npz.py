@@ -2,8 +2,8 @@ import unittest
 
 import six
 
-import cupy
-from cupy import testing
+import clpy
+from clpy import testing
 
 
 @testing.gpu
@@ -15,12 +15,12 @@ class TestNpz(unittest.TestCase):
     def test_save_load(self, dtype):
         a = testing.shaped_arange((2, 3, 4), dtype=dtype)
         sio = six.BytesIO()
-        cupy.save(sio, a)
+        clpy.save(sio, a)
         s = sio.getvalue()
         sio.close()
 
         sio = six.BytesIO(s)
-        b = cupy.load(sio)
+        b = clpy.load(sio)
         sio.close()
 
         testing.assert_array_equal(a, b)
@@ -36,7 +36,7 @@ class TestNpz(unittest.TestCase):
         sio.close()
 
         sio = six.BytesIO(s)
-        with cupy.load(sio) as d:
+        with clpy.load(sio) as d:
             b1 = d['arr_0']
             b2 = d['arr_1']
         sio.close()
@@ -45,10 +45,10 @@ class TestNpz(unittest.TestCase):
         testing.assert_array_equal(a2, b2)
 
     def test_savez(self):
-        self.check_savez(cupy.savez)
+        self.check_savez(clpy.savez)
 
     def test_savez_compressed(self):
-        self.check_savez(cupy.savez_compressed)
+        self.check_savez(clpy.savez_compressed)
 
     @testing.for_all_dtypes()
     def test_pickle(self, dtype):
@@ -67,7 +67,7 @@ class TestNpz(unittest.TestCase):
         sio.close()
 
         sio = six.BytesIO(s)
-        b = cupy.load(sio)
+        b = clpy.load(sio)
         sio.close()
 
         testing.assert_array_equal(a, b)

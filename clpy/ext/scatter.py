@@ -18,11 +18,11 @@ def scatter_add(a, slices, value):
     Example
     -------
     >>> import numpy
-    >>> import cupy
-    >>> a = cupy.zeros((6,), dtype=numpy.float32)
-    >>> i = cupy.array([1, 0, 1])
-    >>> v = cupy.array([1., 1., 1.])
-    >>> cupy.scatter_add(a, i, v);
+    >>> import clpy
+    >>> a = clpy.zeros((6,), dtype=numpy.float32)
+    >>> i = clpy.array([1, 0, 1])
+    >>> v = clpy.array([1., 1., 1.])
+    >>> clpy.scatter_add(a, i, v);
     >>> a
     array([ 1.,  2.,  0.,  0.,  0.,  0.], dtype=float32)
 
@@ -31,8 +31,8 @@ def scatter_add(a, slices, value):
         slices: It is integer, slices, ellipsis, numpy.newaxis,
             integer array-like, boolean array-like or tuple of them.
             It works for slices used for
-            :func:`cupy.ndarray.__getitem__` and
-            :func:`cupy.ndarray.__setitem__`.
+            :func:`clpy.ndarray.__getitem__` and
+            :func:`clpy.ndarray.__setitem__`.
         v (array-like): Values to increment ``a`` at referenced locations.
 
     .. note::

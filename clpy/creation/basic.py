@@ -1,4 +1,4 @@
-import cupy
+import clpy
 
 
 def empty(shape, dtype=float, order='C'):
@@ -11,12 +11,12 @@ def empty(shape, dtype=float, order='C'):
             (Fortran-style) order.
 
     Returns:
-        cupy.ndarray: A new array with elements not initialized.
+        clpy.ndarray: A new array with elements not initialized.
 
     .. seealso:: :func:`numpy.empty`
 
     """
-    return cupy.ndarray(shape, dtype=dtype, order=order)
+    return clpy.ndarray(shape, dtype=dtype, order=order)
 
 
 def empty_like(a, dtype=None):
@@ -25,11 +25,11 @@ def empty_like(a, dtype=None):
     This function currently does not support ``order`` and ``subok`` options.
 
     Args:
-        a (cupy.ndarray): Base array.
+        a (clpy.ndarray): Base array.
         dtype: Data type specifier. The data type of ``a`` is used by default.
 
     Returns:
-        cupy.ndarray: A new array with same shape and dtype of ``a`` with
+        clpy.ndarray: A new array with same shape and dtype of ``a`` with
         elements not initialized.
 
     .. seealso:: :func:`numpy.empty_like`
@@ -38,7 +38,7 @@ def empty_like(a, dtype=None):
     # TODO(beam2d): Support ordering option
     if dtype is None:
         dtype = a.dtype
-    return cupy.ndarray(a.shape, dtype=dtype)
+    return clpy.ndarray(a.shape, dtype=dtype)
 
 
 def eye(N, M=None, k=0, dtype=float):
@@ -53,7 +53,7 @@ def eye(N, M=None, k=0, dtype=float):
         dtype: Data type specifier.
 
     Returns:
-        cupy.ndarray: A 2-D array with given diagonals filled with ones and
+        clpy.ndarray: A 2-D array with given diagonals filled with ones and
         zeros elsewhere.
 
     .. seealso:: :func:`numpy.eye`
@@ -76,7 +76,7 @@ def identity(n, dtype=float):
         dtype: Data type specifier.
 
     Returns:
-        cupy.ndarray: A 2-D identity array.
+        clpy.ndarray: A 2-D identity array.
 
     .. seealso:: :func:`numpy.identity`
 
@@ -94,13 +94,13 @@ def ones(shape, dtype=float):
         dtype: Data type specifier.
 
     Returns:
-        cupy.ndarray: An array filled with ones.
+        clpy.ndarray: An array filled with ones.
 
     .. seealso:: :func:`numpy.ones`
 
     """
     # TODO(beam2d): Support ordering option
-    a = cupy.ndarray(shape, dtype=dtype)
+    a = clpy.ndarray(shape, dtype=dtype)
     a.fill(1)
     return a
 
@@ -111,11 +111,11 @@ def ones_like(a, dtype=None):
     This function currently does not support ``order`` and ``subok`` options.
 
     Args:
-        a (cupy.ndarray): Base array.
+        a (clpy.ndarray): Base array.
         dtype: Data type specifier. The dtype of ``a`` is used by default.
 
     Returns:
-        cupy.ndarray: An array filled with ones.
+        clpy.ndarray: An array filled with ones.
 
     .. seealso:: :func:`numpy.ones_like`
 
@@ -123,7 +123,7 @@ def ones_like(a, dtype=None):
     # TODO(beam2d): Support ordering option
     if dtype is None:
         dtype = a.dtype
-    a = cupy.ndarray(a.shape, dtype=dtype)
+    a = clpy.ndarray(a.shape, dtype=dtype)
     a.fill(1)
     return a
 
@@ -138,13 +138,14 @@ def zeros(shape, dtype=float, order='C'):
             (Fortran-style) order.
 
     Returns:
-        cupy.ndarray: An array filled with ones.
+        clpy.ndarray: An array filled with ones.
 
     .. seealso:: :func:`numpy.zeros`
 
     """
-    a = cupy.ndarray(shape, dtype, order=order)
-    a.data.memset(0, a.nbytes)
+    a = clpy.ndarray(shape, dtype, order=order)
+    # TODO(LWisteria): Use clEnqueueFillBuffer for OpenCL 1.2
+    a.fill(a.dtype.type(0))
     return a
 
 
@@ -154,11 +155,11 @@ def zeros_like(a, dtype=None):
     This function currently does not support ``order`` and ``subok`` options.
 
     Args:
-        a (cupy.ndarray): Base array.
+        a (clpy.ndarray): Base array.
         dtype: Data type specifier. The dtype of ``a`` is used by default.
 
     Returns:
-        cupy.ndarray: An array filled with ones.
+        clpy.ndarray: An array filled with ones.
 
     .. seealso:: :func:`numpy.zeros_like`
 
@@ -166,8 +167,9 @@ def zeros_like(a, dtype=None):
     # TODO(beam2d): Support ordering option
     if dtype is None:
         dtype = a.dtype
-    a = cupy.ndarray(a.shape, dtype)
-    a.data.memset(0, a.nbytes)
+    a = clpy.ndarray(a.shape, dtype)
+    # TODO(LWisteria): Use clEnqueueFillBuffer for OpenCL 1.2
+    a.fill(a.dtype.type(0))
     return a
 
 
@@ -182,13 +184,13 @@ def full(shape, fill_value, dtype=None):
         dtype: Data type specifier.
 
     Returns:
-        cupy.ndarray: An array filled with ``fill_value``.
+        clpy.ndarray: An array filled with ``fill_value``.
 
     .. seealso:: :func:`numpy.full`
 
     """
     # TODO(beam2d): Support ordering option
-    a = cupy.ndarray(shape, dtype=dtype)
+    a = clpy.ndarray(shape, dtype=dtype)
     a.fill(fill_value)
     return a
 
@@ -199,12 +201,12 @@ def full_like(a, fill_value, dtype=None):
     This function currently does not support ``order`` and ``subok`` options.
 
     Args:
-        a (cupy.ndarray): Base array.
+        a (clpy.ndarray): Base array.
         fill_value: A scalar value to fill a new array.
         dtype: Data type specifier. The dtype of ``a`` is used by default.
 
     Returns:
-        cupy.ndarray: An array filled with ``fill_value``.
+        clpy.ndarray: An array filled with ``fill_value``.
 
     .. seealso:: :func:`numpy.full_like`
 
@@ -212,6 +214,6 @@ def full_like(a, fill_value, dtype=None):
     # TODO(beam2d): Support ordering option
     if dtype is None:
         dtype = a.dtype
-    a = cupy.ndarray(a.shape, dtype=dtype)
+    a = clpy.ndarray(a.shape, dtype=dtype)
     a.fill(fill_value)
     return a

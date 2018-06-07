@@ -1,6 +1,6 @@
 import unittest
 
-from cupy import testing
+from clpy import testing
 
 
 @testing.parameterize(

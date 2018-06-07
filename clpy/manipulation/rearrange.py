@@ -1,5 +1,5 @@
-import cupy
-from cupy import core
+import clpy
+from clpy import core
 
 
 def flip(a, axis):
@@ -9,11 +9,11 @@ def flip(a, axis):
     The contents of this document is the same as the original one.
 
     Args:
-        a (~cupy.ndarray): Input array.
+        a (~clpy.ndarray): Input array.
         axis (int): Axis in array, which entries are reversed.
 
     Returns:
-        ~cupy.ndarray: Output array.
+        ~clpy.ndarray: Output array.
 
     .. seealso:: :func:`numpy.flip`
 
@@ -37,10 +37,10 @@ def fliplr(a):
     are preserved, but appear in a different order than before.
 
     Args:
-        a (~cupy.ndarray): Input array.
+        a (~clpy.ndarray): Input array.
 
     Returns:
-        ~cupy.ndarray: Output array.
+        ~clpy.ndarray: Output array.
 
     .. seealso:: :func:`numpy.fliplr`
 
@@ -57,10 +57,10 @@ def flipud(a):
     preserved, but appear in a different order than before.
 
     Args:
-        a (~cupy.ndarray): Input array.
+        a (~clpy.ndarray): Input array.
 
     Returns:
-        ~cupy.ndarray: Output array.
+        ~clpy.ndarray: Output array.
 
     .. seealso:: :func:`numpy.flipud`
 
@@ -74,14 +74,14 @@ def roll(a, shift, axis=None):
     """Roll array elements along a given axis.
 
     Args:
-        a (~cupy.ndarray): Array to be rolled.
+        a (~clpy.ndarray): Array to be rolled.
         shift (int): The number of places by which elements are shifted.
         axis (int or None): The axis along which elements are shifted.
             If ``axis`` is ``None``, the array is flattened before shifting,
             and after that it is reshaped to the original shape.
 
     Returns:
-        ~cupy.ndarray: Output array.
+        ~clpy.ndarray: Output array.
 
     .. seealso:: :func:`numpy.roll`
 
@@ -92,7 +92,7 @@ def roll(a, shift, axis=None):
         size = a.size
         ra = a.ravel()
         shift %= size
-        res = cupy.empty((size,), a.dtype)
+        res = clpy.empty((size,), a.dtype)
         res[:shift] = ra[size - shift:]
         res[shift:] = ra[:size - shift]
         return res.reshape(a.shape)
@@ -116,7 +116,7 @@ def roll(a, shift, axis=None):
         ind2 = prev + (slice(None, size - shift, None),) + rest
         r_ind1 = prev + (slice(None, shift, None),) + rest
         r_ind2 = prev + (slice(shift, None, None),) + rest
-        res = cupy.empty_like(a)
+        res = clpy.empty_like(a)
         res[r_ind1] = a[ind1]
         res[r_ind2] = a[ind2]
         return res
@@ -129,13 +129,13 @@ def rot90(a, k=1, axes=(0, 1)):
     The contents of this document is the same as the original one.
 
     Args:
-        a (~cupy.ndarray): Array of two or more dimensions.
+        a (~clpy.ndarray): Array of two or more dimensions.
         k (int): Number of times the array is rotated by 90 degrees.
         axes: (tuple of ints): The array is rotated in the plane defined by
             the axes. Axes must be different.
 
     Returns:
-        ~cupy.ndarray: Output array.
+        ~clpy.ndarray: Output array.
 
     .. seealso:: :func:`numpy.rot90`
 
@@ -163,9 +163,9 @@ def rot90(a, k=1, axes=(0, 1)):
     axes_t[axes[0]], axes_t[axes[1]] = axes_t[axes[1]], axes_t[axes[0]]
 
     if k == 1:
-        return cupy.transpose(_flip(a, axes[1]), axes_t)
+        return clpy.transpose(_flip(a, axes[1]), axes_t)
     else:
-        return _flip(cupy.transpose(a, axes_t), axes[1])
+        return _flip(clpy.transpose(a, axes_t), axes[1])
 
 
 def _flip(a, axis):

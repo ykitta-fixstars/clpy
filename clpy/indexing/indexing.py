@@ -6,16 +6,16 @@ def take(a, indices, axis=None, out=None):
     This function does not support ``mode`` option.
 
     Args:
-        a (cupy.ndarray): Array to extract elements.
+        a (clpy.ndarray): Array to extract elements.
         indices (int or array-like): Indices of elements that this function
             takes.
         axis (int): The axis along which to select indices. The flattened input
             is used by default.
-        out (cupy.ndarray): Output array. If provided, it should be of
+        out (clpy.ndarray): Output array. If provided, it should be of
             appropriate shape and dtype.
 
     Returns:
-        cupy.ndarray: The result of fancy indexing.
+        clpy.ndarray: The result of fancy indexing.
 
     .. seealso:: :func:`numpy.take`
 
@@ -39,7 +39,7 @@ def diagonal(a, offset=0, axis1=0, axis2=1):
     as NumPy 1.10 will do.
 
     Args:
-        a (cupy.ndarray): Array from which the diagonals are taken.
+        a (clpy.ndarray): Array from which the diagonals are taken.
         offset (int): Index of the diagonals. Zero indicates the main
             diagonals, a positive value upper diagonals, and a negative value
             lower diagonals.
@@ -47,7 +47,7 @@ def diagonal(a, offset=0, axis1=0, axis2=1):
         axis2 (int): The second axis to take diagonals from.
 
     Returns:
-        cupy.ndarray: A view of the diagonals of ``a``.
+        clpy.ndarray: A view of the diagonals of ``a``.
 
     .. seealso:: :func:`numpy.diagonal`
 

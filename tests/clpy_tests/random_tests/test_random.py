@@ -1,7 +1,7 @@
 import unittest
 
-from cupy import random
-from cupy import testing
+from clpy import random
+from clpy import testing
 
 
 @testing.gpu

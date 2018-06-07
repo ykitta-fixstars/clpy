@@ -1,14 +1,11 @@
-import numpy
-from numpy import linalg
+import numpy  # NOQA
+from numpy import linalg  # NOQA
 
-import cupy
-from cupy import cuda
-from cupy.cuda import cublas
-from cupy.cuda import device
-from cupy.linalg import util
-
-if cuda.cusolver_enabled:
-    from cupy.cuda import cusolver
+import clpy  # NOQA
+from clpy import backend  # NOQA
+# from clpy.backend import cublas
+from clpy.backend import device  # NOQA
+from clpy.linalg import util  # NOQA
 
 
 def cholesky(a):
@@ -20,18 +17,19 @@ def cholesky(a):
     a real matrix, and only float32 and float64 are supported.
 
     Args:
-        a (cupy.ndarray): The input matrix with dimension ``(N, N)``
+        a (clpy.ndarray): The input matrix with dimension ``(N, N)``
 
     Returns:
-        cupy.ndarray: The lower-triangular matrix.
+        clpy.ndarray: The lower-triangular matrix.
 
     .. seealso:: :func:`numpy.linalg.cholesky`
     '''
-    if not cuda.cusolver_enabled:
-        raise RuntimeError('Current cupy only supports cusolver in CUDA 8.0')
+    raise NotImplementedError("clpy does not support this")
 
+
+'''
     # TODO(Saito): Current implementation only accepts two-dimensional arrays
-    util._assert_cupy_array(a)
+    util._assert_clpy_array(a)
     util._assert_rank2(a)
     util._assert_nd_squareness(a)
 
@@ -44,18 +42,18 @@ def cholesky(a):
     x = a.astype(dtype, order='C', copy=True)
     n = len(a)
     handle = device.get_cusolver_handle()
-    dev_info = cupy.empty(1, dtype=numpy.int32)
+    dev_info = clpy.empty(1, dtype=numpy.int32)
     if dtype == 'f':
         buffersize = cusolver.spotrf_bufferSize(
             handle, cublas.CUBLAS_FILL_MODE_UPPER, n, x.data.ptr, n)
-        workspace = cupy.empty(buffersize, dtype=numpy.float32)
+        workspace = clpy.empty(buffersize, dtype=numpy.float32)
         cusolver.spotrf(
             handle, cublas.CUBLAS_FILL_MODE_UPPER, n, x.data.ptr, n,
             workspace.data.ptr, buffersize, dev_info.data.ptr)
     else:  # dtype == 'd'
         buffersize = cusolver.dpotrf_bufferSize(
             handle, cublas.CUBLAS_FILL_MODE_UPPER, n, x.data.ptr, n)
-        workspace = cupy.empty(buffersize, dtype=numpy.float64)
+        workspace = clpy.empty(buffersize, dtype=numpy.float64)
         cusolver.dpotrf(
             handle, cublas.CUBLAS_FILL_MODE_UPPER, n, x.data.ptr, n,
             workspace.data.ptr, buffersize, dev_info.data.ptr)
@@ -66,9 +64,10 @@ def cholesky(a):
             'is not positive definite'.format(status))
     elif status < 0:
         raise linalg.LinAlgError(
-            'Parameter error (maybe caused by a bug in cupy.linalg?)')
+            'Parameter error (maybe caused by a bug in clpy.linalg?)')
     util._tril(x, k=0)
     return x
+'''
 
 
 def qr(a, mode='reduced'):
@@ -78,7 +77,7 @@ def qr(a, mode='reduced'):
     is an orthonormal and ``R`` is an upper-triangular matrix.
 
     Args:
-        a (cupy.ndarray): The input matrix.
+        a (clpy.ndarray): The input matrix.
         mode (str): The mode of decomposition. Currently 'reduced',
             'complete', 'r', and 'raw' modes are supported. The default mode
             is 'reduced', in which matrix ``A = (M, N)`` is decomposed into
@@ -86,18 +85,19 @@ def qr(a, mode='reduced'):
             ``K = min(M, N)``.
 
     Returns:
-        cupy.ndarray, or tuple of ndarray:
+        clpy.ndarray, or tuple of ndarray:
             Although the type of returned object depends on the mode,
             it returns a tuple of ``(Q, R)`` by default.
             For details, please see the document of :func:`numpy.linalg.qr`.
 
     .. seealso:: :func:`numpy.linalg.qr`
     '''
-    if not cuda.cusolver_enabled:
-        raise RuntimeError('Current cupy only supports cusolver in CUDA 8.0')
+    raise NotImplementedError("clpy does not support this")
 
+
+'''
     # TODO(Saito): Current implementation only accepts two-dimensional arrays
-    util._assert_cupy_array(a)
+    util._assert_clpy_array(a)
     util._assert_rank2(a)
 
     if mode not in ('reduced', 'complete', 'r', 'raw'):
@@ -117,26 +117,26 @@ def qr(a, mode='reduced'):
     x = a.transpose().astype(dtype, order='C', copy=True)
     mn = min(m, n)
     handle = device.get_cusolver_handle()
-    dev_info = cupy.empty(1, dtype=numpy.int32)
+    dev_info = clpy.empty(1, dtype=numpy.int32)
     # compute working space of geqrf and ormqr, and solve R
     if dtype == 'f':
         buffersize = cusolver.sgeqrf_bufferSize(handle, m, n, x.data.ptr, n)
-        workspace = cupy.empty(buffersize, dtype=numpy.float32)
-        tau = cupy.empty(mn, dtype=numpy.float32)
+        workspace = clpy.empty(buffersize, dtype=numpy.float32)
+        tau = clpy.empty(mn, dtype=numpy.float32)
         cusolver.sgeqrf(
             handle, m, n, x.data.ptr, m,
             tau.data.ptr, workspace.data.ptr, buffersize, dev_info.data.ptr)
     else:  # dtype == 'd'
         buffersize = cusolver.dgeqrf_bufferSize(handle, n, m, x.data.ptr, n)
-        workspace = cupy.empty(buffersize, dtype=numpy.float64)
-        tau = cupy.empty(mn, dtype=numpy.float64)
+        workspace = clpy.empty(buffersize, dtype=numpy.float64)
+        tau = clpy.empty(mn, dtype=numpy.float64)
         cusolver.dgeqrf(
             handle, m, n, x.data.ptr, m,
             tau.data.ptr, workspace.data.ptr, buffersize, dev_info.data.ptr)
     status = int(dev_info[0])
     if status < 0:
         raise linalg.LinAlgError(
-            'Parameter error (maybe caused by a bug in cupy.linalg?)')
+            'Parameter error (maybe caused by a bug in clpy.linalg?)')
 
     if mode == 'r':
         r = x[:, :mn].transpose()
@@ -153,24 +153,24 @@ def qr(a, mode='reduced'):
 
     if mode == 'complete' and m > n:
         mc = m
-        q = cupy.empty((m, m), dtype)
+        q = clpy.empty((m, m), dtype)
     else:
         mc = mn
-        q = cupy.empty((n, m), dtype)
+        q = clpy.empty((n, m), dtype)
     q[:n] = x
 
     # solve Q
     if dtype == 'f':
         buffersize = cusolver.sorgqr_bufferSize(
             handle, m, mc, mn, q.data.ptr, m, tau.data.ptr)
-        workspace = cupy.empty(buffersize, dtype=numpy.float32)
+        workspace = clpy.empty(buffersize, dtype=numpy.float32)
         cusolver.sorgqr(
             handle, m, mc, mn, q.data.ptr, m, tau.data.ptr,
             workspace.data.ptr, buffersize, dev_info.data.ptr)
     else:
         buffersize = cusolver.dorgqr_bufferSize(
             handle, m, mc, mn, q.data.ptr, m, tau.data.ptr)
-        workspace = cupy.empty(buffersize, dtype=numpy.float64)
+        workspace = clpy.empty(buffersize, dtype=numpy.float64)
         cusolver.dorgqr(
             handle, m, mc, mn, q.data.ptr, m, tau.data.ptr,
             workspace.data.ptr, buffersize, dev_info.data.ptr)
@@ -178,6 +178,7 @@ def qr(a, mode='reduced'):
     q = q[:mc].transpose()
     r = x[:, :mc].transpose()
     return q, util._triu(r)
+'''
 
 
 def svd(a, full_matrices=True, compute_uv=True):
@@ -188,7 +189,7 @@ def svd(a, full_matrices=True, compute_uv=True):
     singular values.
 
     Args:
-        a (cupy.ndarray): The input matrix with dimension ``(M, N)``.
+        a (clpy.ndarray): The input matrix with dimension ``(M, N)``.
         full_matrices (bool): If True, it returns u and v with dimensions
             ``(M, M)`` and ``(N, N)``. Otherwise, the dimensions of u and v
             are respectively ``(M, K)`` and ``(K, N)``, where
@@ -196,16 +197,17 @@ def svd(a, full_matrices=True, compute_uv=True):
         compute_uv (bool): If True, it only returns singular values.
 
     Returns:
-        tuple of :class:`cupy.ndarray`:
+        tuple of :class:`clpy.ndarray`:
             A tuple of ``(u, s, v)`` such that ``a = u * np.diag(s) * v``.
 
     .. seealso:: :func:`numpy.linalg.svd`
     '''
-    if not cuda.cusolver_enabled:
-        raise RuntimeError('Current cupy only supports cusolver in CUDA 8.0')
+    raise NotImplementedError("clpy does not support this")
 
+
+'''
     # TODO(Saito): Current implementation only accepts two-dimensional arrays
-    util._assert_cupy_array(a)
+    util._assert_clpy_array(a)
     util._assert_rank2(a)
 
     # Cast to float32 or float64
@@ -230,31 +232,31 @@ def svd(a, full_matrices=True, compute_uv=True):
 
     if compute_uv:
         if full_matrices:
-            u = cupy.empty((m, m), dtype=dtype)
-            vt = cupy.empty((n, n), dtype=dtype)
+            u = clpy.empty((m, m), dtype=dtype)
+            vt = clpy.empty((n, n), dtype=dtype)
         else:
-            u = cupy.empty((mn, m), dtype=dtype)
-            vt = cupy.empty((mn, n), dtype=dtype)
+            u = clpy.empty((mn, m), dtype=dtype)
+            vt = clpy.empty((mn, n), dtype=dtype)
         u_ptr, vt_ptr = u.data.ptr, vt.data.ptr
     else:
         u_ptr, vt_ptr = 0, 0  # Use nullptr
-    s = cupy.empty(mn, dtype=dtype)
+    s = clpy.empty(mn, dtype=dtype)
     handle = device.get_cusolver_handle()
-    dev_info = cupy.empty(1, dtype=numpy.int32)
+    dev_info = clpy.empty(1, dtype=numpy.int32)
     if compute_uv:
         job = ord('A') if full_matrices else ord('S')
     else:
         job = ord('N')
     if dtype == 'f':
         buffersize = cusolver.sgesvd_bufferSize(handle, m, n)
-        workspace = cupy.empty(buffersize, dtype=dtype)
+        workspace = clpy.empty(buffersize, dtype=dtype)
         cusolver.sgesvd(
             handle, job, job, m, n, x.data.ptr, m,
             s.data.ptr, u_ptr, m, vt_ptr, n,
             workspace.data.ptr, buffersize, 0, dev_info.data.ptr)
     else:  # dtype == 'd'
         buffersize = cusolver.dgesvd_bufferSize(handle, m, n)
-        workspace = cupy.empty(buffersize, dtype=dtype)
+        workspace = clpy.empty(buffersize, dtype=dtype)
         cusolver.dgesvd(
             handle, job, job, m, n, x.data.ptr, m,
             s.data.ptr, u_ptr, m, vt_ptr, n,
@@ -266,7 +268,7 @@ def svd(a, full_matrices=True, compute_uv=True):
             'SVD computation does not converge')
     elif status < 0:
         raise linalg.LinAlgError(
-            'Parameter error (maybe caused by a bug in cupy.linalg?)')
+            'Parameter error (maybe caused by a bug in clpy.linalg?)')
 
     # Note that the returned array may need to be transporsed
     # depending on the structure of an input
@@ -277,3 +279,4 @@ def svd(a, full_matrices=True, compute_uv=True):
             return vt, s, u
     else:
         return s
+'''

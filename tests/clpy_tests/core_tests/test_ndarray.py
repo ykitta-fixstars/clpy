@@ -3,11 +3,11 @@ import unittest
 
 import numpy
 
-import cupy
-from cupy import core
-from cupy import cuda
-from cupy import get_array_module
-from cupy import testing
+import clpy
+from clpy import backend
+from clpy import core
+from clpy import get_array_module
+from clpy import testing
 
 
 class TestGetSize(unittest.TestCase):
@@ -97,7 +97,7 @@ class TestNdarrayCopy(unittest.TestCase):
     @testing.multi_gpu(2)
     def test_deepcopy_multi_device(self):
         arr = core.ndarray(self.shape)
-        with cuda.Device(1):
+        with backend.Device(1):
             arr2 = copy.deepcopy(arr)
         self._check_deepcopy(arr, arr2)
         self.assertEqual(arr2.device, arr.device)
@@ -106,19 +106,19 @@ class TestNdarrayCopy(unittest.TestCase):
 @testing.gpu
 class TestNdarrayShape(unittest.TestCase):
 
-    @testing.numpy_cupy_array_equal()
+    @testing.numpy_clpy_array_equal()
     def test_shape_set(self, xp):
         arr = xp.ndarray((2, 3))
         arr.shape = (3, 2)
         return xp.array(arr.shape)
 
-    @testing.numpy_cupy_array_equal()
+    @testing.numpy_clpy_array_equal()
     def test_shape_set_infer(self, xp):
         arr = xp.ndarray((2, 3))
         arr.shape = (3, -1)
         return xp.array(arr.shape)
 
-    @testing.numpy_cupy_array_equal()
+    @testing.numpy_clpy_array_equal()
     def test_shape_set_int(self, xp):
         arr = xp.ndarray((2, 3))
         arr.shape = 6
@@ -137,7 +137,7 @@ class TestNdarrayTake(unittest.TestCase):
     shape = (3, 4, 5)
 
     @testing.for_all_dtypes()
-    @testing.numpy_cupy_array_equal()
+    @testing.numpy_clpy_array_equal()
     def test_take(self, xp, dtype):
         a = testing.shaped_arange(self.shape, xp, dtype)
         if self.axis is None:
@@ -160,7 +160,7 @@ class TestNdarrayTakeWithInt(unittest.TestCase):
     shape = (3, 4, 5)
 
     @testing.for_all_dtypes()
-    @testing.numpy_cupy_array_equal()
+    @testing.numpy_clpy_array_equal()
     def test_take(self, xp, dtype):
         a = testing.shaped_arange(self.shape, xp, dtype)
         return wrap_take(a, self.indices, self.axis)
@@ -178,7 +178,7 @@ class TestNdarrayTakeWithIntWithOutParam(unittest.TestCase):
     shape = (3, 4, 5)
 
     @testing.for_all_dtypes()
-    @testing.numpy_cupy_array_equal()
+    @testing.numpy_clpy_array_equal()
     def test_take(self, xp, dtype):
         a = testing.shaped_arange(self.shape, xp, dtype)
         r1 = wrap_take(a, self.indices, self.axis)
@@ -200,7 +200,7 @@ class TestScalaNdarrayTakeWithIntWithOutParam(unittest.TestCase):
     shape = ()
 
     @testing.for_all_dtypes()
-    @testing.numpy_cupy_array_equal()
+    @testing.numpy_clpy_array_equal()
     def test_take(self, xp, dtype):
         a = testing.shaped_arange(self.shape, xp, dtype)
         r1 = wrap_take(a, self.indices, self.axis)
@@ -219,14 +219,14 @@ class TestNdarrayTakeErrorAxisOverRun(unittest.TestCase):
 
     @testing.for_all_dtypes()
     @testing.with_requires('numpy>=1.13')
-    @testing.numpy_cupy_raises()
+    @testing.numpy_clpy_raises()
     def test_axis_overrun1(self, xp, dtype):
         a = testing.shaped_arange(self.shape, xp, dtype)
         wrap_take(a, self.indices, axis=self.axis)
 
     @testing.for_all_dtypes()
     def test_axis_overrun2(self, dtype):
-        a = testing.shaped_arange(self.shape, cupy, dtype)
+        a = testing.shaped_arange(self.shape, clpy, dtype)
         with self.assertRaises(core.core._AxisError):
             wrap_take(a, self.indices, axis=self.axis)
 
@@ -239,7 +239,7 @@ class TestNdarrayTakeErrorAxisOverRun(unittest.TestCase):
 class TestNdarrayTakeErrorShapeMismatch(unittest.TestCase):
 
     @testing.for_all_dtypes()
-    @testing.numpy_cupy_raises()
+    @testing.numpy_clpy_raises()
     def test_shape_mismatch(self, xp, dtype):
         a = testing.shaped_arange(self.shape, xp, dtype)
         i = testing.shaped_arange(self.indices, xp, numpy.int32) % 3
@@ -254,7 +254,7 @@ class TestNdarrayTakeErrorShapeMismatch(unittest.TestCase):
 @testing.gpu
 class TestNdarrayTakeErrorTypeMismatch(unittest.TestCase):
 
-    @testing.numpy_cupy_raises()
+    @testing.numpy_clpy_raises()
     def test_output_type_mismatch(self, xp):
         a = testing.shaped_arange(self.shape, xp, numpy.int32)
         i = testing.shaped_arange(self.indices, xp, numpy.int32) % 3

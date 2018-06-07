@@ -7,14 +7,14 @@ import unittest
 import numpy
 import six
 
-import cupy
-from cupy import core
-from cupy import cuda
-from cupy.cuda import curand
-from cupy.random import generator
-from cupy import testing
-from cupy.testing import condition
-from cupy.testing import hypothesis
+import clpy
+from clpy import backend
+from clpy.backend import curand
+from clpy import core
+from clpy.random import generator
+from clpy import testing
+from clpy.testing import condition
+from clpy.testing import hypothesis
 
 
 class FunctionSwitcher(object):
@@ -48,7 +48,7 @@ class TestRandomState(unittest.TestCase):
         if exp_size % 2 == 1:
             exp_size += 1
 
-        curand_func.return_value = cupy.zeros(exp_size, dtype=dtype)
+        curand_func.return_value = clpy.zeros(exp_size, dtype=dtype)
         out = self.rs.lognormal(self.args[0], self.args[1], self.size, dtype)
         gen, _, size, mean, sigma = curand_func.call_args[0]
         self.assertIs(gen, self.rs._generator)
@@ -75,7 +75,7 @@ class TestRandomState(unittest.TestCase):
         if exp_size % 2 == 1:
             exp_size += 1
 
-        curand_func.return_value = cupy.zeros(exp_size, dtype=dtype)
+        curand_func.return_value = clpy.zeros(exp_size, dtype=dtype)
         out = self.rs.normal(self.args[0], self.args[1], self.size, dtype)
         gen, _, size, loc, scale = curand_func.call_args[0]
         self.assertIs(gen, self.rs._generator)
@@ -214,7 +214,7 @@ class TestRandAndRandN(unittest.TestCase):
 class TestInterval(unittest.TestCase):
 
     def setUp(self):
-        self.rs = cupy.random.get_random_state()
+        self.rs = clpy.random.get_random_state()
         self.rs.seed(testing.generate_seed())
 
     def test_zero(self):
@@ -297,7 +297,7 @@ class TestInterval(unittest.TestCase):
 class TestChoice1(unittest.TestCase):
 
     def setUp(self):
-        self.rs = cupy.random.get_random_state()
+        self.rs = clpy.random.get_random_state()
         self.rs.seed(testing.generate_seed())
 
     def test_dtype_shape(self):
@@ -333,7 +333,7 @@ class TestChoice1(unittest.TestCase):
 class TestChoice2(unittest.TestCase):
 
     def setUp(self):
-        self.rs = cupy.random.get_random_state()
+        self.rs = clpy.random.get_random_state()
         self.rs.seed(testing.generate_seed())
 
     def test_dtype_shape(self):
@@ -366,7 +366,7 @@ class TestChoice2(unittest.TestCase):
 class TestChoiceChi(unittest.TestCase):
 
     def setUp(self):
-        self.rs = cupy.random.get_random_state()
+        self.rs = clpy.random.get_random_state()
         self.rs.seed(testing.generate_seed())
 
     @condition.repeat(3, 10)
@@ -392,7 +392,7 @@ class TestChoiceMultinomial(unittest.TestCase):
 
     @condition.repeat(3, 10)
     @testing.for_float_dtypes()
-    @testing.numpy_cupy_allclose(atol=0.02)
+    @testing.numpy_clpy_allclose(atol=0.02)
     def test_choice_multinomial(self, xp, dtype):
         p = xp.array([0.5, 0.25, 0.125, 0.125], dtype)
         trial = 10000
@@ -437,7 +437,7 @@ class TestChoiceFailure(unittest.TestCase):
 class TestChoiceReplaceFalse(unittest.TestCase):
 
     def setUp(self):
-        self.rs = cupy.random.get_random_state()
+        self.rs = clpy.random.get_random_state()
         self.rs.seed(testing.generate_seed())
 
     def test_dtype_shape(self):
@@ -464,9 +464,9 @@ class TestChoiceReplaceFalse(unittest.TestCase):
         self.assertEqual(numpy.unique(val).size, val.size)
 
     def test_reproduce(self):
-        rs1 = cupy.random.RandomState(1)
+        rs1 = clpy.random.RandomState(1)
         v1 = rs1.choice(a=self.a, size=self.size, replace=False)
-        rs2 = cupy.random.RandomState(1)
+        rs2 = clpy.random.RandomState(1)
         v2 = rs2.choice(a=self.a, size=self.size, replace=False)
         self.assertTrue((v1 == v2).all())
 
@@ -480,7 +480,7 @@ class TestChoiceReplaceFalse(unittest.TestCase):
 @testing.gpu
 class TestChoiceReplaceFalseFailure(unittest.TestCase):
 
-    @testing.numpy_cupy_raises(accept_error=ValueError)
+    @testing.numpy_clpy_raises(accept_error=ValueError)
     def test_choice_invalid_value(self, xp):
         rs = xp.random.RandomState(seed=testing.generate_seed())
         rs.choice(a=self.a, size=self.size, replace=False)
@@ -498,7 +498,7 @@ class TestResetStates(unittest.TestCase):
 class TestGetRandomState(unittest.TestCase):
 
     def setUp(self):
-        self.device_id = cuda.Device().id
+        self.device_id = backend.Device().id
         self.rs_tmp = generator._random_states
 
     def tearDown(self, *args):
@@ -522,18 +522,18 @@ class TestGetRandomState(unittest.TestCase):
 class TestGetRandomStateThreadSafe(unittest.TestCase):
 
     def setUp(self):
-        cupy.random.reset_states()
+        clpy.random.reset_states()
 
     def test_thread_safe(self):
         seed = 10
         threads = [
-            threading.Thread(target=lambda: cupy.random.seed(seed)),
-            threading.Thread(target=lambda: cupy.random.get_random_state()),
-            threading.Thread(target=lambda: cupy.random.get_random_state()),
-            threading.Thread(target=lambda: cupy.random.get_random_state()),
-            threading.Thread(target=lambda: cupy.random.get_random_state()),
-            threading.Thread(target=lambda: cupy.random.get_random_state()),
-            threading.Thread(target=lambda: cupy.random.get_random_state()),
+            threading.Thread(target=lambda: clpy.random.seed(seed)),
+            threading.Thread(target=lambda: clpy.random.get_random_state()),
+            threading.Thread(target=lambda: clpy.random.get_random_state()),
+            threading.Thread(target=lambda: clpy.random.get_random_state()),
+            threading.Thread(target=lambda: clpy.random.get_random_state()),
+            threading.Thread(target=lambda: clpy.random.get_random_state()),
+            threading.Thread(target=lambda: clpy.random.get_random_state()),
         ]
 
         for t in threads:
@@ -541,9 +541,9 @@ class TestGetRandomStateThreadSafe(unittest.TestCase):
         for t in threads:
             t.join()
 
-        actual = cupy.random.uniform()
-        cupy.random.seed(seed)
-        expected = cupy.random.uniform()
+        actual = clpy.random.uniform()
+        clpy.random.seed(seed)
+        expected = clpy.random.uniform()
         self.assertEqual(actual, expected)
 
 
@@ -555,40 +555,40 @@ class TestGetRandomState2(unittest.TestCase):
         generator.RandomState = mock.Mock()
         self.rs_dict = generator._random_states
         generator._random_states = {}
-        self.cupy_seed = os.getenv('CUPY_SEED')
+        self.clpy_seed = os.getenv('CUPY_SEED')
         self.chainer_seed = os.getenv('CHAINER_SEED')
 
     def tearDown(self, *args):
         generator.RandomState = self.rs_tmp
         generator._random_states = self.rs_dict
-        if self.cupy_seed is None:
+        if self.clpy_seed is None:
             os.environ.pop('CUPY_SEED', None)
         else:
-            os.environ['CUPY_SEED'] = self.cupy_seed
+            os.environ['CUPY_SEED'] = self.clpy_seed
         if self.chainer_seed is None:
             os.environ.pop('CHAINER_SEED', None)
         else:
             os.environ['CHAINER_SEED'] = self.chainer_seed
 
-    def test_get_random_state_no_cupy_no_chainer_seed(self):
+    def test_get_random_state_no_clpy_no_chainer_seed(self):
         os.environ.pop('CUPY_SEED', None)
         os.environ.pop('CHAINER_SEED', None)
         generator.get_random_state()
         generator.RandomState.assert_called_with(None)
 
-    def test_get_random_state_no_cupy_with_chainer_seed(self):
+    def test_get_random_state_no_clpy_with_chainer_seed(self):
         os.environ.pop('CUPY_SEED', None)
         os.environ['CHAINER_SEED'] = '5'
         generator.get_random_state()
         generator.RandomState.assert_called_with('5')
 
-    def test_get_random_state_with_cupy_no_chainer_seed(self):
+    def test_get_random_state_with_clpy_no_chainer_seed(self):
         os.environ['CUPY_SEED'] = '6'
         os.environ.pop('CHAINER_SEED', None)
         generator.get_random_state()
         generator.RandomState.assert_called_with('6')
 
-    def test_get_random_state_with_cupy_with_chainer_seed(self):
+    def test_get_random_state_with_clpy_with_chainer_seed(self):
         os.environ['CUPY_SEED'] = '7'
         os.environ['CHAINER_SEED'] = '8'
         generator.get_random_state()

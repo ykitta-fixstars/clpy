@@ -1,7 +1,7 @@
 import unittest
 
-from cupy.core import internal
-from cupy import testing
+from clpy.core import internal
+from clpy import testing
 
 
 class TestProd(unittest.TestCase):

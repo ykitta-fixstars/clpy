@@ -1,6 +1,6 @@
 import unittest
 
-from cupy.core import flags
+from clpy.core import flags
 
 
 class TestFlags(unittest.TestCase):

@@ -5,13 +5,13 @@ try:
 except ImportError:
     scipy_available = False
 
-import cupy
-from cupy import core
-from cupy.creation import basic
-from cupy import cusparse
-from cupy.sparse import base
-from cupy.sparse import data as sparse_data
-from cupy.sparse import util
+import clpy
+from clpy import core
+from clpy.creation import basic
+from clpy import cusparse
+from clpy.sparse import base
+from clpy.sparse import data as sparse_data
+from clpy.sparse import util
 
 
 class _compressed_sparse_matrix(sparse_data._data_matrix):
@@ -52,11 +52,11 @@ class _compressed_sparse_matrix(sparse_data._data_matrix):
             has_canonical_format = True
 
         elif scipy_available and scipy.sparse.issparse(arg1):
-            # Convert scipy.sparse to cupy.sparse
+            # Convert scipy.sparse to clpy.sparse
             x = arg1.asformat(self.format)
-            data = cupy.array(x.data)
-            indices = cupy.array(x.indices, dtype='i')
-            indptr = cupy.array(x.indptr, dtype='i')
+            data = clpy.array(x.data)
+            indices = clpy.array(x.indices, dtype='i')
+            indptr = clpy.array(x.indptr, dtype='i')
             copy = False
 
             if shape is None:
@@ -134,7 +134,7 @@ class _compressed_sparse_matrix(sparse_data._data_matrix):
         raise NotImplementedError
 
     def _add(self, other, lhs_negative, rhs_negative):
-        if cupy.isscalar(other):
+        if clpy.isscalar(other):
             if other == 0:
                 if lhs_negative:
                     return -self
@@ -229,7 +229,7 @@ class _compressed_sparse_matrix(sparse_data._data_matrix):
     def _get_single(self, major, minor):
         start = self.indptr[major]
         end = self.indptr[major + 1]
-        answer = cupy.zeros((), self.dtype)
+        answer = clpy.zeros((), self.dtype)
         self._compress_getitem_kern(
             self.data[start:end], self.indices[start:end], minor, answer)
         return answer[()]

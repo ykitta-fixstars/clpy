@@ -5,124 +5,119 @@ import six
 
 cimport cpython
 from libcpp cimport vector
+import cython
 
-from cupy.cuda cimport driver
-from cupy.core cimport core
-
-
-cdef extern from "cupy_stdint.h" nogil:
-    ctypedef signed char int8_t
-    ctypedef signed short int16_t
-    ctypedef signed int int32_t
-    ctypedef signed long long int64_t
-
-
-cdef class CPointer:
-    def __init__(self, p=0):
-        self.ptr = <void*>p
-
-
-cdef class CInt8(CPointer):
-    cdef:
-        int8_t val
-
-    def __init__(self, int8_t v):
-        self.val = v
-        self.ptr = <void*>&self.val
-
-
-cdef class CInt16(CPointer):
-    cdef:
-        int16_t val
-
-    def __init__(self, int16_t v):
-        self.val = v
-        self.ptr = <void*>&self.val
-
-
-cdef class CInt32(CPointer):
-    cdef:
-        int32_t val
-
-    def __init__(self, int32_t v):
-        self.val = v
-        self.ptr = <void*>&self.val
-
-
-cdef class CInt64(CPointer):
-    cdef:
-        int64_t val
-
-    def __init__(self, int64_t v):
-        self.val = v
-        self.ptr = <void*>&self.val
-
-
-cdef class CInt128(CPointer):
-    cdef:
-        double complex val
-
-    def __init__(self, double complex v):
-        self.val = v
-        self.ptr = <void*>&self.val
-
-
-cdef set _pointer_numpy_types = {numpy.dtype(i).type
-                                 for i in '?bhilqBHILQefdFD'}
-
-
-cdef inline CPointer _pointer(x):
-    cdef Py_ssize_t itemsize
-    if x is None:
-        return CPointer()
-    if isinstance(x, core.ndarray):
-        return (<core.ndarray>x).get_pointer()
-    if isinstance(x, core.Indexer):
-        return (<core.Indexer>x).get_pointer()
-
-    if type(x) not in _pointer_numpy_types:
-        if isinstance(x, six.integer_types):
-            x = numpy.int64(x)
-        elif isinstance(x, float):
-            x = numpy.float64(x)
-        elif isinstance(x, bool):
-            x = numpy.bool_(x)
-        else:
-            raise TypeError('Unsupported type %s' % type(x))
-
-    itemsize = x.itemsize
-    if itemsize == 1:
-        return CInt8(x.view(numpy.int8))
-    if itemsize == 2:
-        return CInt16(x.view(numpy.int16))
-    if itemsize == 4:
-        return CInt32(x.view(numpy.int32))
-    if itemsize == 8:
-        return CInt64(x.view(numpy.int64))
-    if itemsize == 16:
-        return CInt128(x.view(numpy.complex128))
-    raise TypeError('Unsupported type %s. (size=%d)', type(x), itemsize)
-
+# from clpy.cuda cimport driver
+from clpy.core cimport core
+import clpy.core
+import clpy.backend.opencl
+cimport clpy.backend.opencl.api
+cimport clpy.backend.opencl.utility
+import clpy.backend.opencl.env
+cimport clpy.backend.opencl.env
+import clpy.backend.opencl.types
+from clpy.backend.opencl.types cimport cl_event
 
 cdef inline size_t _get_stream(strm) except *:
     return 0 if strm is None else strm.ptr
 
 
-cdef void _launch(size_t func, Py_ssize_t grid0, int grid1, int grid2,
-                  Py_ssize_t block0, int block1, int block2,
-                  args, Py_ssize_t shared_mem, size_t stream) except *:
-    cdef list pargs = []
-    cdef vector.vector[void*] kargs
-    cdef CPointer cp
-    kargs.reserve(len(args))
-    for a in args:
-        cp = _pointer(a)
-        pargs.append(cp)
-        kargs.push_back(cp.ptr)
+DEF MAX_NDIM = 25
 
-    driver.launchKernel(
-        func, <int>grid0, grid1, grid2, <int>block0, block1, block2,
-        <int>shared_mem, stream, <size_t>&(kargs[0]), <size_t>0)
+cdef struct _CIndexer:
+    Py_ssize_t size
+    Py_ssize_t shape_and_index[MAX_NDIM * 2]
+
+cdef struct _CArray:
+    Py_ssize_t offset
+    Py_ssize_t shape_and_index[MAX_NDIM * 2]
+
+cdef struct _CArray0:
+    char unused
+
+cdef void _launch(clpy.backend.opencl.types.cl_kernel kernel, global_work_size, local_work_size, args, Py_ssize_t local_mem) except *:
+    global_dim = len(global_work_size)
+    local_dim = len(local_work_size)
+    if global_dim < 1 or 3 < global_dim:
+        raise ValueError("Global workitem dimension should be 1,2,3 but {0} was given".format(global_dim))
+    elif local_dim < 0 or 3 < local_dim:
+        raise ValueError("Local workitem dimension should be 0,1,2,3 but {0} was given".format(local_dim))
+    elif local_dim > 0 and global_dim != local_dim:
+        raise ValueError("global_work_size dim is {0} but local is {1}".format(global_dim, local_dim))
+
+    cdef size_t i = 0
+    cdef _CIndexer indexer  # to keep lifetime until SetKernelArg
+    cdef _CArray arrayInfo  # to keep lifetime until SetKernelArg
+    cdef size_t ptr = 0
+    cdef size_t buffer_object = 0
+    for a in args:
+        if isinstance(a, core.ndarray):
+            buffer_object = a.data.buf.get()
+            clpy.backend.opencl.api.SetKernelArg(kernel, i, sizeof(void*), <void*>&buffer_object)
+            i+=1
+
+            ndim = len(a.strides)
+            for d in range(ndim):
+                if a.strides[d] % a.itemsize != 0:
+                    raise ValueError("Stride of dim {0} = {1}, but item size is {2}".format(d, a.strides[d], a.itemsize))
+                arrayInfo.shape_and_index[d] = a.shape[d]
+                arrayInfo.shape_and_index[d + ndim] = a.strides[d] // a.itemsize
+            arrayInfo.offset = a.data.cl_mem_offset() // a.itemsize
+            clpy.backend.opencl.api.SetKernelArg(kernel, i, cython.sizeof(Py_ssize_t)*(2*ndim+1), <void*>&arrayInfo)
+        elif isinstance(a, clpy.core.core.LocalMem):
+            clpy.backend.opencl.utility.SetKernelArgLocalMemory(kernel, i, local_mem)
+        else:
+            if isinstance(a, core.Indexer):
+                for d in range(a.ndim):
+                    indexer.shape_and_index[d] = a.shape[d]
+                ptr = <size_t>&indexer
+                indexer.size = a.size
+                size = a.get_size()
+            else:
+                if isinstance(a, clpy.core.core.Size_t):
+                    if clpy.backend.opencl.types.device_typeof_size == 'uint':
+                        a = numpy.uint32(a.val)
+                    elif clpy.backend.opencl.types.device_typeof_size == 'ulong':
+                        a = numpy.uint64(a.val)
+                    else:
+                        raise "api_sizeof_size is illegal"
+                elif isinstance(a, int):
+                    a = numpy.int_(a)
+                elif isinstance(a, float):
+                    a = numpy.float_(a)
+                elif isinstance(a, bool):
+                    a = numpy.bool_(a)
+
+                if numpy.issctype(type(a)):
+                    ptr = <size_t>numpy.array(a).ctypes.get_as_parameter().value
+                    size = a.nbytes
+                else:
+                    raise TypeError('Unsupported type %s' % type(a))
+            clpy.backend.opencl.api.SetKernelArg(kernel, i, size, <void*>ptr)
+        i+=1
+
+    cdef size_t gws[3]
+    for i in range(global_dim):
+        gws[i] = global_work_size[i]
+
+    # local_work_size is a python list with the size either 0 or 1.
+    cdef size_t lws[1]
+    cdef size_t* lws_ptr
+    if len(local_work_size) > 0:
+        lws[0] = local_work_size[0]
+        lws_ptr = &lws[0]
+    else:
+        lws_ptr = <size_t*>NULL
+
+    clpy.backend.opencl.utility.RunNDRangeKernel(
+        command_queue=clpy.backend.opencl.env.get_command_queue(),
+        kernel=kernel,
+        work_dim=global_dim,
+        global_work_offset=<size_t*>NULL,
+        global_work_size=&gws[0],
+        local_work_size=lws_ptr,
+        num_events_in_wait_list=0,
+        event_wait_list=<cl_event*>NULL)
 
 
 cdef class Function:
@@ -131,30 +126,27 @@ cdef class Function:
 
     def __init__(self, Module module, str funcname):
         self.module = module  # to keep module loaded
-        self.ptr = driver.moduleGetFunction(module.ptr, funcname)
+        self.kernel = clpy.backend.opencl.api.CreateKernel(module.program, funcname.encode('utf-8'))
 
     def __call__(self, tuple grid, tuple block, args, size_t shared_mem=0,
                  stream=None):
-        grid = (grid + (1, 1))[:3]
-        block = (block + (1, 1))[:3]
-        s = _get_stream(stream)
-        _launch(
-            self.ptr,
-            max(1, grid[0]), max(1, grid[1]), max(1, grid[2]),
-            max(1, block[0]), max(1, block[1]), max(1, block[2]),
-            args, shared_mem, s)
+        raise NotImplementedError("clpy does not support this")
+#        grid = (grid + (1, 1))[:3]
+#        block = (block + (1, 1))[:3]
+#        s = _get_stream(stream)
+#        _launch(
+#            self.ptr,
+#            max(1, grid[0]), max(1, grid[1]), max(1, grid[2]),
+#            max(1, block[0]), max(1, block[1]), max(1, block[2]),
+#            args, shared_mem, s)
 
-    cpdef linear_launch(self, size_t size, args, size_t shared_mem=0,
-                        size_t block_max_size=128, stream=None):
+    cpdef linear_launch(self, size_t size, args, size_t local_mem=0, size_t local_size=0):
         # TODO(beam2d): Tune it
-        gridx = size // block_max_size + 1
-        if gridx > 65536:
-            gridx = 65536
-        if size > block_max_size:
-            size = block_max_size
-        s = _get_stream(stream)
-        _launch(self.ptr,
-                gridx, 1, 1, size, 1, 1, args, shared_mem, s)
+        if local_size == 0:
+            local_work_size = []
+        else:
+            local_work_size = [local_size, ]
+        _launch(self.kernel, [size, ], local_work_size, args, local_mem)
 
 
 cdef class Module:
@@ -162,21 +154,25 @@ cdef class Module:
     """CUDA kernel module."""
 
     def __init__(self):
-        self.ptr = 0
+        pass
 
     def __del__(self):
-        if self.ptr:
-            driver.moduleUnload(self.ptr)
-            self.ptr = 0
+        pass
 
     cpdef load_file(self, str filename):
-        self.ptr = driver.moduleLoad(filename)
+        raise NotImplementedError("clpy does not support this")
+#        self.ptr = driver.moduleLoad(filename)
 
     cpdef load(self, bytes cubin):
-        self.ptr = driver.moduleLoadData(cubin)
+        raise NotImplementedError("clpy does not support this")
+#        self.ptr = driver.moduleLoadData(cubin)
 
     cpdef get_global_var(self, str name):
-        return driver.moduleGetGlobal(self.ptr, name)
+        raise NotImplementedError("clpy does not support this")
+#        return driver.moduleGetGlobal(self.ptr, name)
+
+    cdef set(self, clpy.backend.opencl.types.cl_program program):
+        self.program = program
 
     cpdef get_function(self, str name):
         return Function(self, name)
@@ -187,17 +183,21 @@ cdef class LinkState:
     """CUDA link state."""
 
     def __init__(self):
-        self.ptr = driver.linkCreate()
+        raise NotImplementedError("clpy does not support this")
+#        self.ptr = driver.linkCreate()
 
     def __del__(self):
         if self.ptr:
-            driver.linkDestroy(self.ptr)
+            raise NotImplementedError("clpy does not support this")
+#            driver.linkDestroy(self.ptr)
             self.ptr = 0
 
     cpdef add_ptr_data(self, unicode data, unicode name):
         cdef bytes data_byte = data.encode()
-        driver.linkAddData(self.ptr, driver.CU_JIT_INPUT_PTX, data_byte, name)
+        raise NotImplementedError("clpy does not support this")
+#        driver.linkAddData(self.ptr, driver.CU_JIT_INPUT_PTX, data_byte, name)
 
     cpdef bytes complete(self):
-        cubin = driver.linkComplete(self.ptr)
+        raise NotImplementedError("clpy does not support this")
+#        cubin = driver.linkComplete(self.ptr)
         return cubin

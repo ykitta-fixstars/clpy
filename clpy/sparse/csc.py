@@ -4,9 +4,9 @@ try:
 except ImportError:
     _scipy_available = False
 
-import cupy
-from cupy import cusparse
-from cupy.sparse import compressed
+import clpy
+from clpy import cusparse
+from clpy.sparse import compressed
 
 
 class csc_matrix(compressed._compressed_sparse_matrix):
@@ -16,7 +16,7 @@ class csc_matrix(compressed._compressed_sparse_matrix):
     Now it has only part of initializer formats:
 
     ``csc_matrix(D)``
-        ``D`` is a rank-2 :class:`cupy.ndarray`.
+        ``D`` is a rank-2 :class:`clpy.ndarray`.
     ``csc_matrix(S)``
         ``S`` is another sparse matrix. It is equivalent to ``S.tocsc()``.
     ``csc_matrix((M, N), [dtype])``
@@ -24,7 +24,7 @@ class csc_matrix(compressed._compressed_sparse_matrix):
         is flat64.
     ``csc_matrix((data, indices, indptr))``
         All ``data``, ``indices`` and ``indptr`` are one-dimenaional
-        :class:`cupy.ndarray`.
+        :class:`clpy.ndarray`.
 
     Args:
         arg1: Arguments for the initializer.
@@ -46,7 +46,7 @@ class csc_matrix(compressed._compressed_sparse_matrix):
            You need to install SciPy to use this method.
 
         Args:
-            stream (cupy.cuda.Stream): CUDA stream object. If it is given, the
+            stream (clpy.cuda.Stream): CUDA stream object. If it is given, the
                 copy runs asynchronously. Otherwise, the copy is synchronous.
 
         Returns:
@@ -71,23 +71,23 @@ class csc_matrix(compressed._compressed_sparse_matrix):
     # TODO(unno): Implement __getitem__
 
     def __mul__(self, other):
-        if cupy.isscalar(other):
+        if clpy.isscalar(other):
             return self._with_data(self.data * other)
-        elif cupy.sparse.isspmatrix_csr(other):
+        elif clpy.sparse.isspmatrix_csr(other):
             return cusparse.csrgemm(self.T, other, transa=True)
         elif isspmatrix_csc(other):
             return cusparse.csrgemm(self.T, other.T, transa=True, transb=True)
-        elif cupy.sparse.isspmatrix(other):
+        elif clpy.sparse.isspmatrix(other):
             return cusparse.csrgemm(self.T, other.tocsr(), transa=True)
-        elif cupy.sparse.base.isdense(other):
+        elif clpy.sparse.base.isdense(other):
             if other.ndim == 0:
                 return self._with_data(self.data * other)
             elif other.ndim == 1:
                 return cusparse.csrmv(
-                    self.T, cupy.asfortranarray(other), transa=True)
+                    self.T, clpy.asfortranarray(other), transa=True)
             elif other.ndim == 2:
                 return cusparse.csrmm2(
-                    self.T, cupy.asfortranarray(other), transa=True)
+                    self.T, clpy.asfortranarray(other), transa=True)
             else:
                 raise ValueError('could not interpret dimensions')
         else:
@@ -120,16 +120,16 @@ class csc_matrix(compressed._compressed_sparse_matrix):
             out: Not supported.
 
         Returns:
-            cupy.ndarray: Dense array representing the same matrix.
+            clpy.ndarray: Dense array representing the same matrix.
 
-        .. seealso:: :func:`cupy.sparse.csc_array.toarray`
+        .. seealso:: :func:`clpy.sparse.csc_array.toarray`
 
         """
         if order is None:
             order = 'C'
 
         if self.nnz == 0:
-            return cupy.zeros(shape=self.shape, dtype=self.dtype, order=order)
+            return clpy.zeros(shape=self.shape, dtype=self.dtype, order=order)
 
         self.sum_duplicates()
         # csc2dense and csr2dense returns F-contiguous array.
@@ -156,7 +156,7 @@ class csc_matrix(compressed._compressed_sparse_matrix):
                 possible.
 
         Returns:
-            cupy.sparse.coo_matrix: Converted matrix.
+            clpy.sparse.coo_matrix: Converted matrix.
 
         """
         return self.T.tocoo(copy).T
@@ -169,7 +169,7 @@ class csc_matrix(compressed._compressed_sparse_matrix):
                 Otherwise it makes a copy of the matrix.
 
         Returns:
-            cupy.sparse.csc_matrix: Converted matrix.
+            clpy.sparse.csc_matrix: Converted matrix.
 
         """
         if copy:
@@ -186,7 +186,7 @@ class csc_matrix(compressed._compressed_sparse_matrix):
                 arrays in a matrix cannot be shared in csr to csc conversion.
 
         Returns:
-            cupy.sparse.csr_matrix: Converted matrix.
+            clpy.sparse.csr_matrix: Converted matrix.
 
         """
         return self.T.tocsc(copy=False).T
@@ -204,7 +204,7 @@ class csc_matrix(compressed._compressed_sparse_matrix):
                 Otherwise, it shared data arrays as much as possible.
 
         Returns:
-            cupy.sparse.spmatrix: Transpose matrix.
+            clpy.sparse.spmatrix: Transpose matrix.
 
         """
         if axes is not None:
@@ -213,7 +213,7 @@ class csc_matrix(compressed._compressed_sparse_matrix):
                 'swapping dimensions is the only logical permutation.')
 
         shape = self.shape[1], self.shape[0]
-        return cupy.sparse.csr_matrix(
+        return clpy.sparse.csr_matrix(
             (self.data, self.indices, self.indptr), shape=shape, copy=copy)
 
 
@@ -221,7 +221,7 @@ def isspmatrix_csc(x):
     """Checks if a given matrix is of CSC format.
 
     Returns:
-        bool: Returns if ``x`` is :class:`cupy.sparse.csc_matrix`.
+        bool: Returns if ``x`` is :class:`clpy.sparse.csc_matrix`.
 
     """
     return isinstance(x, csc_matrix)

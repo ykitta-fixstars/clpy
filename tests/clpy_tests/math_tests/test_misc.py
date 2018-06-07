@@ -2,7 +2,7 @@ import unittest
 
 import numpy
 
-from cupy import testing
+from clpy import testing
 
 import os
 
@@ -13,7 +13,7 @@ class TestMisc(unittest.TestCase):
     _multiprocess_can_split_ = True
 
     @testing.for_all_dtypes(no_complex=True)
-    @testing.numpy_cupy_allclose(atol=1e-5)
+    @testing.numpy_clpy_allclose(atol=1e-5)
     def check_unary(self, name, xp, dtype, no_bool=False):
         if no_bool and numpy.dtype(dtype).char == '?':
             return numpy.int_(0)
@@ -21,7 +21,7 @@ class TestMisc(unittest.TestCase):
         return getattr(xp, name)(a)
 
     @testing.for_all_dtypes(no_complex=True)
-    @testing.numpy_cupy_allclose(atol=1e-5)
+    @testing.numpy_clpy_allclose(atol=1e-5)
     def check_binary(self, name, xp, dtype, no_bool=False):
         if no_bool and numpy.dtype(dtype).char == '?':
             return numpy.int_(0)
@@ -30,7 +30,7 @@ class TestMisc(unittest.TestCase):
         return getattr(xp, name)(a, b)
 
     @testing.for_dtypes(['?', 'b', 'h', 'i', 'q', 'e', 'f', 'd'])
-    @testing.numpy_cupy_allclose(atol=1e-5)
+    @testing.numpy_clpy_allclose(atol=1e-5)
     def check_unary_negative(self, name, xp, dtype, no_bool=False):
         if no_bool and numpy.dtype(dtype).char == '?':
             return numpy.int_(0)
@@ -38,7 +38,7 @@ class TestMisc(unittest.TestCase):
         return getattr(xp, name)(a)
 
     @testing.for_float_dtypes()
-    @testing.numpy_cupy_array_equal()
+    @testing.numpy_clpy_array_equal()
     def check_binary_nan(self, name, xp, dtype):
         a = xp.array([-3, numpy.NAN, -1, numpy.NAN, 0, numpy.NAN, 2],
                      dtype=dtype)
@@ -49,13 +49,13 @@ class TestMisc(unittest.TestCase):
     @unittest.skipIf(
         os.sys.platform == 'win32', 'dtype problem on Windows')
     @testing.for_all_dtypes(no_complex=True)
-    @testing.numpy_cupy_array_equal()
+    @testing.numpy_clpy_array_equal()
     def test_clip1(self, xp, dtype):
         a = testing.shaped_arange((2, 3, 4), xp, dtype)
         return a.clip(3, 13)
 
     @testing.for_all_dtypes(no_bool=True, no_complex=True)
-    @testing.numpy_cupy_array_equal()
+    @testing.numpy_clpy_array_equal()
     def test_clip3(self, xp, dtype):
         a = testing.shaped_arange((2, 3, 4), xp, dtype)
         return a.clip(3, 13)
@@ -63,19 +63,19 @@ class TestMisc(unittest.TestCase):
     @unittest.skipIf(
         os.sys.platform == 'win32', 'dtype problem on Windows')
     @testing.for_all_dtypes(no_complex=True)
-    @testing.numpy_cupy_array_equal()
+    @testing.numpy_clpy_array_equal()
     def test_external_clip1(self, xp, dtype):
         a = testing.shaped_arange((2, 3, 4), xp, dtype)
         return xp.clip(a, 3, 13)
 
     @testing.for_all_dtypes(no_bool=True, no_complex=True)
-    @testing.numpy_cupy_array_equal()
+    @testing.numpy_clpy_array_equal()
     def test_external_clip2(self, xp, dtype):
         a = testing.shaped_arange((2, 3, 4), xp, dtype)
         return xp.clip(a, 3, 13)
 
     @testing.for_all_dtypes(no_complex=True)
-    @testing.numpy_cupy_array_equal()
+    @testing.numpy_clpy_array_equal()
     def test_clip2(self, xp, dtype):
         a = testing.shaped_arange((2, 3, 4), xp, dtype)
         a_min = xp.array([3, 4, 5, 6], dtype=dtype)

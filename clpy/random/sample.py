@@ -1,10 +1,10 @@
 import six
 
-import cupy
-from cupy import core
-from cupy.creation import basic
-from cupy.random import distributions
-from cupy.random import generator
+import clpy
+from clpy import core
+from clpy.creation import basic
+from clpy.random import distributions
+from clpy.random import generator
 
 
 def rand(*size, **kwarg):
@@ -21,7 +21,7 @@ def rand(*size, **kwarg):
             :class:`numpy.float64`.
 
     Returns:
-        cupy.ndarray: A random array.
+        clpy.ndarray: A random array.
 
     .. seealso:: :func:`numpy.random.rand`
 
@@ -47,7 +47,7 @@ def randn(*size, **kwarg):
             The default is :class:`numpy.float64`.
 
     Returns:
-        cupy.ndarray: An array of standard normal random values.
+        clpy.ndarray: An array of standard normal random values.
 
     .. seealso:: :func:`numpy.random.randn`
 
@@ -76,7 +76,7 @@ def randint(low, high=None, size=None, dtype='l'):
         dtype: Data type specifier.
 
     Returns:
-        int or cupy.ndarray of ints: If size is ``None``,
+        int or clpy.ndarray of ints: If size is ``None``,
         it is single integer sampled.
         If size is integer, it is the 1D-array of length ``size`` element.
         Otherwise, it is the array whose shape specified by ``size``.
@@ -90,21 +90,21 @@ def randint(low, high=None, size=None, dtype='l'):
 
     if lo >= hi:
         raise ValueError('low >= high')
-    if lo < cupy.iinfo(dtype).min:
+    if lo < clpy.iinfo(dtype).min:
         raise ValueError(
-            'low is out of bounds for {}'.format(cupy.dtype(dtype).name))
-    if hi > cupy.iinfo(dtype).max + 1:
+            'low is out of bounds for {}'.format(clpy.dtype(dtype).name))
+    if hi > clpy.iinfo(dtype).max + 1:
         raise ValueError(
-            'high is out of bounds for {}'.format(cupy.dtype(dtype).name))
+            'high is out of bounds for {}'.format(clpy.dtype(dtype).name))
 
     diff = hi - lo - 1
-    if diff > cupy.iinfo(cupy.int32).max - cupy.iinfo(cupy.int32).min + 1:
+    if diff > clpy.iinfo(clpy.int32).max - clpy.iinfo(clpy.int32).min + 1:
         raise NotImplementedError(
             'Sampling from a range whose extent is larger than int32 range is '
             'currently not supported')
     rs = generator.get_random_state()
     x = rs.interval(diff, size).astype(dtype, copy=False)
-    cupy.add(x, lo, out=x)
+    clpy.add(x, lo, out=x)
     return x
 
 
@@ -123,7 +123,7 @@ def random_integers(low, high=None, size=None):
         size (None or int or tuple of ints): The shape of returned value.
 
     Returns:
-        int or cupy.ndarray of ints: If size is ``None``,
+        int or clpy.ndarray of ints: If size is ``None``,
         it is single integer sampled.
         If size is integer, it is the 1D-array of length ``size`` element.
         Otherwise, it is the array whose shape specified by ``size``.
@@ -137,7 +137,7 @@ def random_integers(low, high=None, size=None):
 def random_sample(size=None, dtype=float):
     """Returns an array of random values over the interval ``[0, 1)``.
 
-    This is a variant of :func:`cupy.random.rand`.
+    This is a variant of :func:`clpy.random.rand`.
 
     Args:
         size (int or tuple of ints): The shape of the array.
@@ -145,7 +145,7 @@ def random_sample(size=None, dtype=float):
             :class:`numpy.float64` types are allowed.
 
     Returns:
-        cupy.ndarray: An array of uniformly distributed random values.
+        clpy.ndarray: An array of uniformly distributed random values.
 
     .. seealso:: :func:`numpy.random.random_sample`
 
@@ -169,7 +169,7 @@ def choice(a, size=None, replace=True, p=None):
             If an array-like,
             a random sample is generated from its elements.
             If an int, the random sample is generated as if ``a`` was
-            ``cupy.arange(n)``
+            ``clpy.arange(n)``
         size (int or tuple of ints): The shape of the array.
         replace (boolean): Whether the sample is with or without replacement.
         p (1-D array-like):
@@ -178,7 +178,7 @@ def choice(a, size=None, replace=True, p=None):
             entries in ``a``.
 
     Returns:
-        cupy.ndarray: An array of ``a`` values distributed according to
+        clpy.ndarray: An array of ``a`` values distributed according to
                       ``p`` or uniformly.
 
     .. seealso:: :func:`numpy.random.choice`
@@ -193,7 +193,7 @@ def multinomial(n, pvals, size=None):
 
     Args:
         n (int): Number of trials.
-        pvals (cupy.ndarray): Probabilities of each of the ``p`` different
+        pvals (clpy.ndarray): Probabilities of each of the ``p`` different
             outcomes. The sum of these values must be 1.
         size (int or tuple of ints or None): Shape of a sample in each trial.
             For example when ``size`` is ``(a, b)``, shape of returned value is
@@ -202,7 +202,7 @@ def multinomial(n, pvals, size=None):
             returned value is ``(p,)``.
 
     Returns:
-        cupy.ndarray: An array drawn from multinomial distribution.
+        clpy.ndarray: An array drawn from multinomial distribution.
 
     .. note::
        It does not support ``sum(pvals) < 1`` case.
@@ -231,5 +231,5 @@ def multinomial(n, pvals, size=None):
         core.ElementwiseKernel(
             'int64 x, int32 p, int32 n', 'raw int32 ys',
             'atomicAdd(&ys[i / n * p + x], 1)',
-            'cupy_random_multinomial')(xs, p, n, ys)
+            'clpy_random_multinomial')(xs, p, n, ys)
     return ys.astype('l')

@@ -2,4 +2,4 @@
 # http://docs.scipy.org/doc/numpy/reference/routines.padding.html
 
 # "NOQA" to suppress flake8 warning
-from cupy.padding import pad  # NOQA
+from clpy.padding import pad  # NOQA

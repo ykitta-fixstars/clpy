@@ -15,8 +15,8 @@ cpdef get_memory_hooks():
 class MemoryHook(object):
     """Base class of hooks for Memory allocations.
 
-    :class:`~cupy.cuda.MemoryHook` is an callback object
-    that is registered to :class:`~cupy.cuda.SingleDeviceMemoryPool`.
+    :class:`~clpy.cuda.MemoryHook` is an callback object
+    that is registered to :class:`~clpy.cuda.SingleDeviceMemoryPool`.
     Registered memory hooks are invoked before and after
     memory is allocated from GPU device, and
     memory is retrieved from memory pool, and
@@ -24,27 +24,27 @@ class MemoryHook(object):
 
     Memory hooks that derive :class:`MemoryHook` are required
     to implement six methods:
-    :meth:`~cupy.cuda.MemoryHook.alloc_preprocess`,
-    :meth:`~cupy.cuda.MemoryHook.alloc_postprocess`,
-    :meth:`~cupy.cuda.MemoryHook.malloc_preprocess`,
-    :meth:`~cupy.cuda.MemoryHook.malloc_postprocess`,
-    :meth:`~cupy.cuda.MemoryHook.free_preprocess`, and
-    :meth:`~cupy.cuda.MemoryHook.free_postprocess`,
+    :meth:`~clpy.cuda.MemoryHook.alloc_preprocess`,
+    :meth:`~clpy.cuda.MemoryHook.alloc_postprocess`,
+    :meth:`~clpy.cuda.MemoryHook.malloc_preprocess`,
+    :meth:`~clpy.cuda.MemoryHook.malloc_postprocess`,
+    :meth:`~clpy.cuda.MemoryHook.free_preprocess`, and
+    :meth:`~clpy.cuda.MemoryHook.free_postprocess`,
     By default, these methods do nothing.
 
-    Specifically, :meth:`~cupy.cuda.MemoryHook.alloc_preprocess`
-    (resp. :meth:`~cupy.cuda.MemoryHook.alloc_postprocess`)
+    Specifically, :meth:`~clpy.cuda.MemoryHook.alloc_preprocess`
+    (resp. :meth:`~clpy.cuda.MemoryHook.alloc_postprocess`)
     of all memory hooks registered are called before (resp. after)
     memory is allocated from GPU device.
 
-    Likewise, :meth:`~cupy.cuda.MemoryHook.malloc_preprocess`
-    (resp. :meth:`~cupy.cuda.MemoryHook.malloc_postprocess`)
+    Likewise, :meth:`~clpy.cuda.MemoryHook.malloc_preprocess`
+    (resp. :meth:`~clpy.cuda.MemoryHook.malloc_postprocess`)
     of all memory hooks registered are called before (resp. after)
     memory is retrieved from memory pool, that is,
-    :meth:`~cupy.cuda.SingleDeviceMemoryPool.malloc` is invoked.
+    :meth:`~clpy.cuda.SingleDeviceMemoryPool.malloc` is invoked.
 
     Below is a pseudo code to descirbe how
-    :meth:`~cupy.cuda.SingleDeviceMemoryPool.malloc` and hooks work.
+    :meth:`~clpy.cuda.SingleDeviceMemoryPool.malloc` and hooks work.
     Please note that ``alloc_preprocess`` and ``alloc_postprocess``
     are not invoked if a cached free chunk is found::
 
@@ -57,14 +57,14 @@ class MemoryHook(object):
                 Call alloc_postprocess for all memory hooks
             Call malloc_postprocess for all memory hooks
 
-    Moreover, :meth:`~cupy.cuda.MemoryHook.free_preprocess`
-    (resp. :meth:`~cupy.cuda.MemoryHook.free_postprocess`)
+    Moreover, :meth:`~clpy.cuda.MemoryHook.free_preprocess`
+    (resp. :meth:`~clpy.cuda.MemoryHook.free_postprocess`)
     of all memory hooks registered are called before (resp. after)
     memory is released to memory pool, that is,
-    :meth:`~cupy.cuda.memory.PooledMemory.free` is invoked.
+    :meth:`~clpy.cuda.memory.PooledMemory.free` is invoked.
 
     Below is a pseudo code to descirbe how
-    :meth:`~cupy.cuda.memory.PooledMemory.free` and hooks work::
+    :meth:`~clpy.cuda.memory.PooledMemory.free` and hooks work::
 
         def free(ptr):
             Call free_preprocess of all memory hooks

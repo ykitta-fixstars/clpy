@@ -3,7 +3,7 @@
 
 #ifndef CUPY_NO_CUDA
 
-namespace cupy {
+namespace clpy {
 
 namespace thrust {
 
@@ -15,13 +15,13 @@ template <typename T> void _argsort(size_t *, void *, void *, const std::vector<
 
 } // namespace thrust
 
-} // namespace cupy
+} // namespace clpy
 
 #else // CUPY_NO_CUDA
 
 #include "cupy_common.h"
 
-namespace cupy {
+namespace clpy {
 
 namespace thrust {
 
@@ -33,7 +33,7 @@ template <typename T> void _argsort(size_t *, void *, void *, const std::vector<
 
 } // namespace thrust
 
-} // namespace cupy
+} // namespace clpy
 
 #endif // #ifndef CUPY_NO_CUDA
 

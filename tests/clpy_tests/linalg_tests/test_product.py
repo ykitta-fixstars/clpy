@@ -2,7 +2,7 @@ import unittest
 
 import numpy
 
-from cupy import testing
+from clpy import testing
 
 
 @testing.parameterize(*testing.product({
@@ -35,7 +35,7 @@ class TestDot(unittest.TestCase):
     _multiprocess_can_split_ = True
 
     @testing.for_all_dtypes_combination(['dtype_a', 'dtype_b'])
-    @testing.numpy_cupy_allclose()
+    @testing.numpy_clpy_allclose()
     def test_dot(self, xp, dtype_a, dtype_b):
         shape_a, shape_b = self.shape
         if self.trans_a:
@@ -51,7 +51,7 @@ class TestDot(unittest.TestCase):
     @testing.for_float_dtypes(name='dtype_a')
     @testing.for_float_dtypes(name='dtype_b')
     @testing.for_float_dtypes(name='dtype_c')
-    @testing.numpy_cupy_allclose(accept_error=ValueError)
+    @testing.numpy_clpy_allclose(accept_error=ValueError)
     def test_dot_with_out(self, xp, dtype_a, dtype_b, dtype_c):
         shape_a, shape_b = self.shape
         if self.trans_a:
@@ -87,7 +87,7 @@ class TestDotFor0Dim(unittest.TestCase):
     _multiprocess_can_split_ = True
 
     @testing.for_all_dtypes_combination(['dtype_a', 'dtype_b'])
-    @testing.numpy_cupy_allclose(contiguous_check=False)
+    @testing.numpy_clpy_allclose(contiguous_check=False)
     def test_dot(self, xp, dtype_a, dtype_b):
         shape_a, shape_b = self.shape
         if self.trans_a:
@@ -107,35 +107,35 @@ class TestProduct(unittest.TestCase):
     _multiprocess_can_split_ = True
 
     @testing.for_all_dtypes()
-    @testing.numpy_cupy_allclose()
+    @testing.numpy_clpy_allclose()
     def test_dot_vec1(self, xp, dtype):
         a = testing.shaped_arange((2,), xp, dtype)
         b = testing.shaped_arange((2,), xp, dtype)
         return xp.dot(a, b)
 
     @testing.for_all_dtypes()
-    @testing.numpy_cupy_allclose()
+    @testing.numpy_clpy_allclose()
     def test_dot_vec2(self, xp, dtype):
         a = testing.shaped_arange((2,), xp, dtype)
         b = testing.shaped_arange((2, 1), xp, dtype)
         return xp.dot(a, b)
 
     @testing.for_all_dtypes()
-    @testing.numpy_cupy_allclose()
+    @testing.numpy_clpy_allclose()
     def test_dot_vec3(self, xp, dtype):
         a = testing.shaped_arange((1, 2), xp, dtype)
         b = testing.shaped_arange((2,), xp, dtype)
         return xp.dot(a, b)
 
     @testing.for_all_dtypes()
-    @testing.numpy_cupy_allclose()
+    @testing.numpy_clpy_allclose()
     def test_transposed_dot(self, xp, dtype):
         a = testing.shaped_arange((2, 3, 4), xp, dtype).transpose(1, 0, 2)
         b = testing.shaped_arange((2, 3, 4), xp, dtype).transpose(0, 2, 1)
         return xp.dot(a, b)
 
     @testing.for_all_dtypes()
-    @testing.numpy_cupy_allclose()
+    @testing.numpy_clpy_allclose()
     def test_transposed_dot_with_out(self, xp, dtype):
         a = testing.shaped_arange((2, 3, 4), xp, dtype).transpose(1, 0, 2)
         b = testing.shaped_arange((4, 2, 3), xp, dtype).transpose(2, 0, 1)
@@ -144,7 +144,7 @@ class TestProduct(unittest.TestCase):
         return c
 
     @testing.for_all_dtypes()
-    @testing.numpy_cupy_raises()
+    @testing.numpy_clpy_raises()
     def test_transposed_dot_with_out_f_contiguous(self, xp, dtype):
         a = testing.shaped_arange((2, 3, 4), xp, dtype).transpose(1, 0, 2)
         b = testing.shaped_arange((4, 2, 3), xp, dtype).transpose(2, 0, 1)
@@ -153,42 +153,42 @@ class TestProduct(unittest.TestCase):
         xp.dot(a, b, out=c)
 
     @testing.for_all_dtypes()
-    @testing.numpy_cupy_allclose()
+    @testing.numpy_clpy_allclose()
     def test_dot_with_single_elem_array1(self, xp, dtype):
         a = testing.shaped_arange((3, 1), xp, dtype)
         b = xp.array([[2]], dtype=dtype)
         return xp.dot(a, b)
 
     @testing.for_all_dtypes()
-    @testing.numpy_cupy_allclose()
+    @testing.numpy_clpy_allclose()
     def test_dot_with_single_elem_array2(self, xp, dtype):
         a = xp.array([[2]], dtype=dtype)
         b = testing.shaped_arange((1, 3), xp, dtype)
         return xp.dot(a, b)
 
     @testing.for_all_dtypes()
-    @testing.numpy_cupy_allclose()
+    @testing.numpy_clpy_allclose()
     def test_vdot(self, xp, dtype):
         a = testing.shaped_arange((5,), xp, dtype)
         b = testing.shaped_reverse_arange((5,), xp, dtype)
         return xp.vdot(a, b)
 
     @testing.for_all_dtypes()
-    @testing.numpy_cupy_allclose()
+    @testing.numpy_clpy_allclose()
     def test_reversed_vdot(self, xp, dtype):
         a = testing.shaped_arange((5,), xp, dtype)[::-1]
         b = testing.shaped_reverse_arange((5,), xp, dtype)[::-1]
         return xp.vdot(a, b)
 
     @testing.for_all_dtypes()
-    @testing.numpy_cupy_allclose()
+    @testing.numpy_clpy_allclose()
     def test_multidim_vdot(self, xp, dtype):
         a = testing.shaped_arange((2, 3, 4), xp, dtype)
         b = testing.shaped_arange((2, 2, 2, 3), xp, dtype)
         return xp.vdot(a, b)
 
     @testing.for_all_dtypes()
-    @testing.numpy_cupy_allclose()
+    @testing.numpy_clpy_allclose()
     def test_transposed_multidim_vdot(self, xp, dtype):
         a = testing.shaped_arange((2, 3, 4), xp, dtype).transpose(2, 0, 1)
         b = testing.shaped_arange(
@@ -196,7 +196,7 @@ class TestProduct(unittest.TestCase):
         return xp.vdot(a, b)
 
     @testing.for_all_dtypes()
-    @testing.numpy_cupy_allclose()
+    @testing.numpy_clpy_allclose()
     def test_inner(self, xp, dtype):
         a = testing.shaped_arange((5,), xp, dtype)
         b = testing.shaped_reverse_arange((5,), xp, dtype)
@@ -204,63 +204,63 @@ class TestProduct(unittest.TestCase):
 
     @testing.for_all_dtypes()
     @testing.with_requires('numpy>=1.10.2')
-    @testing.numpy_cupy_allclose()
+    @testing.numpy_clpy_allclose()
     def test_reversed_inner(self, xp, dtype):
         a = testing.shaped_arange((5,), xp, dtype)[::-1]
         b = testing.shaped_reverse_arange((5,), xp, dtype)[::-1]
         return xp.inner(a, b)
 
     @testing.for_all_dtypes()
-    @testing.numpy_cupy_allclose()
+    @testing.numpy_clpy_allclose()
     def test_multidim_inner(self, xp, dtype):
         a = testing.shaped_arange((2, 3, 4), xp, dtype)
         b = testing.shaped_arange((3, 2, 4), xp, dtype)
         return xp.inner(a, b)
 
     @testing.for_all_dtypes()
-    @testing.numpy_cupy_allclose()
+    @testing.numpy_clpy_allclose()
     def test_transposed_higher_order_inner(self, xp, dtype):
         a = testing.shaped_arange((2, 4, 3), xp, dtype).transpose(2, 0, 1)
         b = testing.shaped_arange((4, 2, 3), xp, dtype).transpose(1, 2, 0)
         return xp.inner(a, b)
 
     @testing.for_all_dtypes()
-    @testing.numpy_cupy_allclose()
+    @testing.numpy_clpy_allclose()
     def test_outer(self, xp, dtype):
         a = testing.shaped_arange((5,), xp, dtype)
         b = testing.shaped_arange((4,), xp, dtype)
         return xp.outer(a, b)
 
     @testing.for_all_dtypes()
-    @testing.numpy_cupy_allclose()
+    @testing.numpy_clpy_allclose()
     def test_reversed_outer(self, xp, dtype):
         a = testing.shaped_arange((5,), xp, dtype)
         b = testing.shaped_arange((4,), xp, dtype)
         return xp.outer(a[::-1], b[::-1])
 
     @testing.for_all_dtypes()
-    @testing.numpy_cupy_allclose()
+    @testing.numpy_clpy_allclose()
     def test_multidim_outer(self, xp, dtype):
         a = testing.shaped_arange((2, 3), xp, dtype)
         b = testing.shaped_arange((4, 5), xp, dtype)
         return xp.outer(a, b)
 
     @testing.for_all_dtypes()
-    @testing.numpy_cupy_allclose()
+    @testing.numpy_clpy_allclose()
     def test_tensordot(self, xp, dtype):
         a = testing.shaped_arange((2, 3, 4), xp, dtype)
         b = testing.shaped_arange((3, 4, 5), xp, dtype)
         return xp.tensordot(a, b)
 
     @testing.for_all_dtypes()
-    @testing.numpy_cupy_allclose()
+    @testing.numpy_clpy_allclose()
     def test_transposed_tensordot(self, xp, dtype):
         a = testing.shaped_arange((2, 3, 4), xp, dtype).transpose(1, 0, 2)
         b = testing.shaped_arange((4, 3, 2), xp, dtype).transpose(2, 0, 1)
         return xp.tensordot(a, b)
 
     @testing.for_all_dtypes()
-    @testing.numpy_cupy_allclose()
+    @testing.numpy_clpy_allclose()
     def test_tensordot_with_int_axes(self, xp, dtype):
         if dtype in (numpy.uint8, numpy.int8, numpy.uint16, numpy.int16):
             a = testing.shaped_arange((1, 2, 3), xp, dtype)
@@ -272,7 +272,7 @@ class TestProduct(unittest.TestCase):
             return xp.tensordot(a, b, axes=3)
 
     @testing.for_all_dtypes()
-    @testing.numpy_cupy_allclose()
+    @testing.numpy_clpy_allclose()
     def test_transposed_tensordot_with_int_axes(self, xp, dtype):
         if dtype in (numpy.uint8, numpy.int8, numpy.uint16, numpy.int16):
             # Avoid overflow
@@ -289,7 +289,7 @@ class TestProduct(unittest.TestCase):
             return xp.tensordot(a, b, axes=3)
 
     @testing.for_all_dtypes()
-    @testing.numpy_cupy_allclose()
+    @testing.numpy_clpy_allclose()
     def test_tensordot_with_list_axes(self, xp, dtype):
         if dtype in (numpy.uint8, numpy.int8, numpy.uint16, numpy.int16):
             # Avoid overflow
@@ -302,7 +302,7 @@ class TestProduct(unittest.TestCase):
             return xp.tensordot(a, b, axes=([3, 2, 1], [1, 2, 0]))
 
     @testing.for_all_dtypes()
-    @testing.numpy_cupy_allclose()
+    @testing.numpy_clpy_allclose()
     def test_transposed_tensordot_with_list_axes(self, xp, dtype):
         if dtype in (numpy.uint8, numpy.int8, numpy.uint16, numpy.int16):
             # Avoid overflow
@@ -319,35 +319,35 @@ class TestProduct(unittest.TestCase):
             return xp.tensordot(a, b, axes=([2, 0, 3], [3, 2, 1]))
 
     @testing.for_all_dtypes()
-    @testing.numpy_cupy_allclose()
+    @testing.numpy_clpy_allclose()
     def test_tensordot_zero_dim(self, xp, dtype):
         a = xp.array(2, dtype=dtype)
         b = testing.shaped_arange((3, 4, 2), xp, dtype)
         return xp.tensordot(a, b, axes=0)
 
     @testing.for_all_dtypes()
-    @testing.numpy_cupy_allclose()
+    @testing.numpy_clpy_allclose()
     def test_kron(self, xp, dtype):
         a = testing.shaped_arange((4,), xp, dtype)
         b = testing.shaped_arange((5,), xp, dtype)
         return xp.kron(a, b)
 
     @testing.for_all_dtypes()
-    @testing.numpy_cupy_allclose()
+    @testing.numpy_clpy_allclose()
     def test_reversed_kron(self, xp, dtype):
         a = testing.shaped_arange((4,), xp, dtype)
         b = testing.shaped_arange((5,), xp, dtype)
         return xp.kron(a[::-1], b[::-1])
 
     @testing.for_all_dtypes()
-    @testing.numpy_cupy_allclose()
+    @testing.numpy_clpy_allclose()
     def test_multidim_kron(self, xp, dtype):
         a = testing.shaped_arange((2, 3, 4), xp, dtype)
         b = testing.shaped_arange((4, 2, 3), xp, dtype)
         return xp.kron(a, b)
 
     @testing.for_all_dtypes()
-    @testing.numpy_cupy_allclose()
+    @testing.numpy_clpy_allclose()
     def test_zerodim_kron(self, xp, dtype):
         a = xp.array(2, dtype=dtype)
         b = testing.shaped_arange((4, 5), xp, dtype)

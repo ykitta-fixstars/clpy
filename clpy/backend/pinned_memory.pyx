@@ -5,9 +5,10 @@ import weakref
 
 from fastrlock cimport rlock
 
-from cupy.cuda import runtime
-
-from cupy.cuda cimport runtime
+# TODO(LWisteria): Use clEnqueueMapBuffer
+from libc.stdlib cimport malloc, free
+# from clpy.backend import runtime
+# from clpy.backend cimport runtime
 
 
 class PinnedMemory(object):
@@ -25,11 +26,13 @@ class PinnedMemory(object):
         self.size = size
         self.ptr = 0
         if size > 0:
-            self.ptr = runtime.hostAlloc(size, flags)
+            self.ptr = <size_t>malloc(size)
+#            self.ptr = runtime.hostAlloc(size, flags) # TODO(LWisteria): Use clEnqueueMapBuffer
 
     def __del__(self):
         if self.ptr:
-            runtime.freeHost(self.ptr)
+            free(<void*>self.ptr)
+#            runtime.freeHost(self.ptr) # TODO(LWisteria): Use clEnqueueMapBuffer
 
     def __int__(self):
         """Returns the pointer value to the head of the allocation."""
@@ -144,7 +147,7 @@ cdef class _EventWatcher:
         The ``obj`` are automatically released when the event done.
 
         Args:
-            event (cupy.cuda.Event): The CUDA event to be monitored.
+            event (clpy.cuda.Event): The CUDA event to be monitored.
             obj: The object to be held.
         """
         rlock.lock_fastrlock(self._lock, -1, True)
@@ -174,7 +177,8 @@ cdef class _EventWatcher:
 
 
 cpdef PinnedMemoryPointer _malloc(Py_ssize_t size):
-    mem = PinnedMemory(size, runtime.hostAllocPortable)
+    mem = PinnedMemory(size)
+#    mem = PinnedMemory(size, runtime.hostAllocPortable) # TODO(LWisteria): Use clEnqueueMapBuffer
     return PinnedMemoryPointer(mem, 0)
 
 
@@ -188,7 +192,7 @@ cpdef _add_to_watch_list(event, obj):
     The ``obj`` are automatically released when the event done.
 
     Args:
-        event (cupy.cuda.Event): The CUDA event to be monitored.
+        event (clpy.cuda.Event): The CUDA event to be monitored.
         obj: The object to be held.
     """
     _watcher.add(event, obj)
@@ -197,14 +201,14 @@ cpdef _add_to_watch_list(event, obj):
 cpdef PinnedMemoryPointer alloc_pinned_memory(Py_ssize_t size):
     """Calls the current allocator.
 
-    Use :func:`~cupy.cuda.set_pinned_memory_allocator` to change the current
+    Use :func:`~clpy.cuda.set_pinned_memory_allocator` to change the current
     allocator.
 
     Args:
         size (int): Size of the memory allocation.
 
     Returns:
-        ~cupy.cuda.PinnedMemoryPointer: Pointer to the allocated buffer.
+        ~clpy.cuda.PinnedMemoryPointer: Pointer to the allocated buffer.
 
     """
     _watcher.check_and_release()
@@ -216,7 +220,7 @@ cpdef set_pinned_memory_allocator(allocator=_malloc):
 
     Args:
         allocator (function): CuPy pinned memory allocator. It must have the
-            same interface as the :func:`cupy.cuda.alloc_alloc_pinned_memory`
+            same interface as the :func:`clpy.cuda.alloc_alloc_pinned_memory`
             function, which takes the buffer size as an argument and returns
             the device buffer of that size.
 
@@ -294,13 +298,14 @@ cdef class PinnedMemoryPool:
             if free:
                 mem = free.pop()
             else:
-                try:
-                    mem = self._alloc(size).mem
-                except runtime.CUDARuntimeError as e:
-                    if e.status != runtime.errorMemoryAllocation:
-                        raise
-                    self.free_all_blocks()
-                    mem = self._alloc(size).mem
+                mem = self._alloc(size).mem  # TODO(LWisteria): Use clEnqueueMapBuffer
+#                try:
+#                    mem = self._alloc(size).mem
+#                except runtime.CUDARuntimeError as e:
+#                    if e.status != runtime.errorMemoryAllocation:
+#                        raise
+#                    self.free_all_blocks()
+#                    mem = self._alloc(size).mem
 
             self._in_use[mem.ptr] = mem
         finally:

@@ -1,6 +1,6 @@
 import unittest
 
-from cupy.testing import condition
+from clpy.testing import condition
 
 
 # The test fixtures of this TestCase is used to be decorated by

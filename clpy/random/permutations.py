@@ -1,4 +1,4 @@
-from cupy.random import generator
+from clpy.random import generator
 
 # TODO(okuta): Implement permutation
 
@@ -7,7 +7,7 @@ def shuffle(a):
     """Shuffles an array.
 
     Args:
-        a (cupy.ndarray): The array to be shuffled.
+        a (clpy.ndarray): The array to be shuffled.
 
     .. seealso:: :func:`numpy.random.shuffle`
 

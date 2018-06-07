@@ -1,15 +1,11 @@
 import numpy
-from numpy import linalg
+from numpy import linalg  # NOQA
 
-import cupy
-from cupy import cuda
-from cupy.cuda import device
-from cupy.linalg import decomposition
-from cupy.linalg import util
-
-
-if cuda.cusolver_enabled:
-    from cupy.cuda import cusolver
+import clpy
+from clpy import backend  # NOQA
+from clpy.backend import device  # NOQA
+from clpy.linalg import decomposition
+from clpy.linalg import util  # NOQA
 
 
 def norm(x, ord=None, axis=None, keepdims=False):
@@ -19,7 +15,7 @@ def norm(x, ord=None, axis=None, keepdims=False):
     See numpy.linalg.norm for more detail.
 
     Args:
-        x (cupy.ndarray): Array to take norm. If ``axis`` is None,
+        x (clpy.ndarray): Array to take norm. If ``axis`` is None,
             ``x`` must be 1-D or 2-D.
         ord (non-zero int, inf, -inf, 'fro'): Norm type.
         axis (int, 2-tuple of ints, None): 1-D or 2-D norm is cumputed over
@@ -28,7 +24,7 @@ def norm(x, ord=None, axis=None, keepdims=False):
             over are left.
 
     Returns:
-        cupy.ndarray
+        clpy.ndarray
 
     """
     if not issubclass(x.dtype.type, numpy.inexact):
@@ -39,7 +35,7 @@ def norm(x, ord=None, axis=None, keepdims=False):
         ndim = x.ndim
         if (ord is None or (ndim == 1 and ord == 2) or
                 (ndim == 2 and ord in ('f', 'fro'))):
-            ret = cupy.sqrt(cupy.sum(x.ravel() ** 2))
+            ret = clpy.sqrt(clpy.sum(x.ravel() ** 2))
             if keepdims:
                 ret = ret.reshape((1,) * ndim)
             return ret
@@ -71,7 +67,7 @@ def norm(x, ord=None, axis=None, keepdims=False):
         elif ord is None or ord == 2:
             # special case for speedup
             s = x ** 2
-            return cupy.sqrt(s.sum(axis=axis, keepdims=keepdims))
+            return clpy.sqrt(s.sum(axis=axis, keepdims=keepdims))
         else:
             try:
                 float(ord)
@@ -110,7 +106,7 @@ def norm(x, ord=None, axis=None, keepdims=False):
                 row_axis -= 1
             ret = abs(x).sum(axis=col_axis).min(axis=row_axis)
         elif ord in [None, 'fro', 'f']:
-            ret = cupy.sqrt((x ** 2).sum(axis=axis))
+            ret = clpy.sqrt((x ** 2).sum(axis=axis))
         else:
             raise ValueError("Invalid norm order for matrices.")
         if keepdims:
@@ -130,22 +126,22 @@ def det(a):
     """Retruns the deteminant of an array.
 
     Args:
-        a (cupy.ndarray): The input matrix with dimension ``(..., N, N)``.
+        a (clpy.ndarray): The input matrix with dimension ``(..., N, N)``.
 
     Returns:
-        cupy.ndarray: Determinant of ``a``. Its shape is ``a.shape[:-2]``.
+        clpy.ndarray: Determinant of ``a``. Its shape is ``a.shape[:-2]``.
 
     .. seealso:: :func:`numpy.linalg.det`
     """
     sign, logdet = slogdet(a)
-    return sign * cupy.exp(logdet)
+    return sign * clpy.exp(logdet)
 
 
 def matrix_rank(M, tol=None):
     """Return matrix rank of array using SVD method
 
     Args:
-        M (cupy.ndarray): Input array. Its `ndim` must be less than or equal to
+        M (clpy.ndarray): Input array. Its `ndim` must be less than or equal to
             2.
         tol (None or float): Threshold of singular value of `M`.
             When `tol` is `None`, and `eps` is the epsilon value for datatype
@@ -154,7 +150,7 @@ def matrix_rank(M, tol=None):
             It obeys :func:`numpy.linalg.matrix_rank`.
 
     Returns:
-        cupy.ndarray: Rank of `M`.
+        clpy.ndarray: Rank of `M`.
 
     .. seealso:: :func:`numpy.linalg.matrix_rank`
     """
@@ -173,10 +169,10 @@ def slogdet(a):
     It calculates the natural logarithm of the deteminant of a given value.
 
     Args:
-        a (cupy.ndarray): The input matrix with dimension ``(..., N, N)``.
+        a (clpy.ndarray): The input matrix with dimension ``(..., N, N)``.
 
     Returns:
-        tuple of :class:`~cupy.ndarray`:
+        tuple of :class:`~clpy.ndarray`:
             It returns a tuple ``(sign, logdet)``. ``sign`` represents each
             sign of the deteminant as a real number ``0``, ``1`` or ``-1``.
             'logdet' represents the natural logarithm of the absolute of the
@@ -188,9 +184,10 @@ def slogdet(a):
 
     .. seealso:: :func:`numpy.linalg.slogdet`
     """
-    if not cuda.cusolver_enabled:
-        raise RuntimeError('Current cupy only supports cusolver in CUDA 8.0')
+    raise NotImplementedError("clpy does not support this")
 
+
+'''
     if a.ndim < 2:
         msg = ('%d-dimensional array given. '
                'Array must be at least two-dimensional' % a.ndim)
@@ -198,8 +195,8 @@ def slogdet(a):
 
     dtype = numpy.find_common_type((a.dtype.char, 'f'), ())
     shape = a.shape[:-2]
-    sign = cupy.empty(shape, dtype)
-    logdet = cupy.empty(shape, dtype)
+    sign = clpy.empty(shape, dtype)
+    logdet = clpy.empty(shape, dtype)
 
     a = a.astype(dtype)
     for index in numpy.ndindex(*shape):
@@ -207,8 +204,10 @@ def slogdet(a):
         sign[index] = s
         logdet[index] = l
     return sign, logdet
+'''
 
 
+'''
 def _slogdet_one(a):
     util._assert_rank2(a)
     util._assert_nd_squareness(a)
@@ -216,8 +215,8 @@ def _slogdet_one(a):
 
     handle = device.get_cusolver_handle()
     m = len(a)
-    ipiv = cupy.empty(m, 'i')
-    info = cupy.empty((), 'i')
+    ipiv = clpy.empty(m, 'i')
+    info = clpy.empty((), 'i')
 
     # Need to make a copy because getrf works inplace
     a_copy = a.copy(order='F')
@@ -230,21 +229,21 @@ def _slogdet_one(a):
         getrf = cusolver.dgetrf
 
     buffersize = getrf_bufferSize(handle, m, m, a_copy.data.ptr, m)
-    workspace = cupy.empty(buffersize, dtype=dtype)
+    workspace = clpy.empty(buffersize, dtype=dtype)
     getrf(handle, m, m, a_copy.data.ptr, m, workspace.data.ptr,
           ipiv.data.ptr, info.data.ptr)
 
     if info[()] == 0:
-        diag = cupy.diag(a_copy)
+        diag = clpy.diag(a_copy)
         # ipiv is 1-origin
-        non_zero = (cupy.count_nonzero(ipiv != cupy.arange(1, m + 1)) +
-                    cupy.count_nonzero(diag < 0))
+        non_zero = (clpy.count_nonzero(ipiv != clpy.arange(1, m + 1)) +
+                    clpy.count_nonzero(diag < 0))
         # Note: sign == -1 ** (non_zero % 2)
         sign = (non_zero % 2) * -2 + 1
-        logdet = cupy.log(abs(diag)).sum()
+        logdet = clpy.log(abs(diag)).sum()
     else:
-        sign = cupy.array(0.0, dtype=dtype)
-        logdet = cupy.array(float('-inf'), dtype)
+        sign = clpy.array(0.0, dtype=dtype)
+        logdet = clpy.array(float('-inf'), dtype)
 
     return sign, logdet
 
@@ -255,20 +254,21 @@ def trace(a, offset=0, axis1=0, axis2=1, dtype=None, out=None):
     It computes the sum along the diagonals at ``axis1`` and ``axis2``.
 
     Args:
-        a (cupy.ndarray): Array to take trace.
+        a (clpy.ndarray): Array to take trace.
         offset (int): Index of diagonals. Zero indicates the main diagonal, a
             positive value an upper diagonal, and a negative value a lower
             diagonal.
         axis1 (int): The first axis along which the trace is taken.
         axis2 (int): The second axis along which the trace is taken.
         dtype: Data type specifier of the output.
-        out (cupy.ndarray): Output array.
+        out (clpy.ndarray): Output array.
 
     Returns:
-        cupy.ndarray: The trace of ``a`` along axes ``(axis1, axis2)``.
+        clpy.ndarray: The trace of ``a`` along axes ``(axis1, axis2)``.
 
     .. seealso:: :func:`numpy.trace`
 
     """
     # TODO(okuta): check type
     return a.trace(offset, axis1, axis2, dtype, out)
+'''

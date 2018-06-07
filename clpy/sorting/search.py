@@ -1,20 +1,20 @@
-from cupy import core
+from clpy import core
 
 
 def argmax(a, axis=None, dtype=None, out=None, keepdims=False):
     """Returns the indices of the maximum along an axis.
 
     Args:
-        a (cupy.ndarray): Array to take argmax.
+        a (clpy.ndarray): Array to take argmax.
         axis (int): Along which axis to find the maximum. ``a`` is flattened by
             default.
         dtype: Data type specifier.
-        out (cupy.ndarray): Output array.
+        out (clpy.ndarray): Output array.
         keepdims (bool): If ``True``, the axis ``axis`` is preserved as an axis
             of length one.
 
     Returns:
-        cupy.ndarray: The indices of the maximum of ``a`` along an axis.
+        clpy.ndarray: The indices of the maximum of ``a`` along an axis.
 
     .. seealso:: :func:`numpy.argmax`
 
@@ -30,16 +30,16 @@ def argmin(a, axis=None, dtype=None, out=None, keepdims=False):
     """Returns the indices of the minimum along an axis.
 
     Args:
-        a (cupy.ndarray): Array to take argmin.
+        a (clpy.ndarray): Array to take argmin.
         axis (int): Along which axis to find the minimum. ``a`` is flattened by
             default.
         dtype: Data type specifier.
-        out (cupy.ndarray): Output array.
+        out (clpy.ndarray): Output array.
         keepdims (bool): If ``True``, the axis ``axis`` is preserved as an axis
             of length one.
 
     Returns:
-        cupy.ndarray: The indices of the minimum of ``a`` along an axis.
+        clpy.ndarray: The indices of the minimum of ``a`` along an axis.
 
     .. seealso:: :func:`numpy.argmin`
 
@@ -61,7 +61,7 @@ def nonzero(a):
     containing the indices of the non-zero elements in that dimension.
 
     Args:
-        a (cupy.ndarray): array
+        a (clpy.ndarray): array
 
     Returns:
         tuple of arrays: Indices of elements that are non-zero.
@@ -79,10 +79,10 @@ def flatnonzero(a):
     This is equivalent to a.ravel().nonzero()[0].
 
     Args:
-        a (cupy.ndarray): input array
+        a (clpy.ndarray): input array
 
     Returns:
-        cupy.ndarray: Output array,
+        clpy.ndarray: Output array,
         containing the indices of the elements of a.ravel() that are non-zero.
 
     .. seealso:: :func:`numpy.flatnonzero`
@@ -97,12 +97,12 @@ def where(condition, x=None, y=None):
     If only condition is given, return ``condition.nonzero()``.
 
     Args:
-        condition (cupy.ndarray): When True, take x, otherwise take y.
-        x (cupy.ndarray): Values from which to choose on ``True``.
-        y (cupy.ndarray): Values from which to choose on ``False``.
+        condition (clpy.ndarray): When True, take x, otherwise take y.
+        x (clpy.ndarray): Values from which to choose on ``True``.
+        y (clpy.ndarray): Values from which to choose on ``False``.
 
     Returns:
-        cupy.ndarray: Each element of output contains elements of ``x`` when
+        clpy.ndarray: Each element of output contains elements of ``x`` when
             ``condition`` is ``True``, otherwise elements of ``y``. If only
             ``condition`` is given, return the tuple ``condition.nonzero()``,
             the indices where ``condition`` is True.
@@ -122,9 +122,9 @@ def where(condition, x=None, y=None):
 
 
 _where_ufunc = core.create_ufunc(
-    'cupy_where',
+    'clpy_where',
     ('???->?', '?bb->b', '?BB->B', '?hh->h', '?HH->H', '?ii->i', '?II->I',
-     '?ll->l', '?LL->L', '?qq->q', '?QQ->Q', '?ee->e', '?ff->f',
+     '?ll->l', '?LL->L', '?qq->q', '?QQ->Q', '?ff->f',
      # On CUDA 6.5 these combinations don't work correctly (on CUDA >=7.0, it
      # works).
      # See issue #551.

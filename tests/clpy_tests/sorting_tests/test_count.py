@@ -3,8 +3,8 @@ import unittest
 import numpy
 import six
 
-import cupy
-from cupy import testing
+import clpy
+from clpy import testing
 
 
 @testing.gpu
@@ -18,28 +18,28 @@ class TestCount(unittest.TestCase):
             m = testing.shaped_random((2, 3), xp, xp.bool_)
             a = testing.shaped_random((2, 3), xp, dtype) * m
             c = xp.count_nonzero(a)
-            if xp is cupy:
+            if xp is clpy:
                 # CuPy returns zero-dimensional array instead of
                 # returning a scalar value
                 self.assertIsInstance(c, xp.ndarray)
                 self.assertEqual(c.dtype, 'l')
                 self.assertEqual(c.shape, ())
             return int(c)
-        self.assertEqual(func(numpy), func(cupy))
+        self.assertEqual(func(numpy), func(clpy))
 
     @testing.for_all_dtypes()
     def test_count_nonzero_zero_dim(self, dtype):
         def func(xp):
             a = xp.array(1.0, dtype=dtype)
             c = xp.count_nonzero(a)
-            if xp is cupy:
+            if xp is clpy:
                 # CuPy returns zero-dimensional array instead of
                 # returning a scalar value
                 self.assertIsInstance(c, xp.ndarray)
                 self.assertEqual(c.dtype, 'l')
                 self.assertEqual(c.shape, ())
             return int(c)
-        self.assertEqual(func(numpy), func(cupy))
+        self.assertEqual(func(numpy), func(clpy))
 
     @testing.with_requires('numpy>=1.12')
     @testing.for_all_dtypes()
@@ -49,7 +49,7 @@ class TestCount(unittest.TestCase):
                 m = testing.shaped_random((2, 3, 4), xp, xp.bool_)
                 a = testing.shaped_random((2, 3, 4), xp, dtype) * m
                 return xp.count_nonzero(a, axis=ax)
-            testing.assert_allclose(func(numpy), func(cupy))
+            testing.assert_allclose(func(numpy), func(clpy))
 
     @testing.with_requires('numpy>=1.12')
     @testing.for_all_dtypes()
@@ -63,4 +63,4 @@ class TestCount(unittest.TestCase):
                     m = testing.shaped_random((2, 3, 4), xp, xp.bool_)
                     a = testing.shaped_random((2, 3, 4), xp, dtype) * m
                     return xp.count_nonzero(a, axis=(ax, ay))
-                testing.assert_allclose(func(numpy), func(cupy))
+                testing.assert_allclose(func(numpy), func(clpy))

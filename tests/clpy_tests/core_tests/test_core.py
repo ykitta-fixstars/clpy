@@ -1,7 +1,7 @@
 import unittest
 
-import cupy
-from cupy.core import core
+import clpy
+from clpy.core import core
 
 
 class TestGetStridesForNocopyReshape(unittest.TestCase):
@@ -12,7 +12,7 @@ class TestGetStridesForNocopyReshape(unittest.TestCase):
                          [])
 
     def test_one(self):
-        a = core.ndarray((1,), dtype=cupy.int32)
+        a = core.ndarray((1,), dtype=clpy.int32)
         self.assertEqual(core._get_strides_for_nocopy_reshape(a, (1, 1, 1)),
                          [4, 4, 4])
 

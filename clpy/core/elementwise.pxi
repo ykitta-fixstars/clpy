@@ -3,24 +3,37 @@ import string
 import numpy
 import six
 
-from cupy.cuda import compiler
-from cupy import util
+# from clpy.backend import compiler
+from clpy import util
 
-from cupy.cuda cimport device
-from cupy.cuda cimport function
+from clpy.backend cimport device
+from clpy.backend cimport function
 
+cimport clpy.backend.opencl.api
+import clpy.backend.opencl.types
+cimport clpy.backend.opencl.utility
 
 cpdef _get_simple_elementwise_kernel(
-        params, operation, name, preamble,
+        params, operation, name, preamble, ndim,
         loop_prep='', after_loop='', options=()):
+    if loop_prep != '' or after_loop != '':
+        raise NotImplementedError("clpy does not support this")
+
+    # Workaround for reduction kernel by Chainer
+    # TODO(LWisteria): More neat and generic solution
+    #  C++ style cast -> C style cast
+    operation = operation .replace('T(', '(T)(')
+    #  _ind.size() -> _ind_size
+    operation = operation .replace('_ind.size()', '_ind_size')
+
     module_code = string.Template('''
     ${preamble}
-    extern "C" __global__ void ${name}(${params}) {
+    __kernel void ${name}(${params}) {
       ${loop_prep};
-      CUPY_FOR(i, _ind.size()) {
-        _ind.set(i);
-        ${operation};
-      }
+      set_CIndexer_${ndim}(&_ind, get_global_id(0));
+      const size_t i = get_global_id(0); // TODO: Add offset and/or stride
+      const size_t _ind_size = size_CIndexer_${ndim}(&_ind);
+      ${operation};
       ${after_loop};
     }
     ''').substitute(
@@ -28,6 +41,7 @@ cpdef _get_simple_elementwise_kernel(
         operation=operation,
         name=name,
         preamble=preamble,
+        ndim=ndim,
         loop_prep=loop_prep,
         after_loop=after_loop)
     module = compile_with_cache(module_code, options)
@@ -37,27 +51,27 @@ cpdef _get_simple_elementwise_kernel(
 cdef dict _typenames_base = {
     numpy.dtype('float64'): 'double',
     numpy.dtype('float32'): 'float',
-    numpy.dtype('float16'): 'float16',
-    numpy.dtype('complex128'): 'complex<double>',
-    numpy.dtype('complex64'): 'complex<float>',
-    numpy.dtype('int64'): 'long long',
+#    numpy.dtype('float16'): 'half', # Extension type
+#    numpy.dtype('complex128'): 'complex<double>', # OpenCL does not support
+#    numpy.dtype('complex64'): 'complex<float>', # OpenCL does not support
+    numpy.dtype('int64'): 'long',
     numpy.dtype('int32'): 'int',
     numpy.dtype('int16'): 'short',
-    numpy.dtype('int8'): 'signed char',
-    numpy.dtype('uint64'): 'unsigned long long',
-    numpy.dtype('uint32'): 'unsigned int',
-    numpy.dtype('uint16'): 'unsigned short',
-    numpy.dtype('uint8'): 'unsigned char',
-    numpy.dtype('bool'): 'bool',
+    numpy.dtype('int8'): 'char',
+    numpy.dtype('uint64'): 'ulong',
+    numpy.dtype('uint32'): 'uint',
+    numpy.dtype('uint16'): 'ushort',
+    numpy.dtype('uint8'): 'uchar',
+    numpy.dtype('bool'): 'uchar',  # OpenCL deos not support bool in kernel param but sizeof(numpy.bool) = 1 (same as uchar)
 }
 
-cdef str _all_type_chars = 'dfDFeqlihbQLIHB?'
+cdef str _all_type_chars = 'dfqlihbQLIHB?'
 # for c in 'dDfFeqlihbQLIHB?':
 #    print('#', c, '...', np.dtype(c).name)
 # d ... float64
-# D ... complex128
+# D ... complex128 # OpenCL does not support
 # f ... float32
-# F ... complex64
+# F ... complex64 # OpenCL does not support
 # e ... float16
 # q ... int64
 # l ... int64
@@ -121,18 +135,20 @@ cpdef list _preprocess_args(args):
     - Converts Python scalars into NumPy scalars
     """
     cdef list ret = []
-    cdef int dev_id = device.get_device_id()
+#    cdef int dev_id = device.get_device_id()
     cdef type typ
 
     for arg in args:
         typ = type(arg)
         if typ is ndarray:
-            arr_dev = (<ndarray?>arg).data.device
-            if arr_dev is not None and arr_dev.id != dev_id:
-                raise ValueError(
-                    'Array device must be same as the current '
-                    'device: array device = %d while current = %d'
-                    % (arr_dev.id, dev_id))
+            pass
+            # TODO(LWisteria): Implement OpenCL device check
+#            arr_dev = (<ndarray?>arg).data.device
+#            if arr_dev is not None and arr_dev.id != dev_id:
+#                raise ValueError(
+#                    'Array device must be same as the current '
+#                    'device: array device = %d while current = %d'
+#                    % (arr_dev.id, dev_id))
         elif typ in _python_scalar_type_set:
             arg = _python_scalar_to_numpy_scalar(arg)
         elif typ in _numpy_scalar_type_set:
@@ -147,7 +163,7 @@ cpdef tuple _get_args_info(list args):
     ret = []
     for a in args:
         t = type(a)
-        if t is Indexer:
+        if t is Indexer or t is Size_t or t is LocalMem:
             dtype = None
         else:
             dtype = a.dtype.type
@@ -155,23 +171,36 @@ cpdef tuple _get_args_info(list args):
     return tuple(ret)
 
 
-cpdef str _get_kernel_params(tuple params, tuple args_info):
+cpdef _get_kernel_params(tuple params, tuple args_info):
     cdef ParameterInfo p
     ret = []
+    ndims = {}
     for i in range(len(params)):
         p = params[i]
         type, dtype, ndim = <tuple>(args_info[i])
-        is_array = type is ndarray
+        name = p.name
         if type is Indexer:
-            t = 'CIndexer<%d>' % ndim
+            t = 'CIndexer_%d' % ndim
+            ndims[name] = ndim
+        elif type is Size_t:
+            t = 'kernel_arg_size_t'
+        elif type is LocalMem:
+            t = '__local _type_reduce* const __restrict__'
         else:
             t = _get_typename(dtype)
-            if is_array:
-                t = 'CArray<%s, %d>' % (t, ndim)
-        ret.append('%s %s%s' % (t,
-                                '_raw_' if is_array and not p.raw else '',
-                                p.name))
-    return ', '.join(ret)
+            # TODO(LWisteria): add "const" if p.is_const
+            if type is ndarray:
+                t = '__global %s* const __restrict__' % (t)
+                if p.raw:
+                    fmt = '%s'
+                else:
+                    fmt = '%s_data'
+                name = fmt % (name)
+        ret.append('%s %s' % (t, name))
+
+        if type is ndarray:
+            ret.append('const CArray_%d %s_info' % (ndim, p.name))
+    return ', '.join(ret), ndims
 
 
 cpdef tuple _reduce_dims(list args, tuple params, tuple shape):
@@ -270,6 +299,11 @@ cdef class ParameterInfo:
         t, self.name = s[-2:]
         if t == 'CIndexer':
             pass
+        elif t == 'LocalMem':
+            pass
+        elif t == 'kernel_arg_size_t':
+            self.dtype = numpy.intp
+            self.ctype = clpy.backend.opencl.types.device_typeof_size
         elif len(t) == 1:
             self.ctype = t
         else:
@@ -300,7 +334,7 @@ def _decide_params_type(in_params, out_params, in_args_dtype, out_args_dtype):
         assert len(out_params) == len(out_args_dtype)
         for p, a in zip(out_params, out_args_dtype):
             if a is None:
-                raise TypeError('Output arguments must be cupy.ndarray')
+                raise TypeError('Output arguments must be clpy.ndarray')
             if p.dtype is not None:
                 if numpy.dtype(a) != numpy.dtype(p.dtype):
                     raise TypeError(
@@ -383,7 +417,7 @@ cdef list _get_out_args(list out_args, tuple out_types, tuple out_shape,
     for i, a in enumerate(out_args):
         if not isinstance(a, ndarray):
             raise TypeError(
-                'Output arguments type must be cupy.ndarray')
+                'Output arguments type must be clpy.ndarray')
         if a.shape != out_shape:
             raise ValueError('Out shape is mismatched')
         out_type = out_types[i]
@@ -413,16 +447,57 @@ cdef list _get_out_args_with_params(
         p = out_params[i]
         if not isinstance(a, ndarray):
             raise TypeError(
-                'Output arguments type must be cupy.ndarray')
+                'Output arguments type must be clpy.ndarray')
         if not p.raw and a.shape != out_shape:
             raise ValueError('Out shape is mismatched')
     return out_args
 
+cdef tuple _get_raw_indexers_params(tuple params, operation):
+    # raw_indexers_params has tuple of ( name of raw array , index to access raw array)
+    # when operation is 'x[i] + x[n+i-1] + y[i];', raw_indexers_params has (('x', 'i'), ('x', 'n+i-1'), (y, 'i')).
+    raw_indexers_params = ()
+    cdef list raw_names = [];
+    for p in params:
+        if p.raw:
+            raw_names.append(p.name)
+    for op in operation.split(';'):
+        for p_name in raw_names:
+            target = p_name
+            target_len = len(target)
+            # TODO(tomoya.sakai): Cannot find array name with white space, e.g. 'y = x [i]'
+            last_matched = op.find(target + '[')
+            while last_matched != -1:
+                left_pos = last_matched + target_len
+                # TODO(tomoya.sakai): Nesting of '[' is not implemented. Wrong ']' is found if nested.
+                right_pos = op.find(']', left_pos)
+                if right_pos == -1:
+                    raise RuntimeError('Cannot find \']\'')
+                index = op[(left_pos+1):(right_pos)]
+                raw_indexers_params = raw_indexers_params + ((p_name, index), )
+                last_matched = op.find(target + '[', last_matched + target_len)
+    return raw_indexers_params
+
+
+def _get_raw_replaced_operation(operation, params, args_info, raw_indexers_params):
+    ndims={}
+    for i in range(len(params)):
+        if (params[i].raw):
+            type, dtype, ndim = <tuple>(args_info[i])
+            ndims[params[i].name] = ndim
+    for t in raw_indexers_params:
+        p_name, target_index = t
+        target = p_name + '[' + target_index + ']'
+        if operation.find(target) != -1:
+            replace_str = '{n}[get_CArrayIndexRaw_{ndim}(&{n}_info, {target_index})]'.format(n=p_name, ndim=ndims[p_name], target_index=target_index)
+            operation = operation.replace(target, replace_str)
+    return operation
+
 
 @util.memoize(for_each_device=True)
 def _get_elementwise_kernel(args_info, types, params, operation, name,
-                            preamble, kwargs):
-    kernel_params = _get_kernel_params(params, args_info)
+                            preamble, raw_indexers_params, kwargs):
+    kernel_params, ndims = _get_kernel_params(params, args_info)
+    ndim = ndims['_ind']
     types_preamble = '\n'.join(
         'typedef %s %s;' % (_get_typename(v), k) for k, v in types)
     preamble = types_preamble + '\n' + preamble
@@ -430,16 +505,20 @@ def _get_elementwise_kernel(args_info, types, params, operation, name,
     op = []
     for p, a in zip(params, args_info):
         if not p.raw and a[0] == ndarray:
+            fmt = '{t} {n} = {n}_data[get_CArrayIndex_{ndim}(&{n}_info, &_ind)];'
             if p.is_const:
-                fmt = '{t} &{n} = _raw_{n}[_ind.get()];'
-            else:
-                fmt = '{t} &{n} = _raw_{n}[_ind.get()];'
-            op.append(fmt.format(t=p.ctype, n=p.name))
-    op.append(operation)
+                fmt = 'const ' + fmt
+            op.append(fmt.format(t=p.ctype, n=p.name, ndim=ndim))
+    operation = _get_raw_replaced_operation(operation, params, args_info, raw_indexers_params)
+    op.append(operation + ';')
+    for p, a in zip(params, args_info):
+        if not p.raw and a[0] == ndarray and not p.is_const:
+            fmt = '{n}_data[get_CArrayIndex_{ndim}(&{n}_info, &_ind)] = {n};'
+            op.append(fmt.format(n=p.name, ndim=ndim))
     operation = '\n'.join(op)
     return _get_simple_elementwise_kernel(
         kernel_params, operation, name,
-        preamble, **dict(kwargs))
+        preamble, ndim, **dict(kwargs))
 
 
 cdef class ElementwiseKernel:
@@ -453,7 +532,7 @@ cdef class ElementwiseKernel:
     :meth:`~ElementwiseKernel.__call__` method,
     which is cached for each device.
     The compiled binary is also cached into a file under the
-    ``$HOME/.cupy/kernel_cache/`` directory with a hashed file name. The cached
+    ``$HOME/.clpy/kernel_cache/`` directory with a hashed file name. The cached
     binary is reused by other processes.
 
     Args:
@@ -490,10 +569,11 @@ cdef class ElementwiseKernel:
         readonly bint reduce_dims
         readonly str preamble
         readonly object kwargs
+        readonly tuple raw_indexers_params
 
     def __init__(self, in_params, out_params, operation,
                  name='kernel', reduce_dims=True, preamble='', **kwargs):
-        if not compiler.is_valid_kernel_name(name):
+        if not clpy.backend.opencl.utility.is_valid_kernel_name(name):
             raise ValueError(
                 'Invalid kernel name: "%s"' % name)
 
@@ -504,6 +584,8 @@ cdef class ElementwiseKernel:
         self.nargs = self.nin + self.nout
         param_rest = _get_param_info('CIndexer _ind', False)
         self.params = self.in_params + self.out_params + param_rest
+
+        self.raw_indexers_params = _get_raw_indexers_params(self.params, operation)
         self.operation = operation
         self.name = name
         self.reduce_dims = reduce_dims
@@ -536,7 +618,6 @@ cdef class ElementwiseKernel:
         cdef function.Function kern
 
         size = kwargs.pop('size', None)
-        stream = kwargs.pop('stream', None)
         if kwargs:
             raise TypeError('Wrong arguments %s' % kwargs)
 
@@ -584,41 +665,44 @@ cdef class ElementwiseKernel:
         inout_args.append(indexer)
 
         args_info = _get_args_info(inout_args)
+
         kern = _get_elementwise_kernel(
             args_info, types, self.params, self.operation,
-            self.name, self.preamble, self.kwargs)
-        kern.linear_launch(indexer.size, inout_args, shared_mem=0,
-                           block_max_size=128, stream=stream)
+            self.name, self.preamble, self.raw_indexers_params, self.kwargs)
+        kern.linear_launch(indexer.size, inout_args)
         return ret
 
 
 @util.memoize(for_each_device=True)
 def _get_ufunc_kernel(
         in_types, out_types, routine, args_info, params, name, preamble):
-    kernel_params = _get_kernel_params(params, args_info)
+    kernel_params, ndims = _get_kernel_params(params, args_info)
+    ndim = ndims['_ind']
 
     types = []
     op = []
     for i, x in enumerate(in_types):
         types.append('typedef %s in%d_type;' % (_get_typename(x), i))
         if args_info[i][0] is ndarray:
-            op.append(
-                'const in{0}_type in{0}(_raw_in{0}[_ind.get()]);'
-                .format(i))
+            op.append('const in{0}_type in{0} = in{0}_data[get_CArrayIndex_{1}(&in{0}_info, &_ind)];'.format(i, ndim))
 
     for i, x in enumerate(out_types):
         types.append('typedef %s out%d_type;' % (
             _get_typename(args_info[i + len(in_types)][1]), i))
-        op.append('out{0}_type &out{0} = _raw_out{0}[_ind.get()];'.format(i))
+        op.append('out{0}_type out{0} = out{0}_data[get_CArrayIndex_{1}(&out{0}_info, &_ind)];'.format(i, ndim))
 
-    op.append(routine)
+    op.append(routine + ';')
+
+    for i, x in enumerate(out_types):
+        op.append('out{0}_data[get_CArrayIndex_{1}(&out{0}_info, &_ind)] = out{0};'.format(i, ndim))
+
     operation = '\n'.join(op)
 
     types.append(preamble)
     preamble = '\n'.join(types)
 
     return _get_simple_elementwise_kernel(
-        kernel_params, operation, name, preamble)
+        kernel_params, operation, name, preamble, ndim)
 
 
 cdef tuple _guess_routine_from_in_types(list ops, tuple in_types):
@@ -706,6 +790,7 @@ class ufunc(object):
 
     """
     def __init__(self, name, nin, nout, ops, preamble='', doc=''):
+        # TODO(tomoya.sakai): raw array may be possible for ufunc
         self.name = name
         self.nin = nin
         self.nout = nout
@@ -747,10 +832,10 @@ class ufunc(object):
         Applies the universal function to arguments elementwise.
 
         Args:
-            args: Input arguments. Each of them can be a :class:`cupy.ndarray`
+            args: Input arguments. Each of them can be a :class:`clpy.ndarray`
                 object or a scalar. The output arguments can be omitted or be
                 specified by the ``out`` argument.
-            out (cupy.ndarray): Output array. It outputs to new arrays
+            out (clpy.ndarray): Output array. It outputs to new arrays
                 default.
             dtype: Data type specifier.
 

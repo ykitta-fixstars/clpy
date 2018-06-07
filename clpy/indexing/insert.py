@@ -17,7 +17,7 @@ def fill_diagonal(a, val, wrap=False):
     modifies the input array in-place, it does not return a value.
 
     Args:
-        a (cupy.ndarray): The array, at least 2-D.
+        a (clpy.ndarray): The array, at least 2-D.
         val (scalar): The value to be written on the diagonal.
             Its type must be compatible with that of the array a.
         wrap (bool): If specified, the diagonal is "wrapped" after N columns.
@@ -25,8 +25,8 @@ def fill_diagonal(a, val, wrap=False):
 
     Examples
     --------
-    >>> a = cupy.zeros((3, 3), int)
-    >>> cupy.fill_diagonal(a, 5)
+    >>> a = clpy.zeros((3, 3), int)
+    >>> clpy.fill_diagonal(a, 5)
     >>> a
     array([[5, 0, 0],
            [0, 5, 0],
@@ -47,6 +47,6 @@ def fill_diagonal(a, val, wrap=False):
             raise ValueError('All dimensions of input must be of equal length')
         step = 1 + numpy.cumprod(a.shape[:-1]).sum()
 
-    # Since the current cupy does not support a.flat,
+    # Since the current clpy does not support a.flat,
     # we use a.ravel() instead of a.flat
     a.ravel()[:end:step] = val

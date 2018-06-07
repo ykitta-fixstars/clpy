@@ -4,7 +4,7 @@ import unittest
 
 import numpy
 
-from cupy import testing
+from clpy import testing
 
 
 @testing.parameterize(
@@ -33,7 +33,7 @@ class TestMatmul(unittest.TestCase):
     @testing.with_requires('numpy>=1.10')
     @testing.for_all_dtypes(name='dtype1', no_complex=True)
     @testing.for_all_dtypes(name='dtype2', no_complex=True)
-    @testing.numpy_cupy_allclose(rtol=1e-3, atol=1e-3)  # required for uint8
+    @testing.numpy_clpy_allclose(rtol=1e-3, atol=1e-3)  # required for uint8
     def test_operator_matmul(self, xp, dtype1, dtype2):
         x1 = testing.shaped_arange(self.shape_pair[0], xp, dtype1)
         x2 = testing.shaped_arange(self.shape_pair[1], xp, dtype2)
@@ -42,8 +42,8 @@ class TestMatmul(unittest.TestCase):
     @testing.with_requires('numpy>=1.10')
     @testing.for_all_dtypes(name='dtype1', no_complex=True)
     @testing.for_all_dtypes(name='dtype2', no_complex=True)
-    @testing.numpy_cupy_allclose(rtol=1e-3, atol=1e-3)  # required for uint8
-    def test_cupy_matmul(self, xp, dtype1, dtype2):
+    @testing.numpy_clpy_allclose(rtol=1e-3, atol=1e-3)  # required for uint8
+    def test_clpy_matmul(self, xp, dtype1, dtype2):
         x1 = testing.shaped_arange(self.shape_pair[0], xp, dtype1)
         x2 = testing.shaped_arange(self.shape_pair[1], xp, dtype2)
         return xp.matmul(x1, x2)
@@ -87,7 +87,7 @@ class TestMatmulLarge(unittest.TestCase):
     @testing.with_requires('numpy>=1.10')
     @testing.for_all_dtypes(name='dtype1', no_complex=True)
     @testing.for_all_dtypes(name='dtype2', no_complex=True)
-    @testing.numpy_cupy_allclose(rtol=1e-3, atol=1e-3)  # required for uint8
+    @testing.numpy_clpy_allclose(rtol=1e-3, atol=1e-3)  # required for uint8
     def test_operator_matmul(self, xp, dtype1, dtype2):
         if ((dtype1, dtype2) in self.skip_dtypes or
                 (dtype2, dtype1) in self.skip_dtypes):
@@ -99,8 +99,8 @@ class TestMatmulLarge(unittest.TestCase):
     @testing.with_requires('numpy>=1.10')
     @testing.for_all_dtypes(name='dtype1', no_complex=True)
     @testing.for_all_dtypes(name='dtype2', no_complex=True)
-    @testing.numpy_cupy_allclose(rtol=1e-3, atol=1e-3)  # required for uint8
-    def test_cupy_matmul(self, xp, dtype1, dtype2):
+    @testing.numpy_clpy_allclose(rtol=1e-3, atol=1e-3)  # required for uint8
+    def test_clpy_matmul(self, xp, dtype1, dtype2):
         if ((dtype1, dtype2) in self.skip_dtypes or
                 (dtype2, dtype1) in self.skip_dtypes):
             return xp.array([])

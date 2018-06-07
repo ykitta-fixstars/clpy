@@ -2,16 +2,13 @@ import numpy
 from numpy import linalg
 import six
 
-import cupy
-from cupy.core import core
-from cupy import cuda
-from cupy.cuda import cublas
-from cupy.cuda import device
-from cupy.linalg import decomposition
-from cupy.linalg import util
-
-if cuda.cusolver_enabled:
-    from cupy.cuda import cusolver
+import clpy  # NOQA
+from clpy import backend  # NOQA
+from clpy.backend import device  # NOQA
+from clpy.core import core
+# from clpy.backend import cublas
+from clpy.linalg import decomposition
+from clpy.linalg import util  # NOQA
 
 
 def solve(a, b):
@@ -21,12 +18,12 @@ def solve(a, b):
     where ``a`` is a square and full rank matrix.
 
     Args:
-        a (cupy.ndarray): The matrix with dimension ``(M, M)``
-        b (cupy.ndarray): The vector with ``M`` elements, or
+        a (clpy.ndarray): The matrix with dimension ``(M, M)``
+        b (clpy.ndarray): The vector with ``M`` elements, or
             the matrix with dimension ``(M, K)``
 
     Returns:
-        cupy.ndarray:
+        clpy.ndarray:
             The vector with ``M`` elements, or the matrix with dimension
             ``(M, K)``.
 
@@ -36,11 +33,12 @@ def solve(a, b):
     #       we manually solve a linear system with QR decomposition.
     #       For details, please see the following:
     #       http://docs.nvidia.com/cuda/cusolver/index.html#qr_examples
-    if not cuda.cusolver_enabled:
-        raise RuntimeError('Current cupy only supports cusolver in CUDA 8.0')
+    raise NotImplementedError("clpy does not support this")
 
+
+'''
     # TODO(Saito): Current implementation only accepts two-dimensional arrays
-    util._assert_cupy_array(a, b)
+    util._assert_clpy_array(a, b)
     util._assert_rank2(a)
     util._assert_nd_squareness(a)
     if 2 < b.ndim:
@@ -63,7 +61,7 @@ def solve(a, b):
     b = b.transpose().astype(dtype, order='C', copy=True)
     cusolver_handle = device.get_cusolver_handle()
     cublas_handle = device.get_cublas_handle()
-    dev_info = cupy.empty(1, dtype=numpy.int32)
+    dev_info = clpy.empty(1, dtype=numpy.int32)
 
     if dtype == 'f':
         geqrf = cusolver.sgeqrf
@@ -78,8 +76,8 @@ def solve(a, b):
 
     # 1. QR decomposition (A = Q * R)
     buffersize = geqrf_bufferSize(cusolver_handle, m, m, a.data.ptr, m)
-    workspace = cupy.empty(buffersize, dtype=dtype)
-    tau = cupy.empty(m, dtype=dtype)
+    workspace = clpy.empty(buffersize, dtype=dtype)
+    tau = clpy.empty(m, dtype=dtype)
     geqrf(
         cusolver_handle, m, m, a.data.ptr, m,
         tau.data.ptr, workspace.data.ptr, buffersize, dev_info.data.ptr)
@@ -96,29 +94,30 @@ def solve(a, b):
         cublas.CUBLAS_OP_N, cublas.CUBLAS_DIAG_NON_UNIT,
         m, k, 1, a.data.ptr, m, b.data.ptr, m)
     return b.transpose()
+'''
 
 
 def _check_status(dev_info):
     status = int(dev_info)
     if status < 0:
         raise linalg.LinAlgError(
-            'Parameter error (maybe caused by a bug in cupy.linalg?)')
+            'Parameter error (maybe caused by a bug in clpy.linalg?)')
 
 
 def tensorsolve(a, b, axes=None):
     '''Solves tensor equations denoted by ``ax = b``.
 
-    Suppose that ``b`` is equivalent to ``cupy.tensordot(a, x)``.
+    Suppose that ``b`` is equivalent to ``clpy.tensordot(a, x)``.
     This function computes tensor ``x`` from ``a`` and ``b``.
 
     Args:
-        a (cupy.ndarray): The tensor with ``len(shape) >= 1``
-        b (cupy.ndarray): The tensor with ``len(shape) >= 1``
+        a (clpy.ndarray): The tensor with ``len(shape) >= 1``
+        b (clpy.ndarray): The tensor with ``len(shape) >= 1``
         axes (tuple of ints): Axes in ``a`` to reorder to the right
             before inversion.
 
     Returns:
-        cupy.ndarray:
+        clpy.ndarray:
             The tensor with shape ``Q`` such that ``b.shape + Q == a.shape``.
 
     .. seealso:: :func:`numpy.linalg.tensorsolve`
@@ -149,22 +148,24 @@ def inv(a):
     ``a`` such that ``dot(a, a_inv) == eye(n)``.
 
     Args:
-        a (cupy.ndarray): The regular matrix
+        a (clpy.ndarray): The regular matrix
 
     Returns:
-        cupy.ndarray: The inverse of a matrix.
+        clpy.ndarray: The inverse of a matrix.
 
     .. seealso:: :func:`numpy.linalg.inv`
     '''
-    if not cuda.cusolver_enabled:
-        raise RuntimeError('Current cupy only supports cusolver in CUDA 8.0')
+    raise NotImplementedError("clpy does not support this")
 
-    util._assert_cupy_array(a)
+
+'''
+    util._assert_clpy_array(a)
     util._assert_rank2(a)
     util._assert_nd_squareness(a)
 
-    b = cupy.eye(len(a), dtype=a.dtype)
+    b = clpy.eye(len(a), dtype=a.dtype)
     return solve(a, b)
+'''
 
 
 def pinv(a, rcond=1e-15):
@@ -175,13 +176,13 @@ def pinv(a, rcond=1e-15):
     Note that it automatically removes small singular values for stability.
 
     Args:
-        a (cupy.ndarray): The matrix with dimension ``(M, N)``
+        a (clpy.ndarray): The matrix with dimension ``(M, N)``
         rcond (float): Cutoff parameter for small singular values.
             For stability it computes the largest singular value denoted by
             ``s``, and sets all singular values smaller than ``s`` to zero.
 
     Returns:
-        cupy.ndarray: The pseudoinverse of ``a`` with dimension ``(N, M)``.
+        clpy.ndarray: The pseudoinverse of ``a`` with dimension ``(N, M)``.
 
     .. seealso:: :func:`numpy.linalg.pinv`
     '''

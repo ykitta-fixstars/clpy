@@ -1,6 +1,6 @@
 import unittest
 
-from cupy import testing
+from clpy import testing
 
 
 @testing.parameterize(
@@ -13,6 +13,6 @@ class TestWindow(unittest.TestCase):
 
     _multiprocess_can_split_ = True
 
-    @testing.numpy_cupy_allclose(atol=1e-5)
+    @testing.numpy_clpy_allclose(atol=1e-5)
     def test_window(self, xp):
         return getattr(xp, self.name)(self.m)

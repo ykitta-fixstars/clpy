@@ -3,7 +3,7 @@ import warnings
 
 import numpy
 
-from cupy import testing
+from clpy import testing
 
 
 @testing.parameterize(
@@ -20,7 +20,7 @@ class TestPadDefault(unittest.TestCase):
     _multiprocess_can_split_ = True
 
     @testing.for_all_dtypes(no_bool=True)
-    @testing.numpy_cupy_array_equal()
+    @testing.numpy_clpy_array_equal()
     def test_pad_default(self, xp, dtype):
         array = xp.array(self.array, dtype=dtype)
 
@@ -54,7 +54,7 @@ class TestPad(unittest.TestCase):
     _multiprocess_can_split_ = True
 
     @testing.for_all_dtypes(no_bool=True)
-    @testing.numpy_cupy_array_equal()
+    @testing.numpy_clpy_array_equal()
     def test_pad(self, xp, dtype):
         array = xp.array(self.array, dtype=dtype)
 
@@ -78,7 +78,7 @@ class TestPadNumpybug(unittest.TestCase):
 
     @testing.with_requires('numpy>=1.11.2')
     @testing.for_all_dtypes(no_bool=True, no_complex=True)
-    @testing.numpy_cupy_array_equal()
+    @testing.numpy_clpy_array_equal()
     def test_pad_highdim_default(self, xp, dtype):
         array = xp.arange(6, dtype=dtype).reshape([2, 3])
         pad_width = [[1, 2], [3, 4]]
@@ -101,7 +101,7 @@ class TestPadSpecial(unittest.TestCase):
 
     _multiprocess_can_split_ = True
 
-    @testing.numpy_cupy_array_equal()
+    @testing.numpy_clpy_array_equal()
     def test_pad_special(self, xp):
         a = xp.pad(self.array, self.pad_width, mode=self.mode,
                    constant_values=self.constant_values)
@@ -124,7 +124,7 @@ class TestPadFailure(unittest.TestCase):
 
     _multiprocess_can_split_ = True
 
-    @testing.numpy_cupy_raises()
+    @testing.numpy_clpy_raises()
     def test_pad_failure(self, xp):
         a = xp.pad(self.array, self.pad_width, mode=self.mode,
                    constant_values=self.constant_values)

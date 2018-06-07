@@ -8,9 +8,9 @@ try:
 except ImportError:
     scipy_available = False
 
-import cupy
-import cupy.sparse
-from cupy import testing
+import clpy
+import clpy.sparse
+from clpy import testing
 
 
 def _make(xp, sp, dtype):
@@ -34,7 +34,7 @@ def _make_empty(xp, sp, dtype):
 class TestDiaMatrix(unittest.TestCase):
 
     def setUp(self):
-        self.m = _make(cupy, cupy.sparse, self.dtype)
+        self.m = _make(clpy, clpy.sparse, self.dtype)
 
     def test_dtype(self):
         self.assertEqual(self.m.dtype, self.dtype)
@@ -42,12 +42,12 @@ class TestDiaMatrix(unittest.TestCase):
     def test_data(self):
         self.assertEqual(self.m.data.dtype, self.dtype)
         testing.assert_array_equal(
-            self.m.data, cupy.array([[0, 1, 2], [3, 4, 5]], self.dtype))
+            self.m.data, clpy.array([[0, 1, 2], [3, 4, 5]], self.dtype))
 
     def test_offsets(self):
         self.assertEqual(self.m.offsets.dtype, numpy.int32)
         testing.assert_array_equal(
-            self.m.offsets, cupy.array([0, -1], self.dtype))
+            self.m.offsets, clpy.array([0, -1], self.dtype))
 
     def test_shape(self):
         self.assertEqual(self.m.shape, (3, 4))
@@ -73,7 +73,7 @@ class TestDiaMatrix(unittest.TestCase):
             [0, 4, 2, 0]
         ]
         self.assertTrue(m.flags.c_contiguous)
-        cupy.testing.assert_allclose(m, expect)
+        clpy.testing.assert_allclose(m, expect)
 
 
 @testing.parameterize(*testing.product({
@@ -91,28 +91,28 @@ class TestDiaMatrixInit(unittest.TestCase):
     def offsets(self, xp):
         return xp.array([0, -1], 'i')
 
-    @testing.numpy_cupy_raises(sp_name='sp', accept_error=ValueError)
+    @testing.numpy_clpy_raises(sp_name='sp', accept_error=ValueError)
     def test_shape_none(self, xp, sp):
         sp.dia_matrix(
             (self.data(xp), self.offsets(xp)), shape=None)
 
-    @testing.numpy_cupy_raises(sp_name='sp', accept_error=ValueError)
+    @testing.numpy_clpy_raises(sp_name='sp', accept_error=ValueError)
     def test_large_rank_offset(self, xp, sp):
         sp.dia_matrix(
             (self.data(xp), self.offsets(xp)[None]), shape=self.shape)
 
-    @testing.numpy_cupy_raises(sp_name='sp', accept_error=ValueError)
+    @testing.numpy_clpy_raises(sp_name='sp', accept_error=ValueError)
     def test_large_rank_data(self, xp, sp):
         sp.dia_matrix(
             (self.data(xp)[None], self.offsets(xp)), shape=self.shape)
 
-    @testing.numpy_cupy_raises(sp_name='sp', accept_error=ValueError)
+    @testing.numpy_clpy_raises(sp_name='sp', accept_error=ValueError)
     def test_data_offsets_different_size(self, xp, sp):
         offsets = xp.array([0, -1, 1], 'i')
         sp.dia_matrix(
             (self.data(xp), offsets), shape=self.shape)
 
-    @testing.numpy_cupy_raises(sp_name='sp', accept_error=ValueError)
+    @testing.numpy_clpy_raises(sp_name='sp', accept_error=ValueError)
     def test_duplicated_offsets(self, xp, sp):
         offsets = xp.array([1, 1], 'i')
         sp.dia_matrix(
@@ -130,63 +130,63 @@ class TestDiaMatrixScipyComparison(unittest.TestCase):
     def make(self):
         return globals()[self.make_method]
 
-    @testing.numpy_cupy_equal(sp_name='sp')
+    @testing.numpy_clpy_equal(sp_name='sp')
     def test_nnz_axis(self, xp, sp):
         m = self.make(xp, sp, self.dtype)
         return m.nnz
 
-    @testing.numpy_cupy_raises(sp_name='sp', accept_error=NotImplementedError)
+    @testing.numpy_clpy_raises(sp_name='sp', accept_error=NotImplementedError)
     def test_nnz_axis_not_none(self, xp, sp):
         m = self.make(xp, sp, self.dtype)
         m.getnnz(axis=0)
 
-    @testing.numpy_cupy_allclose(sp_name='sp')
+    @testing.numpy_clpy_allclose(sp_name='sp')
     def test_toarray(self, xp, sp):
         m = self.make(xp, sp, self.dtype)
         return m.toarray()
 
-    @testing.numpy_cupy_allclose(sp_name='sp')
+    @testing.numpy_clpy_allclose(sp_name='sp')
     def test_A(self, xp, sp):
         m = self.make(xp, sp, self.dtype)
         return m.A
 
-    @testing.numpy_cupy_allclose(sp_name='sp')
+    @testing.numpy_clpy_allclose(sp_name='sp')
     def test_tocoo(self, xp, sp):
         m = self.make(xp, sp, self.dtype)
         return m.tocoo().toarray()
 
-    @testing.numpy_cupy_allclose(sp_name='sp')
+    @testing.numpy_clpy_allclose(sp_name='sp')
     def test_tocoo_copy(self, xp, sp):
         m = self.make(xp, sp, self.dtype)
         n = m.tocoo(copy=True)
         self.assertIsNot(m.data, n.data)
         return n.toarray()
 
-    @testing.numpy_cupy_allclose(sp_name='sp')
+    @testing.numpy_clpy_allclose(sp_name='sp')
     def test_tocsc(self, xp, sp):
         m = _make(xp, sp, self.dtype)
         return m.tocsc().toarray()
 
-    @testing.numpy_cupy_allclose(sp_name='sp')
+    @testing.numpy_clpy_allclose(sp_name='sp')
     def test_tocsc_copy(self, xp, sp):
         m = self.make(xp, sp, self.dtype)
         n = m.tocsc(copy=True)
         self.assertIsNot(m.data, n.data)
         return n.toarray()
 
-    @testing.numpy_cupy_allclose(sp_name='sp')
+    @testing.numpy_clpy_allclose(sp_name='sp')
     def test_tocsr(self, xp, sp):
         m = self.make(xp, sp, self.dtype)
         return m.tocsr().toarray()
 
-    @testing.numpy_cupy_allclose(sp_name='sp')
+    @testing.numpy_clpy_allclose(sp_name='sp')
     def test_tocsr_copy(self, xp, sp):
         m = self.make(xp, sp, self.dtype)
         n = m.tocsr(copy=True)
         self.assertIsNot(m.data, n.data)
         return n.toarray()
 
-    @testing.numpy_cupy_allclose(sp_name='sp')
+    @testing.numpy_clpy_allclose(sp_name='sp')
     def test_transpose(self, xp, sp):
         m = self.make(xp, sp, self.dtype)
         return m.transpose().toarray()
@@ -195,16 +195,16 @@ class TestDiaMatrixScipyComparison(unittest.TestCase):
 class TestIsspmatrixDia(unittest.TestCase):
 
     def test_dia(self):
-        x = cupy.sparse.dia_matrix(
-            (cupy.array([], 'f'),
-             cupy.array([0], 'i')),
+        x = clpy.sparse.dia_matrix(
+            (clpy.array([], 'f'),
+             clpy.array([0], 'i')),
             shape=(0, 0), dtype='f')
-        self.assertTrue(cupy.sparse.isspmatrix_dia(x))
+        self.assertTrue(clpy.sparse.isspmatrix_dia(x))
 
     def test_csr(self):
-        x = cupy.sparse.csr_matrix(
-            (cupy.array([], 'f'),
-             cupy.array([], 'i'),
-             cupy.array([0], 'i')),
+        x = clpy.sparse.csr_matrix(
+            (clpy.array([], 'f'),
+             clpy.array([], 'i'),
+             clpy.array([0], 'i')),
             shape=(0, 0), dtype='f')
-        self.assertFalse(cupy.sparse.isspmatrix_dia(x))
+        self.assertFalse(clpy.sparse.isspmatrix_dia(x))

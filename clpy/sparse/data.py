@@ -1,5 +1,5 @@
-import cupy
-from cupy.sparse import base
+import clpy
+from clpy.sparse import base
 
 
 _ufuncs = [
@@ -55,7 +55,7 @@ class _data_matrix(base.spmatrix):
             Number of non-zero entries.
 
         """
-        return cupy.count_nonzero(self.data)
+        return clpy.count_nonzero(self.data)
 
     def power(self, n, dtype=None):
         """Elementwise power function.
@@ -76,7 +76,7 @@ class _data_matrix(base.spmatrix):
 def _install_ufunc(func_name):
 
     def f(self):
-        ufunc = getattr(cupy, func_name)
+        ufunc = getattr(clpy, func_name)
         result = ufunc(self.data)
         return self._with_data(result)
 

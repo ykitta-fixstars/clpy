@@ -5,12 +5,12 @@ try:
 except ImportError:
     _scipy_available = False
 
-import cupy
-from cupy import cusparse
-from cupy.sparse import base
-from cupy.sparse import csr
-from cupy.sparse import data as sparse_data
-from cupy.sparse import util
+import clpy
+from clpy import cusparse
+from clpy.sparse import base
+from clpy.sparse import csr
+from clpy.sparse import data as sparse_data
+from clpy.sparse import util
 
 
 class coo_matrix(sparse_data._data_matrix):
@@ -28,7 +28,7 @@ class coo_matrix(sparse_data._data_matrix):
 
     ``coo_matrix((data, (row, col))``
         All ``data``, ``row`` and ``col`` are one-dimenaional
-        :class:`cupy.ndarray`.
+        :class:`clpy.ndarray`.
 
     Args:
         arg1: Arguments for the initializer.
@@ -66,9 +66,9 @@ class coo_matrix(sparse_data._data_matrix):
         elif util.isshape(arg1):
             m, n = arg1
             m, n = int(m), int(n)
-            data = cupy.zeros(0, dtype if dtype else 'd')
-            row = cupy.zeros(0, dtype='i')
-            col = cupy.zeros(0, dtype='i')
+            data = clpy.zeros(0, dtype if dtype else 'd')
+            row = clpy.zeros(0, dtype='i')
+            col = clpy.zeros(0, dtype='i')
             # shape and copy argument is ignored
             shape = (m, n)
             copy = False
@@ -155,7 +155,7 @@ class coo_matrix(sparse_data._data_matrix):
         """Returns a copy of the array on host memory.
 
         Args:
-            stream (cupy.cuda.Stream): CUDA stream object. If it is given, the
+            stream (clpy.cuda.Stream): CUDA stream object. If it is given, the
                 copy runs asynchronously. Otherwise, the copy is synchronous.
 
         Returns:
@@ -183,12 +183,12 @@ class coo_matrix(sparse_data._data_matrix):
         if self.data.size == 0:
             self._has_canonical_format = True
             return
-        keys = cupy.stack([self.row, self.col])
-        order = cupy.lexsort(keys)
+        keys = clpy.stack([self.row, self.col])
+        order = clpy.lexsort(keys)
         src_data = self.data[order]
         src_row = self.row[order]
         src_col = self.col[order]
-        diff = cupy.ElementwiseKernel(
+        diff = clpy.ElementwiseKernel(
             'raw int32 row, raw int32 col',
             'int32 diff',
             '''
@@ -208,12 +208,12 @@ class coo_matrix(sparse_data._data_matrix):
             row = src_row
             col = src_col
         else:
-            index = cupy.cumsum(diff, dtype='i')
+            index = clpy.cumsum(diff, dtype='i')
             size = int(index[-1]) + 1
-            data = cupy.zeros(size, dtype=self.data.dtype)
-            row = cupy.empty(size, dtype='i')
-            col = cupy.empty(size, dtype='i')
-            cupy.ElementwiseKernel(
+            data = clpy.zeros(size, dtype=self.data.dtype)
+            row = clpy.empty(size, dtype='i')
+            col = clpy.empty(size, dtype='i')
+            clpy.ElementwiseKernel(
                 'T src_data, int32 src_row, int32 src_col, int32 index',
                 'raw T data, raw int32 row, raw int32 col',
                 '''
@@ -238,9 +238,9 @@ class coo_matrix(sparse_data._data_matrix):
             out: Not supported.
 
         Returns:
-            cupy.ndarray: Dense array representing the same value.
+            clpy.ndarray: Dense array representing the same value.
 
-        .. seealso:: :func:`cupy.sparse.coo_array.toarray`
+        .. seealso:: :func:`clpy.sparse.coo_array.toarray`
 
         """
         return self.tocsr().toarray(order=order, out=out)
@@ -253,7 +253,7 @@ class coo_matrix(sparse_data._data_matrix):
                 possible.
 
         Returns:
-            cupy.sparse.coo_matrix: Converted matrix.
+            clpy.sparse.coo_matrix: Converted matrix.
 
         """
         if copy:
@@ -270,7 +270,7 @@ class coo_matrix(sparse_data._data_matrix):
                 arrays in a matrix cannot be shared in coo to csc conversion.
 
         Returns:
-            cupy.sparse.csc_matrix: Converted matrix.
+            clpy.sparse.csc_matrix: Converted matrix.
 
         """
         return self.T.tocsr().T
@@ -284,7 +284,7 @@ class coo_matrix(sparse_data._data_matrix):
                 arrays in a matrix cannot be shared in coo to csr conversion.
 
         Returns:
-            cupy.sparse.csr_matrix: Converted matrix.
+            clpy.sparse.csr_matrix: Converted matrix.
 
         """
         if self.nnz == 0:
@@ -304,7 +304,7 @@ class coo_matrix(sparse_data._data_matrix):
                 Otherwise, it shared data arrays as much as possible.
 
         Returns:
-            cupy.sparse.spmatrix: Transpose matrix.
+            clpy.sparse.spmatrix: Transpose matrix.
 
         """
         if axes is not None:
@@ -320,7 +320,7 @@ def isspmatrix_coo(x):
     """Checks if a given matrix is of COO format.
 
     Returns:
-        bool: Returns if ``x`` is :class:`cupy.sparse.coo_matrix`.
+        bool: Returns if ``x`` is :class:`clpy.sparse.coo_matrix`.
 
     """
     return isinstance(x, coo_matrix)

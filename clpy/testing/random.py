@@ -7,48 +7,48 @@ import random
 import types
 import unittest
 
-import cupy
+import clpy
 
 
 _old_python_random_state = None
 _old_numpy_random_state = None
-_old_cupy_random_states = None
+_old_clpy_random_states = None
 
 
 def do_setup(deterministic=True):
     global _old_python_random_state
     global _old_numpy_random_state
-    global _old_cupy_random_states
+    global _old_clpy_random_states
     _old_python_random_state = random.getstate()
     _old_numpy_random_state = numpy.random.get_state()
-    _old_cupy_random_states = cupy.random.generator._random_states
-    cupy.random.reset_states()
+    _old_clpy_random_states = clpy.random.generator._random_states
+    clpy.random.reset_states()
     # Check that _random_state has been recreated in
-    # cupy.random.reset_states(). Otherwise the contents of
-    # _old_cupy_random_states would be overwritten.
-    assert (cupy.random.generator._random_states is not
-            _old_cupy_random_states)
+    # clpy.random.reset_states(). Otherwise the contents of
+    # _old_clpy_random_states would be overwritten.
+    assert (clpy.random.generator._random_states is not
+            _old_clpy_random_states)
 
     if not deterministic:
         random.seed()
         numpy.random.seed()
-        cupy.random.seed()
+        clpy.random.seed()
     else:
         random.seed(99)
         numpy.random.seed(100)
-        cupy.random.seed(101)
+        clpy.random.seed(101)
 
 
 def do_teardown():
     global _old_python_random_state
     global _old_numpy_random_state
-    global _old_cupy_random_states
+    global _old_clpy_random_states
     random.setstate(_old_python_random_state)
     numpy.random.set_state(_old_numpy_random_state)
-    cupy.random.generator._random_states = _old_cupy_random_states
+    clpy.random.generator._random_states = _old_clpy_random_states
     _old_python_random_state = None
     _old_numpy_random_state = None
-    _old_cupy_random_states = None
+    _old_clpy_random_states = None
 
 
 # In some tests (which utilize condition.repeat or condition.retry),
@@ -64,7 +64,7 @@ def _check_teardown():
 
 
 def _setup_random():
-    """Sets up the deterministic random states of ``numpy`` and ``cupy``.
+    """Sets up the deterministic random states of ``numpy`` and ``clpy``.
 
     """
     global _nest_count

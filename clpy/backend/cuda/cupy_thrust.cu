@@ -15,7 +15,7 @@ using namespace thrust;
  */
 
 template <typename T>
-void cupy::thrust::_sort(void *data_start, size_t *keys_start, const std::vector<ptrdiff_t>& shape) {
+void clpy::thrust::_sort(void *data_start, size_t *keys_start, const std::vector<ptrdiff_t>& shape) {
 
     size_t ndim = shape.size();
     ptrdiff_t size;
@@ -49,16 +49,16 @@ void cupy::thrust::_sort(void *data_start, size_t *keys_start, const std::vector
     }
 }
 
-template void cupy::thrust::_sort<cpy_byte>(void *, size_t *, const std::vector<ptrdiff_t>& shape);
-template void cupy::thrust::_sort<cpy_ubyte>(void *, size_t *, const std::vector<ptrdiff_t>& shape);
-template void cupy::thrust::_sort<cpy_short>(void *, size_t *, const std::vector<ptrdiff_t>& shape);
-template void cupy::thrust::_sort<cpy_ushort>(void *, size_t *, const std::vector<ptrdiff_t>& shape);
-template void cupy::thrust::_sort<cpy_int>(void *, size_t *, const std::vector<ptrdiff_t>& shape);
-template void cupy::thrust::_sort<cpy_uint>(void *, size_t *, const std::vector<ptrdiff_t>& shape);
-template void cupy::thrust::_sort<cpy_long>(void *, size_t *, const std::vector<ptrdiff_t>& shape);
-template void cupy::thrust::_sort<cpy_ulong>(void *, size_t *, const std::vector<ptrdiff_t>& shape);
-template void cupy::thrust::_sort<cpy_float>(void *, size_t *, const std::vector<ptrdiff_t>& shape);
-template void cupy::thrust::_sort<cpy_double>(void *, size_t *, const std::vector<ptrdiff_t>& shape);
+template void clpy::thrust::_sort<cpy_byte>(void *, size_t *, const std::vector<ptrdiff_t>& shape);
+template void clpy::thrust::_sort<cpy_ubyte>(void *, size_t *, const std::vector<ptrdiff_t>& shape);
+template void clpy::thrust::_sort<cpy_short>(void *, size_t *, const std::vector<ptrdiff_t>& shape);
+template void clpy::thrust::_sort<cpy_ushort>(void *, size_t *, const std::vector<ptrdiff_t>& shape);
+template void clpy::thrust::_sort<cpy_int>(void *, size_t *, const std::vector<ptrdiff_t>& shape);
+template void clpy::thrust::_sort<cpy_uint>(void *, size_t *, const std::vector<ptrdiff_t>& shape);
+template void clpy::thrust::_sort<cpy_long>(void *, size_t *, const std::vector<ptrdiff_t>& shape);
+template void clpy::thrust::_sort<cpy_ulong>(void *, size_t *, const std::vector<ptrdiff_t>& shape);
+template void clpy::thrust::_sort<cpy_float>(void *, size_t *, const std::vector<ptrdiff_t>& shape);
+template void clpy::thrust::_sort<cpy_double>(void *, size_t *, const std::vector<ptrdiff_t>& shape);
 
 
 /*
@@ -75,7 +75,7 @@ private:
 };
 
 template <typename T>
-void cupy::thrust::_lexsort(size_t *idx_start, void *keys_start, size_t k, size_t n) {
+void clpy::thrust::_lexsort(size_t *idx_start, void *keys_start, size_t k, size_t n) {
     /* idx_start is the beginning of the output array where the indexes that
        would sort the data will be placed. The original contents of idx_start
        will be destroyed. */
@@ -88,16 +88,16 @@ void cupy::thrust::_lexsort(size_t *idx_start, void *keys_start, size_t k, size_
     }
 }
 
-template void cupy::thrust::_lexsort<cpy_byte>(size_t *, void *, size_t, size_t);
-template void cupy::thrust::_lexsort<cpy_ubyte>(size_t *, void *, size_t, size_t);
-template void cupy::thrust::_lexsort<cpy_short>(size_t *, void *, size_t, size_t);
-template void cupy::thrust::_lexsort<cpy_ushort>(size_t *, void *, size_t, size_t);
-template void cupy::thrust::_lexsort<cpy_int>(size_t *, void *, size_t, size_t);
-template void cupy::thrust::_lexsort<cpy_uint>(size_t *, void *, size_t, size_t);
-template void cupy::thrust::_lexsort<cpy_long>(size_t *, void *, size_t, size_t);
-template void cupy::thrust::_lexsort<cpy_ulong>(size_t *, void *, size_t, size_t);
-template void cupy::thrust::_lexsort<cpy_float>(size_t *, void *, size_t, size_t);
-template void cupy::thrust::_lexsort<cpy_double>(size_t *, void *, size_t, size_t);
+template void clpy::thrust::_lexsort<cpy_byte>(size_t *, void *, size_t, size_t);
+template void clpy::thrust::_lexsort<cpy_ubyte>(size_t *, void *, size_t, size_t);
+template void clpy::thrust::_lexsort<cpy_short>(size_t *, void *, size_t, size_t);
+template void clpy::thrust::_lexsort<cpy_ushort>(size_t *, void *, size_t, size_t);
+template void clpy::thrust::_lexsort<cpy_int>(size_t *, void *, size_t, size_t);
+template void clpy::thrust::_lexsort<cpy_uint>(size_t *, void *, size_t, size_t);
+template void clpy::thrust::_lexsort<cpy_long>(size_t *, void *, size_t, size_t);
+template void clpy::thrust::_lexsort<cpy_ulong>(size_t *, void *, size_t, size_t);
+template void clpy::thrust::_lexsort<cpy_float>(size_t *, void *, size_t, size_t);
+template void clpy::thrust::_lexsort<cpy_double>(size_t *, void *, size_t, size_t);
 
 
 /*
@@ -105,7 +105,7 @@ template void cupy::thrust::_lexsort<cpy_double>(size_t *, void *, size_t, size_
  */
 
 template <typename T>
-void cupy::thrust::_argsort(size_t *idx_start, void *data_start, void *keys_start, const std::vector<ptrdiff_t>& shape) {
+void clpy::thrust::_argsort(size_t *idx_start, void *data_start, void *keys_start, const std::vector<ptrdiff_t>& shape) {
     /* idx_start is the beggining of the output array where the indexes that
        would sort the data will be placed. The original contents of idx_start
        will be destroyed. */
@@ -158,13 +158,13 @@ void cupy::thrust::_argsort(size_t *idx_start, void *data_start, void *keys_star
     }
 }
 
-template void cupy::thrust::_argsort<cpy_byte>(size_t *, void *, void *, const std::vector<ptrdiff_t>& shape);
-template void cupy::thrust::_argsort<cpy_ubyte>(size_t *, void *, void *, const std::vector<ptrdiff_t>& shape);
-template void cupy::thrust::_argsort<cpy_short>(size_t *, void *, void *, const std::vector<ptrdiff_t>& shape);
-template void cupy::thrust::_argsort<cpy_ushort>(size_t *, void *, void *, const std::vector<ptrdiff_t>& shape);
-template void cupy::thrust::_argsort<cpy_int>(size_t *, void *, void *, const std::vector<ptrdiff_t>& shape);
-template void cupy::thrust::_argsort<cpy_uint>(size_t *, void *, void *, const std::vector<ptrdiff_t>& shape);
-template void cupy::thrust::_argsort<cpy_long>(size_t *, void *, void *, const std::vector<ptrdiff_t>& shape);
-template void cupy::thrust::_argsort<cpy_ulong>(size_t *, void *, void *, const std::vector<ptrdiff_t>& shape);
-template void cupy::thrust::_argsort<cpy_float>(size_t *, void *, void *, const std::vector<ptrdiff_t>& shape);
-template void cupy::thrust::_argsort<cpy_double>(size_t *, void *, void *, const std::vector<ptrdiff_t>& shape);
+template void clpy::thrust::_argsort<cpy_byte>(size_t *, void *, void *, const std::vector<ptrdiff_t>& shape);
+template void clpy::thrust::_argsort<cpy_ubyte>(size_t *, void *, void *, const std::vector<ptrdiff_t>& shape);
+template void clpy::thrust::_argsort<cpy_short>(size_t *, void *, void *, const std::vector<ptrdiff_t>& shape);
+template void clpy::thrust::_argsort<cpy_ushort>(size_t *, void *, void *, const std::vector<ptrdiff_t>& shape);
+template void clpy::thrust::_argsort<cpy_int>(size_t *, void *, void *, const std::vector<ptrdiff_t>& shape);
+template void clpy::thrust::_argsort<cpy_uint>(size_t *, void *, void *, const std::vector<ptrdiff_t>& shape);
+template void clpy::thrust::_argsort<cpy_long>(size_t *, void *, void *, const std::vector<ptrdiff_t>& shape);
+template void clpy::thrust::_argsort<cpy_ulong>(size_t *, void *, void *, const std::vector<ptrdiff_t>& shape);
+template void clpy::thrust::_argsort<cpy_float>(size_t *, void *, void *, const std::vector<ptrdiff_t>& shape);
+template void clpy::thrust::_argsort<cpy_double>(size_t *, void *, void *, const std::vector<ptrdiff_t>& shape);

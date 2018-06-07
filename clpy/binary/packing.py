@@ -1,5 +1,5 @@
-import cupy
-from cupy import core
+import clpy
+from clpy import core
 
 
 _packbits_kernel = core.ElementwiseKernel(
@@ -19,10 +19,10 @@ def packbits(myarray):
     This function currently does not support ``axis`` option.
 
     Args:
-        myarray (cupy.ndarray): Input array.
+        myarray (clpy.ndarray): Input array.
 
     Returns:
-        cupy.ndarray: The packed array.
+        clpy.ndarray: The packed array.
 
     .. note::
         When the input array is empty, this function returns a copy of it,
@@ -38,7 +38,7 @@ def packbits(myarray):
 
     myarray = myarray.ravel()
     packed_size = (myarray.size + 7) // 8
-    packed = cupy.zeros((packed_size,), dtype=cupy.uint8)
+    packed = clpy.zeros((packed_size,), dtype=clpy.uint8)
     return _packbits_kernel(myarray, myarray.size, packed)
 
 
@@ -55,15 +55,15 @@ def unpackbits(myarray):
     This function currently does not support ``axis`` option.
 
     Args:
-        myarray (cupy.ndarray): Input array.
+        myarray (clpy.ndarray): Input array.
 
     Returns:
-        cupy.ndarray: The unpacked array.
+        clpy.ndarray: The unpacked array.
 
     .. seealso:: :func:`numpy.unpackbits`
     """
-    if myarray.dtype != cupy.uint8:
+    if myarray.dtype != clpy.uint8:
         raise TypeError('Expected an input array of unsigned byte data type')
 
-    unpacked = cupy.ndarray((myarray.size * 8), dtype=cupy.uint8)
+    unpacked = clpy.ndarray((myarray.size * 8), dtype=clpy.uint8)
     return _unpackbits_kernel(myarray, unpacked)

@@ -1,51 +1,17 @@
 import os
 
-from cupy import cuda
+from clpy import backend
 
-from cupy.cuda cimport function
-from cupy.cuda cimport runtime
+from clpy.backend cimport function
+# from clpy.backend cimport runtime
+cimport clpy.backend.opencl.api
+cimport clpy.backend.opencl.utility
+import clpy.backend.opencl.env
+cimport clpy.backend.opencl.env
 
 import warnings
-
-
-cdef struct _CArray:
-    void* data
-    Py_ssize_t size
-    Py_ssize_t shape_and_strides[MAX_NDIM * 2]
-
-
-cdef class CArray(CPointer):
-
-    cdef:
-        _CArray val
-
-    def __init__(self, ndarray arr):
-        cdef Py_ssize_t i
-        cdef int ndim = arr._shape.size()
-        self.val.data = <void*>arr.data.ptr
-        self.val.size = arr.size
-        for i in range(ndim):
-            self.val.shape_and_strides[i] = arr._shape[i]
-            self.val.shape_and_strides[i + ndim] = arr._strides[i]
-        self.ptr = <void*>&self.val
-
-
-cdef struct _CIndexer:
-    Py_ssize_t size
-    Py_ssize_t shape_and_index[MAX_NDIM * 2]
-
-
-cdef class CIndexer(CPointer):
-    cdef:
-        _CIndexer val
-
-    def __init__(self, Py_ssize_t size, tuple shape):
-        self.val.size = size
-        cdef Py_ssize_t i
-        for i in range(len(shape)):
-            self.val.shape_and_index[i] = shape[i]
-        self.ptr = <void*>&self.val
-
+import functools
+import operator
 
 cdef class Indexer:
     def __init__(self, tuple shape):
@@ -59,40 +25,54 @@ cdef class Indexer:
     def ndim(self):
         return len(self.shape)
 
-    cdef CPointer get_pointer(self):
-        return CIndexer(self.size, self.shape)
+    def get_size(self):
+        return cython.sizeof(Py_ssize_t) * (1 + self.ndim * 2)  # size + shape_and_stride
 
+cdef class Size_t:
+    def __init__(self, size_t val):
+        self.val = val
 
-cdef list _cupy_header_list = [
-    'cupy/complex.cuh',
-    'cupy/carray.cuh',
+    @property
+    def ndim(self):
+        return 1
+
+cdef class LocalMem:
+    @property
+    def ndim(self):
+        return 1
+
+cdef list _clpy_header_list = [
+# TODO(LWisteria): implement complex
+#    'clpy/complex.cuh',
+    'clpy/carray.clh',
 ]
-cdef str _cupy_header = ''.join(
-    ['#include <%s>\n' % i for i in _cupy_header_list])
+cdef str _clpy_header = ''.join(
+    ['#include <%s>\n' % i for i in _clpy_header_list])
 
 # This is indirect include header list.
 # These header files are subject to a hash key.
-cdef list _cupy_extra_header_list = [
-    'cupy/complex/complex.h',
-    'cupy/complex/math_private.h',
-    'cupy/complex/complex_inl.h',
-    'cupy/complex/arithmetic.h',
-    'cupy/complex/cproj.h',
-    'cupy/complex/cexp.h',
-    'cupy/complex/cexpf.h',
-    'cupy/complex/clog.h',
-    'cupy/complex/clogf.h',
-    'cupy/complex/cpow.h',
-    'cupy/complex/ccosh.h',
-    'cupy/complex/ccoshf.h',
-    'cupy/complex/csinh.h',
-    'cupy/complex/csinhf.h',
-    'cupy/complex/ctanh.h',
-    'cupy/complex/ctanhf.h',
-    'cupy/complex/csqrt.h',
-    'cupy/complex/csqrtf.h',
-    'cupy/complex/catrig.h',
-    'cupy/complex/catrigf.h',
+cdef list _clpy_extra_header_list = [
+# TODO(LWisteria): implement complex
+#    'clpy/complex/complex.h',
+#    'clpy/complex/math_private.h',
+#    'clpy/complex/complex_inl.h',
+#    'clpy/complex/arithmetic.h',
+#    'clpy/complex/cproj.h',
+#    'clpy/complex/cexp.h',
+#    'clpy/complex/cexpf.h',
+#    'clpy/complex/clog.h',
+#    'clpy/complex/clogf.h',
+#    'clpy/complex/cpow.h',
+#    'clpy/complex/ccosh.h',
+#    'clpy/complex/ccoshf.h',
+#    'clpy/complex/csinh.h',
+#    'clpy/complex/csinhf.h',
+#    'clpy/complex/ctanh.h',
+#    'clpy/complex/ctanhf.h',
+#    'clpy/complex/csqrt.h',
+#    'clpy/complex/csqrtf.h',
+#    'clpy/complex/catrig.h',
+#    'clpy/complex/catrigf.h',
 ]
 
 cdef str _header_path_cache = None
@@ -113,7 +93,7 @@ cpdef str _get_header_source():
     if _header_source is None:
         source = []
         base_path = _get_header_dir_path()
-        for file_path in _cupy_header_list + _cupy_extra_header_list:
+        for file_path in _clpy_header_list + _clpy_extra_header_list:
             header_path = os.path.join(base_path, file_path)
             with open(header_path) as header_file:
                 source.append(header_file.read())
@@ -148,24 +128,13 @@ cpdef str _get_cuda_path():
 
 cpdef function.Module compile_with_cache(
         str source, tuple options=(), arch=None, cachd_dir=None):
-    source = _cupy_header + source
+    source = _clpy_header + source
     extra_source = _get_header_source()
     options += ('-I%s' % _get_header_dir_path(),)
+    options += (' -cl-fp32-correctly-rounded-divide-sqrt', )
+    optionStr = functools.reduce(operator.add, options)
 
-    # The variable _cuda_runtime_version is declared in cupy/core/core.pyx,
-    # but it might not have been set appropriately before coming here.
-    global _cuda_runtime_version
-    if _cuda_runtime_version is None:
-        _cuda_runtime_version = runtime.runtimeGetVersion()
-
-    if _cuda_runtime_version >= 9000:
-        cuda_path = _get_cuda_path()
-        if cuda_path is None:
-            warnings.warn('Please set the CUDA path ' +
-                          'to environment variable `CUDA_PATH`')
-        else:
-            path = os.path.join(cuda_path, 'include')
-            options += ('-I ' + path,)
-
-    return cuda.compile_with_cache(source, options, arch, cachd_dir,
-                                   extra_source)
+    program = clpy.backend.opencl.utility.CreateProgram([source.encode('utf-8')], clpy.backend.opencl.env.get_context(), clpy.backend.opencl.env.num_devices, clpy.backend.opencl.env.get_devices_ptrs(), optionStr.encode('utf-8'))
+    cdef function.Module module = function.Module()
+    module.set(program)
+    return module

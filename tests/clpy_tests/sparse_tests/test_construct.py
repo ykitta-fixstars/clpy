@@ -2,7 +2,7 @@ import unittest
 
 import numpy
 
-from cupy import testing
+from clpy import testing
 
 
 @testing.parameterize(*testing.product({
@@ -15,7 +15,7 @@ from cupy import testing
 @testing.with_requires('scipy')
 class TestEye(unittest.TestCase):
 
-    @testing.numpy_cupy_allclose(sp_name='sp')
+    @testing.numpy_clpy_allclose(sp_name='sp')
     def test_eye(self, xp, sp):
         x = sp.eye(
             self.m, n=self.n, k=self.k, dtype=self.dtype, format=self.format)
@@ -31,7 +31,7 @@ class TestEye(unittest.TestCase):
 @testing.with_requires('scipy')
 class TestIdentity(unittest.TestCase):
 
-    @testing.numpy_cupy_allclose(sp_name='sp')
+    @testing.numpy_clpy_allclose(sp_name='sp')
     def test_eye(self, xp, sp):
         x = sp.identity(3, dtype=self.dtype, format=self.format)
         self.assertIsInstance(x, sp.spmatrix)
@@ -45,7 +45,7 @@ class TestIdentity(unittest.TestCase):
 @testing.with_requires('scipy')
 class TestSpdiags(unittest.TestCase):
 
-    @testing.numpy_cupy_allclose(sp_name='sp')
+    @testing.numpy_clpy_allclose(sp_name='sp')
     def test_spdiags(self, xp, sp):
         data = xp.arange(12, dtype=self.dtype).reshape(3, 4)
         diags = xp.array([0, -1, 2], dtype='i')

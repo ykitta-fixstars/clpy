@@ -1,7 +1,7 @@
 # distutils: language = c++
 
 """Thin wrapper of cuda profiler."""
-from cupy.cuda cimport runtime
+from clpy.cuda cimport runtime
 
 
 cdef extern from "cupy_cuda.h" nogil:
@@ -23,8 +23,8 @@ cpdef void initialize(str config_file,
     Args:
         config_file (str): Name of the configuration file.
         output_file (str): Name of the coutput file.
-        output_mode (int): ``cupy.cuda.profiler.cudaKeyValuePair`` or
-            ``cupy.cuda.profiler.cudaCSV``.
+        output_mode (int): ``clpy.cuda.profiler.cudaKeyValuePair`` or
+            ``clpy.cuda.profiler.cudaCSV``.
     """
     cdef bytes b_config_file = config_file.encode()
     cdef bytes b_output_file = output_file.encode()

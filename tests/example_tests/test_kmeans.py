@@ -5,7 +5,7 @@ import unittest
 
 import six
 
-from cupy import testing
+from clpy import testing
 
 from example_tests import example_test
 

@@ -3,8 +3,8 @@ import unittest
 import itertools
 import numpy
 
-import cupy
-from cupy import testing
+import clpy
+from clpy import testing
 
 
 def perm(iterable):
@@ -38,7 +38,7 @@ def perm(iterable):
 class TestArrayAdvancedIndexingGetitemPerm(unittest.TestCase):
 
     @testing.for_all_dtypes()
-    @testing.numpy_cupy_array_equal()
+    @testing.numpy_clpy_array_equal()
     def test_adv_getitem(self, xp, dtype):
         a = testing.shaped_arange(self.shape, xp, dtype)
         return a[self.indexes]
@@ -116,7 +116,7 @@ class TestArrayAdvancedIndexingGetitemPerm(unittest.TestCase):
 class TestArrayAdvancedIndexingGetitemParametrized(unittest.TestCase):
 
     @testing.for_all_dtypes()
-    @testing.numpy_cupy_array_equal()
+    @testing.numpy_clpy_array_equal()
     def test_adv_getitem(self, xp, dtype):
         a = testing.shaped_arange(self.shape, xp, dtype)
         return a[self.indexes]
@@ -132,7 +132,7 @@ class TestArrayAdvancedIndexingGetitemParametrized(unittest.TestCase):
 class TestArrayAdvancedIndexingGetitemParametrizedTransp(unittest.TestCase):
 
     @testing.for_all_dtypes()
-    @testing.numpy_cupy_array_equal()
+    @testing.numpy_clpy_array_equal()
     def test_adv_getitem(self, xp, dtype):
         a = testing.shaped_arange(self.shape, xp, dtype)
         if self.transpose:
@@ -145,45 +145,45 @@ class TestArrayAdvancedIndexingGetitemCupyIndices(unittest.TestCase):
 
     shape = (2, 3, 4)
 
-    def test_adv_getitem_cupy_indices1(self):
-        a = cupy.zeros(self.shape)
-        index = cupy.array([1, 0])
+    def test_adv_getitem_clpy_indices1(self):
+        a = clpy.zeros(self.shape)
+        index = clpy.array([1, 0])
         original_index = index.copy()
         b = a[index]
         b_cpu = a.get()[index.get()]
         testing.assert_array_equal(b, b_cpu)
         testing.assert_array_equal(original_index, index)
 
-    def test_adv_getitem_cupy_indices2(self):
-        a = cupy.zeros(self.shape)
-        index = cupy.array([1, 0])
+    def test_adv_getitem_clpy_indices2(self):
+        a = clpy.zeros(self.shape)
+        index = clpy.array([1, 0])
         original_index = index.copy()
         b = a[(slice(None), index)]
         b_cpu = a.get()[(slice(None), index.get())]
         testing.assert_array_equal(b, b_cpu)
         testing.assert_array_equal(original_index, index)
 
-    def test_adv_getitem_cupy_indices3(self):
-        a = cupy.zeros(self.shape)
-        index = cupy.array([True, False])
+    def test_adv_getitem_clpy_indices3(self):
+        a = clpy.zeros(self.shape)
+        index = clpy.array([True, False])
         original_index = index.copy()
         b = a[index]
         b_cpu = a.get()[index.get()]
         testing.assert_array_equal(b, b_cpu)
         testing.assert_array_equal(original_index, index)
 
-    def test_adv_getitem_cupy_indices4(self):
-        a = cupy.zeros(self.shape)
-        index = cupy.array([4, -5])
+    def test_adv_getitem_clpy_indices4(self):
+        a = clpy.zeros(self.shape)
+        index = clpy.array([4, -5])
         original_index = index.copy()
         b = a[index]
         b_cpu = a.get()[index.get() % self.shape[1]]
         testing.assert_array_equal(b, b_cpu)
         testing.assert_array_equal(original_index, index)
 
-    def test_adv_getitem_cupy_indices5(self):
-        a = cupy.zeros(self.shape)
-        index = cupy.array([4, -5])
+    def test_adv_getitem_clpy_indices5(self):
+        a = clpy.zeros(self.shape)
+        index = clpy.array([4, -5])
         original_index = index.copy()
         b = a[[1, 0], index]
         b_cpu = a.get()[[1, 0], index.get() % self.shape[1]]
@@ -216,7 +216,7 @@ class TestArrayAdvancedIndexingGetitemCupyIndices(unittest.TestCase):
 class TestArrayInvalidIndexAdvGetitem(unittest.TestCase):
 
     @testing.for_all_dtypes()
-    @testing.numpy_cupy_raises()
+    @testing.numpy_clpy_raises()
     def test_invalid_adv_getitem(self, xp, dtype):
         a = testing.shaped_arange(self.shape, xp, dtype)
         a[self.indexes]
@@ -357,7 +357,7 @@ class TestArrayInvalidIndexAdvGetitem(unittest.TestCase):
 class TestArrayAdvancedIndexingSetitemScalarValue(unittest.TestCase):
 
     @testing.for_all_dtypes()
-    @testing.numpy_cupy_array_equal()
+    @testing.numpy_clpy_array_equal()
     def test_adv_setitem(self, xp, dtype):
         a = xp.zeros(self.shape, dtype=dtype)
         a[self.indexes] = self.value
@@ -413,7 +413,7 @@ class TestArrayAdvancedIndexingSetitemScalarValue(unittest.TestCase):
 class TestArrayAdvancedIndexingVectorValue(unittest.TestCase):
 
     @testing.for_all_dtypes()
-    @testing.numpy_cupy_array_equal()
+    @testing.numpy_clpy_array_equal()
     def test_adv_setitem(self, xp, dtype):
         a = xp.zeros(self.shape, dtype=dtype)
         a[self.indexes] = self.value.astype(a.dtype)
@@ -425,40 +425,40 @@ class TestArrayAdvancedIndexingSetitemCupyIndices(unittest.TestCase):
 
     shape = (2, 3)
 
-    def test_cupy_indices_integer_array_1(self):
-        a = cupy.zeros(self.shape)
-        index = cupy.array([0, 1])
+    def test_clpy_indices_integer_array_1(self):
+        a = clpy.zeros(self.shape)
+        index = clpy.array([0, 1])
         original_index = index.copy()
-        a[:, index] = cupy.array(1.)
+        a[:, index] = clpy.array(1.)
         testing.assert_array_equal(
-            a, cupy.array([[1., 1., 0.], [1., 1., 0.]]))
+            a, clpy.array([[1., 1., 0.], [1., 1., 0.]]))
         testing.assert_array_equal(index, original_index)
 
-    def test_cupy_indices_integer_array_2(self):
-        a = cupy.zeros(self.shape)
-        index = cupy.array([3, -5])
+    def test_clpy_indices_integer_array_2(self):
+        a = clpy.zeros(self.shape)
+        index = clpy.array([3, -5])
         original_index = index.copy()
-        a[:, index] = cupy.array(1.)
+        a[:, index] = clpy.array(1.)
         testing.assert_array_equal(
-            a, cupy.array([[1., 1., 0.], [1., 1., 0.]]))
+            a, clpy.array([[1., 1., 0.], [1., 1., 0.]]))
         testing.assert_array_equal(index, original_index)
 
-    def test_cupy_indices_integer_array_3(self):
-        a = cupy.zeros(self.shape)
-        index = cupy.array([3, -5])
+    def test_clpy_indices_integer_array_3(self):
+        a = clpy.zeros(self.shape)
+        index = clpy.array([3, -5])
         original_index = index.copy()
-        a[[1, 1], index] = cupy.array(1.)
+        a[[1, 1], index] = clpy.array(1.)
         testing.assert_array_equal(
-            a, cupy.array([[0., 0., 0.], [1., 1., 0.]]))
+            a, clpy.array([[0., 0., 0.], [1., 1., 0.]]))
         testing.assert_array_equal(index, original_index)
 
-    def test_cupy_indices_boolean_array(self):
-        a = cupy.zeros(self.shape)
-        index = cupy.array([True, False])
+    def test_clpy_indices_boolean_array(self):
+        a = clpy.zeros(self.shape)
+        index = clpy.array([True, False])
         original_index = index.copy()
-        a[index] = cupy.array(1.)
+        a[index] = clpy.array(1.)
         testing.assert_array_equal(
-            a, cupy.array([[1., 1., 1.], [0., 0., 0.]]))
+            a, clpy.array([[1., 1., 1.], [0., 0., 0.]]))
         testing.assert_array_almost_equal(original_index, index)
 
 
@@ -467,7 +467,7 @@ class TestArrayAdvancedIndexingSetitemDifferetnDtypes(unittest.TestCase):
 
     @testing.for_all_dtypes_combination(names=['src_dtype', 'dst_dtype'],
                                         no_complex=True)
-    @testing.numpy_cupy_array_equal()
+    @testing.numpy_clpy_array_equal()
     def test_differnt_dtypes(self, xp, src_dtype, dst_dtype):
         shape = (2, 3)
         a = xp.zeros(shape, dtype=src_dtype)
@@ -477,7 +477,7 @@ class TestArrayAdvancedIndexingSetitemDifferetnDtypes(unittest.TestCase):
 
     @testing.for_all_dtypes_combination(names=['src_dtype', 'dst_dtype'],
                                         no_complex=True)
-    @testing.numpy_cupy_array_equal()
+    @testing.numpy_clpy_array_equal()
     def test_differnt_dtypes_mask(self, xp, src_dtype, dst_dtype):
         shape = (2, 3)
         a = xp.zeros(shape, dtype=src_dtype)
@@ -489,7 +489,7 @@ class TestArrayAdvancedIndexingSetitemDifferetnDtypes(unittest.TestCase):
 @testing.gpu
 class TestArrayAdvancedIndexingSetitemTranspose(unittest.TestCase):
 
-    @testing.numpy_cupy_array_equal()
+    @testing.numpy_clpy_array_equal()
     def test_adv_setitem_transp(self, xp):
         shape = (2, 3, 4)
         a = xp.zeros(shape).transpose(0, 2, 1)

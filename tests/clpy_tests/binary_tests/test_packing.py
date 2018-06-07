@@ -1,7 +1,7 @@
 import numpy
 import unittest
 
-from cupy import testing
+from clpy import testing
 
 
 @testing.gpu
@@ -11,14 +11,14 @@ class TestPacking(unittest.TestCase):
 
     @testing.with_requires('numpy>=1.10')
     @testing.for_int_dtypes()
-    @testing.numpy_cupy_array_equal()
+    @testing.numpy_clpy_array_equal()
     def check_packbits(self, data, xp, dtype):
         # Note numpy <= 1.9 raises an Exception when an input array is bool.
         # See https://github.com/numpy/numpy/issues/5377
         a = xp.array(data, dtype=dtype)
         return xp.packbits(a)
 
-    @testing.numpy_cupy_array_equal()
+    @testing.numpy_clpy_array_equal()
     def check_unpackbits(self, data, xp):
         a = xp.array(data, dtype=xp.uint8)
         return xp.unpackbits(a)

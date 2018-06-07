@@ -2,14 +2,14 @@ import unittest
 
 import numpy
 
-import cupy
-from cupy import cuda
-from cupy import testing
-from cupy.testing import condition
+import clpy
+from clpy import backend
+from clpy import testing
+from clpy.testing import condition
 
 
 @unittest.skipUnless(
-    cuda.cusolver_enabled, 'Only cusolver in CUDA 8.0 is supported')
+    backend.cusolver_enabled, 'Only cusolver in CUDA 8.0 is supported')
 @testing.gpu
 class TestSolve(unittest.TestCase):
 
@@ -19,18 +19,18 @@ class TestSolve(unittest.TestCase):
     def check_x(self, a_shape, b_shape, dtype):
         a_cpu = numpy.random.randint(0, 10, size=a_shape).astype(dtype)
         b_cpu = numpy.random.randint(0, 10, size=b_shape).astype(dtype)
-        a_gpu = cupy.asarray(a_cpu)
-        b_gpu = cupy.asarray(b_cpu)
+        a_gpu = clpy.asarray(a_cpu)
+        b_gpu = clpy.asarray(b_cpu)
         result_cpu = numpy.linalg.solve(a_cpu, b_cpu)
-        result_gpu = cupy.linalg.solve(a_gpu, b_gpu)
+        result_gpu = clpy.linalg.solve(a_gpu, b_gpu)
         self.assertEqual(result_cpu.dtype, result_gpu.dtype)
-        cupy.testing.assert_allclose(result_cpu, result_gpu, atol=1e-3)
+        clpy.testing.assert_allclose(result_cpu, result_gpu, atol=1e-3)
 
     def check_shape(self, a_shape, b_shape):
-        a = cupy.random.rand(*a_shape)
-        b = cupy.random.rand(*b_shape)
+        a = clpy.random.rand(*a_shape)
+        b = clpy.random.rand(*b_shape)
         with self.assertRaises(numpy.linalg.LinAlgError):
-            cupy.linalg.solve(a, b)
+            clpy.linalg.solve(a, b)
 
     @condition.retry(10)
     def test_solve(self):
@@ -51,7 +51,7 @@ class TestSolve(unittest.TestCase):
 @testing.fix_random()
 @testing.gpu
 @unittest.skipUnless(
-    cuda.cusolver_enabled, 'Only cusolver in CUDA 8.0 is supported')
+    backend.cusolver_enabled, 'Only cusolver in CUDA 8.0 is supported')
 class TestTensorSolve(unittest.TestCase):
 
     _multiprocess_can_split_ = True
@@ -62,7 +62,7 @@ class TestTensorSolve(unittest.TestCase):
         self.b = numpy.random.randint(
             0, 10, size=self.a_shape[:2]).astype(self.dtype)
 
-    @testing.numpy_cupy_allclose(atol=0.02)
+    @testing.numpy_clpy_allclose(atol=0.02)
     def test_tensorsolve(self, xp):
         a = xp.array(self.a)
         b = xp.array(self.b)
@@ -70,7 +70,7 @@ class TestTensorSolve(unittest.TestCase):
 
 
 @unittest.skipUnless(
-    cuda.cusolver_enabled, 'Only cusolver in CUDA 8.0 is supported')
+    backend.cusolver_enabled, 'Only cusolver in CUDA 8.0 is supported')
 @testing.gpu
 class TestInv(unittest.TestCase):
 
@@ -79,16 +79,16 @@ class TestInv(unittest.TestCase):
     @testing.for_float_dtypes(no_float16=True)
     def check_x(self, a_shape, dtype):
         a_cpu = numpy.random.randint(0, 10, size=a_shape).astype(dtype)
-        a_gpu = cupy.asarray(a_cpu)
+        a_gpu = clpy.asarray(a_cpu)
         result_cpu = numpy.linalg.inv(a_cpu)
-        result_gpu = cupy.linalg.inv(a_gpu)
+        result_gpu = clpy.linalg.inv(a_gpu)
         self.assertEqual(result_cpu.dtype, result_gpu.dtype)
-        cupy.testing.assert_allclose(result_cpu, result_gpu, atol=1e-3)
+        clpy.testing.assert_allclose(result_cpu, result_gpu, atol=1e-3)
 
     def check_shape(self, a_shape):
-        a = cupy.random.rand(*a_shape)
+        a = clpy.random.rand(*a_shape)
         with self.assertRaises(numpy.linalg.LinAlgError):
-            cupy.linalg.inv(a)
+            clpy.linalg.inv(a)
 
     @condition.retry(10)
     def test_inv(self):
@@ -102,7 +102,7 @@ class TestInv(unittest.TestCase):
 
 
 @unittest.skipUnless(
-    cuda.cusolver_enabled, 'Only cusolver in CUDA 8.0 is supported')
+    backend.cusolver_enabled, 'Only cusolver in CUDA 8.0 is supported')
 @testing.gpu
 class TestPinv(unittest.TestCase):
 
@@ -111,17 +111,17 @@ class TestPinv(unittest.TestCase):
     @testing.for_float_dtypes(no_float16=True)
     def check_x(self, a_shape, rcond, dtype):
         a_cpu = numpy.random.randint(0, 10, size=a_shape).astype(dtype)
-        a_gpu = cupy.asarray(a_cpu)
+        a_gpu = clpy.asarray(a_cpu)
         result_cpu = numpy.linalg.pinv(a_cpu, rcond=rcond)
-        result_gpu = cupy.linalg.pinv(a_gpu, rcond=rcond)
+        result_gpu = clpy.linalg.pinv(a_gpu, rcond=rcond)
 
         self.assertEqual(result_cpu.dtype, result_gpu.dtype)
-        cupy.testing.assert_allclose(result_cpu, result_gpu, atol=1e-3)
+        clpy.testing.assert_allclose(result_cpu, result_gpu, atol=1e-3)
 
     def check_shape(self, a_shape, rcond):
-        a = cupy.random.rand(*a_shape)
+        a = clpy.random.rand(*a_shape)
         with self.assertRaises(numpy.linalg.LinAlgError):
-            cupy.linalg.pinv(a)
+            clpy.linalg.pinv(a)
 
     @condition.retry(10)
     def test_pinv(self):

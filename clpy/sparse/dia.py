@@ -4,10 +4,10 @@ try:
 except ImportError:
     _scipy_available = False
 
-import cupy
-from cupy import core
-from cupy.sparse import csc
-from cupy.sparse import data
+import clpy
+from clpy import core
+from clpy.sparse import csc
+from clpy.sparse import data
 
 
 class dia_matrix(data._data_matrix):
@@ -41,10 +41,10 @@ class dia_matrix(data._data_matrix):
             raise ValueError(
                 'unrecognized form for dia_matrix constructor')
 
-        data = cupy.array(data, dtype=dtype, copy=copy)
-        data = cupy.atleast_2d(data)
-        offsets = cupy.array(offsets, dtype='i', copy=copy)
-        offsets = cupy.atleast_1d(offsets)
+        data = clpy.array(data, dtype=dtype, copy=copy)
+        data = clpy.atleast_2d(data)
+        offsets = clpy.array(offsets, dtype='i', copy=copy)
+        offsets = clpy.atleast_1d(offsets)
 
         if offsets.ndim != 1:
             raise ValueError('offsets array must have rank 1')
@@ -58,7 +58,7 @@ class dia_matrix(data._data_matrix):
                 'offsets (%d)'
                 % (data.shape[0], len(offsets)))
 
-        sorted_offsets = cupy.sort(offsets)
+        sorted_offsets = clpy.sort(offsets)
         if (sorted_offsets[:-1] == sorted_offsets[1:]).any():
             raise ValueError('offset array contains duplicate values')
 
@@ -73,7 +73,7 @@ class dia_matrix(data._data_matrix):
         """Returns a copy of the array on host memory.
 
         Args:
-            stream (cupy.cuda.Stream): CUDA stream object. If it is given, the
+            stream (clpy.cuda.Stream): CUDA stream object. If it is given, the
                 copy runs asynchronously. Otherwise, the copy is synchronous.
 
         Returns:
@@ -128,7 +128,7 @@ class dia_matrix(data._data_matrix):
                 arrays in a matrix cannot be shared in dia to csc conversion.
 
         Returns:
-            cupy.sparse.csc_matrix: Converted matrix.
+            clpy.sparse.csc_matrix: Converted matrix.
 
         """
         if self.data.size == 0:
@@ -149,8 +149,8 @@ class dia_matrix(data._data_matrix):
             ''',
             'dia_tocsc')(offset_len, self.offsets[:, None], num_rows,
                          num_cols, self.data)
-        indptr = cupy.zeros(num_cols + 1, dtype='i')
-        indptr[1: offset_len + 1] = cupy.cumsum(mask.sum(axis=0))
+        indptr = clpy.zeros(num_cols + 1, dtype='i')
+        indptr[1: offset_len + 1] = clpy.cumsum(mask.sum(axis=0))
         indptr[offset_len + 1:] = indptr[offset_len]
         indices = row.T[mask.T].astype('i', copy=False)
         data = self.data.T[mask.T]
@@ -166,7 +166,7 @@ class dia_matrix(data._data_matrix):
                 arrays in a matrix cannot be shared in dia to csr conversion.
 
         Returns:
-            cupy.sparse.csc_matrix: Converted matrix.
+            clpy.sparse.csc_matrix: Converted matrix.
 
         """
         return self.tocsc().tocsr()
@@ -176,7 +176,7 @@ def isspmatrix_dia(x):
     """Checks if a given matrix is of DIA format.
 
     Returns:
-        bool: Returns if ``x`` is :class:`cupy.sparse.dia_matrix`.
+        bool: Returns if ``x`` is :class:`clpy.sparse.dia_matrix`.
 
     """
     return isinstance(x, dia_matrix)

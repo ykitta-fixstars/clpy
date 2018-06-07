@@ -2,16 +2,16 @@ import unittest
 
 import mock
 
-from cupy import cuda
-from cupy import prof
+from clpy import backend
+from clpy import prof
 
 
-@unittest.skipUnless(cuda.nvtx_enabled, 'nvtx is required for time_range')
+@unittest.skipUnless(backend.nvtx_enabled, 'nvtx is required for time_range')
 class TestTimeRange(unittest.TestCase):
 
     def test_time_range(self):
-        push_patch = mock.patch('cupy.cuda.nvtx.RangePush')
-        pop_patch = mock.patch('cupy.cuda.nvtx.RangePop')
+        push_patch = mock.patch('clpy.backend.nvtx.RangePush')
+        pop_patch = mock.patch('clpy.backend.nvtx.RangePop')
         with push_patch as push, pop_patch as pop:
             with prof.time_range('test:time_range', color_id=-1):
                 pass
@@ -19,8 +19,8 @@ class TestTimeRange(unittest.TestCase):
             pop.assert_called_once_with()
 
     def test_time_range_with_ARGB(self):
-        push_patch = mock.patch('cupy.cuda.nvtx.RangePushC')
-        pop_patch = mock.patch('cupy.cuda.nvtx.RangePop')
+        push_patch = mock.patch('clpy.backend.nvtx.RangePushC')
+        pop_patch = mock.patch('clpy.backend.nvtx.RangePop')
         with push_patch as push, pop_patch as pop:
             with prof.time_range('test:time_range_with_ARGB',
                                  argb_color=0xFF00FF00):
@@ -30,8 +30,8 @@ class TestTimeRange(unittest.TestCase):
             pop.assert_called_once_with()
 
     def test_time_range_err(self):
-        push_patch = mock.patch('cupy.cuda.nvtx.RangePush')
-        pop_patch = mock.patch('cupy.cuda.nvtx.RangePop')
+        push_patch = mock.patch('clpy.backend.nvtx.RangePush')
+        pop_patch = mock.patch('clpy.backend.nvtx.RangePop')
         with push_patch as push, pop_patch as pop:
             try:
                 with prof.time_range('test:time_range_error', -1):
@@ -42,8 +42,8 @@ class TestTimeRange(unittest.TestCase):
             pop.assert_called_once_with()
 
     def test_TimeRangeDecorator(self):
-        push_patch = mock.patch('cupy.cuda.nvtx.RangePush')
-        pop_patch = mock.patch('cupy.cuda.nvtx.RangePop')
+        push_patch = mock.patch('clpy.backend.nvtx.RangePush')
+        pop_patch = mock.patch('clpy.backend.nvtx.RangePop')
         with push_patch as push, pop_patch as pop:
             @prof.TimeRangeDecorator()
             def f():
@@ -54,8 +54,8 @@ class TestTimeRange(unittest.TestCase):
             pop.assert_called_once_with()
 
     def test_TimeRangeDecorator_with_ARGB(self):
-        push_patch = mock.patch('cupy.cuda.nvtx.RangePushC')
-        pop_patch = mock.patch('cupy.cuda.nvtx.RangePop')
+        push_patch = mock.patch('clpy.backend.nvtx.RangePushC')
+        pop_patch = mock.patch('clpy.backend.nvtx.RangePop')
         with push_patch as push, pop_patch as pop:
             @prof.TimeRangeDecorator(argb_color=0xFFFF0000)
             def f():
@@ -65,8 +65,8 @@ class TestTimeRange(unittest.TestCase):
             pop.assert_called_once_with()
 
     def test_TimeRangeDecorator_err(self):
-        push_patch = mock.patch('cupy.cuda.nvtx.RangePush')
-        pop_patch = mock.patch('cupy.cuda.nvtx.RangePop')
+        push_patch = mock.patch('clpy.backend.nvtx.RangePush')
+        pop_patch = mock.patch('clpy.backend.nvtx.RangePop')
         with push_patch as push, pop_patch as pop:
             @prof.TimeRangeDecorator()
             def f():
@@ -83,11 +83,11 @@ class TestTimeRange(unittest.TestCase):
 class TestTimeRangeNVTXUnavailable(unittest.TestCase):
 
     def setUp(self):
-        self.nvtx_enabled = cuda.nvtx_enabled
-        cuda.nvtx_enabled = False
+        self.nvtx_enabled = backend.nvtx_enabled
+        backend.nvtx_enabled = False
 
     def tearDown(self):
-        cuda.nvtx_enabled = self.nvtx_enabled
+        backend.nvtx_enabled = self.nvtx_enabled
 
     def test_time_range(self):
         with self.assertRaises(RuntimeError):

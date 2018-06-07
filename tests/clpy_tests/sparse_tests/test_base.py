@@ -6,8 +6,8 @@ try:
 except ImportError:
     scipy_available = False
 
-import cupy.sparse
-from cupy import testing
+import clpy.sparse
+from clpy import testing
 
 
 if scipy_available:
@@ -22,7 +22,7 @@ if scipy_available:
             return self._nnz
 
 
-class DummySparseGPU(cupy.sparse.spmatrix):
+class DummySparseGPU(clpy.sparse.spmatrix):
 
     def __init__(self, maxprint=50, shape=None, nnz=0):
         super(DummySparseGPU, self).__init__(maxprint)
@@ -40,41 +40,41 @@ class DummySparseGPU(cupy.sparse.spmatrix):
 class TestSpmatrix(unittest.TestCase):
 
     def dummy_class(self, sp):
-        if sp is cupy.sparse:
+        if sp is clpy.sparse:
             return DummySparseGPU
         else:
             return DummySparseCPU
 
-    @testing.numpy_cupy_raises(sp_name='sp', accept_error=ValueError)
+    @testing.numpy_clpy_raises(sp_name='sp', accept_error=ValueError)
     def test_instantiation(self, xp, sp):
         sp.spmatrix()
 
-    @testing.numpy_cupy_raises(sp_name='sp', accept_error=TypeError)
+    @testing.numpy_clpy_raises(sp_name='sp', accept_error=TypeError)
     def test_len(self, xp, sp):
         s = self.dummy_class(sp)()
         len(s)
 
-    @testing.numpy_cupy_equal(sp_name='sp')
+    @testing.numpy_clpy_equal(sp_name='sp')
     def test_bool_true(self, xp, sp):
         s = self.dummy_class(sp)(shape=(1, 1), nnz=1)
         return bool(s)
 
-    @testing.numpy_cupy_equal(sp_name='sp')
+    @testing.numpy_clpy_equal(sp_name='sp')
     def test_bool_false(self, xp, sp):
         s = self.dummy_class(sp)(shape=(1, 1), nnz=0)
         return bool(s)
 
-    @testing.numpy_cupy_raises(sp_name='sp', accept_error=ValueError)
+    @testing.numpy_clpy_raises(sp_name='sp', accept_error=ValueError)
     def test_bool_invalid(self, xp, sp):
         s = self.dummy_class(sp)(shape=(2, 1))
         bool(s)
 
-    @testing.numpy_cupy_equal(sp_name='sp')
+    @testing.numpy_clpy_equal(sp_name='sp')
     def test_asformat_none(self, xp, sp):
         s = self.dummy_class(sp)()
         self.assertIs(s.asformat(None), s)
 
-    @testing.numpy_cupy_equal(sp_name='sp')
+    @testing.numpy_clpy_equal(sp_name='sp')
     def test_maxprint(self, xp, sp):
         s = self.dummy_class(sp)(maxprint=30)
         return s.getmaxprint()
