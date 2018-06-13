@@ -11,7 +11,8 @@ cdef class Function:
         Module module
         clpy.backend.opencl.types.cl_kernel kernel
 
-    cpdef linear_launch(self, size_t size, args, size_t local_mem=*, size_t local_size=*)
+    cpdef linear_launch(self, size_t size, args, size_t local_mem=*,
+                        size_t local_size=*)
 
 
 cdef class Module:

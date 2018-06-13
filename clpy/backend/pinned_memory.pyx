@@ -28,12 +28,14 @@ class PinnedMemory(object):
         self.ptr = 0
         if size > 0:
             self.ptr = <size_t>malloc(size)
-#            self.ptr = runtime.hostAlloc(size, flags) # TODO(LWisteria): Use clEnqueueMapBuffer
+            # # TODO(LWisteria): Use clEnqueueMapBuffer
+            # self.ptr = runtime.hostAlloc(size, flags)
 
     def __del__(self):
         if self.ptr:
             free(<void*>self.ptr)
-#            runtime.freeHost(self.ptr) # TODO(LWisteria): Use clEnqueueMapBuffer
+            # # TODO(LWisteria): Use clEnqueueMapBuffer
+            # runtime.freeHost(self.ptr)
 
     def __int__(self):
         """Returns the pointer value to the head of the allocation."""
@@ -179,7 +181,8 @@ cdef class _EventWatcher:
 
 cpdef PinnedMemoryPointer _malloc(Py_ssize_t size):
     mem = PinnedMemory(size)
-#    mem = PinnedMemory(size, runtime.hostAllocPortable) # TODO(LWisteria): Use clEnqueueMapBuffer
+    # # TODO(LWisteria): Use clEnqueueMapBuffer
+    # mem = PinnedMemory(size, runtime.hostAllocPortable)
     return PinnedMemoryPointer(mem, 0)
 
 
@@ -299,7 +302,8 @@ cdef class PinnedMemoryPool:
             if free:
                 mem = free.pop()
             else:
-                mem = self._alloc(size).mem  # TODO(LWisteria): Use clEnqueueMapBuffer
+                # TODO(LWisteria): Use clEnqueueMapBuffer
+                mem = self._alloc(size).mem
 #                try:
 #                    mem = self._alloc(size).mem
 #                except runtime.CUDARuntimeError as e:

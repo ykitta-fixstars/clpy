@@ -25,7 +25,8 @@ from clpy.backend.opencl.types cimport cl_mem
 
 thread_local = threading.local()
 
-subbuffer_alignment = clpy.backend.opencl.utility.GetDeviceMemBaseAddrAlign(clpy.backend.opencl.env.get_primary_device()) // 8
+subbuffer_alignment = clpy.backend.opencl.utility.GetDeviceMemBaseAddrAlign(
+    clpy.backend.opencl.env.get_primary_device()) // 8
 
 cdef inline _ensure_context(int device_id):
 
@@ -709,7 +710,8 @@ cdef class SingleDeviceMemoryPool:
                     rlock.unlock_fastrlock(self._free_lock)
 
         if chunk is not None:
-            # _ensure_context(self._device_id) # TODO(LWisteria): need on OpenCL?
+            # # TODO(LWisteria): need on OpenCL?
+            # _ensure_context(self._device_id)
             chunk, remaining = self._split(chunk, size)
         else:
             # cudaMalloc if a cache is not found

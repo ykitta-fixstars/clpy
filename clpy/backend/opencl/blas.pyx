@@ -16,7 +16,9 @@ from clpy.backend.opencl.types cimport cl_event
 _local_work_size = 16  # TODO(tomoya.sakai): GetDeviceInfo
 _work_per_thread = 2
 
-cdef void SetKernelArgWithScalarValue(clpy.backend.opencl.types.cl_kernel kernel, arg_index, _arg_value):
+cdef void SetKernelArgWithScalarValue(
+        clpy.backend.opencl.types.cl_kernel kernel,
+        arg_index, _arg_value):
     ptr = _arg_value
     # Wrap _arg_value with NumPy container if _arg_value is a scalar value.
     if isinstance(_arg_value, int):
@@ -36,9 +38,11 @@ cdef void SetKernelArgWithScalarValue(clpy.backend.opencl.types.cl_kernel kernel
     if numpy.issctype(type(arg_value)):
         size = arg_value.nbytes
         temporary = numpy.array(arg_value).ctypes.get_as_parameter().value
-        clpy.backend.opencl.api.SetKernelArg(kernel, arg_index, size, <void*>temporary)
+        clpy.backend.opencl.api.SetKernelArg(kernel, arg_index,
+                                             size, <void*>temporary)
     else:
-        raise ValueError("Type {0} is not a scalar value.".format(type(arg_value)))
+        raise ValueError("Type {0} is not a scalar value."
+                         .format(type(arg_value)))
 
 cdef computeGlobalWorkItemSize(n, local_work_size):
     if n % local_work_size == 0:
@@ -71,28 +75,36 @@ cpdef sgemm(transa, transb, m, n, k, alpha, A, lda, B, ldb, beta, C, ldc):
     else:
         raise ValueError("transb should be n(0) or t(1)")
 
-    cdef size_t program_sizet = _sgemm_kernel[(name, alpha == 0.0, beta == 0.0)]
-    cdef clpy.backend.opencl.types.cl_program program = <clpy.backend.opencl.types.cl_program>program_sizet
-    cdef clpy.backend.opencl.types.cl_kernel kernel = clpy.backend.opencl.api.CreateKernel(
-        program=program,
-        kernel_name=b'dot_kernel')
+    cdef size_t program_sizet \
+        = _sgemm_kernel[(name, alpha == 0.0, beta == 0.0)]
+    cdef clpy.backend.opencl.types.cl_program program \
+        = <clpy.backend.opencl.types.cl_program>program_sizet
+    cdef clpy.backend.opencl.types.cl_kernel kernel \
+        = clpy.backend.opencl.api.CreateKernel(program=program,
+                                               kernel_name=b'dot_kernel')
     SetKernelArgWithScalarValue(kernel, 0, m)
     SetKernelArgWithScalarValue(kernel, 1, n)
     SetKernelArgWithScalarValue(kernel, 2, k)
     SetKernelArgWithScalarValue(kernel, 3, alpha)
     cdef size_t Aptrtmp = A.data.buf.get()
-    clpy.backend.opencl.api.SetKernelArg(kernel, 4, sizeof(void*), <void*>&Aptrtmp)
+    clpy.backend.opencl.api.SetKernelArg(kernel, 4,
+                                         sizeof(void*), <void*>&Aptrtmp)
     SetKernelArgWithScalarValue(kernel, 5, lda)
     cdef size_t Bptrtmp = B.data.buf.get()
-    clpy.backend.opencl.api.SetKernelArg(kernel, 6, sizeof(void*), <void*>&Bptrtmp)
+    clpy.backend.opencl.api.SetKernelArg(kernel, 6,
+                                         sizeof(void*), <void*>&Bptrtmp)
     SetKernelArgWithScalarValue(kernel, 7, ldb)
     SetKernelArgWithScalarValue(kernel, 8, beta)
     cdef size_t Cptrtmp = C.data.buf.get()
-    clpy.backend.opencl.api.SetKernelArg(kernel, 9, sizeof(void*), <void*>&Cptrtmp)
+    clpy.backend.opencl.api.SetKernelArg(kernel, 9,
+                                         sizeof(void*), <void*>&Cptrtmp)
     SetKernelArgWithScalarValue(kernel, 10, ldc)
-    SetKernelArgWithScalarValue(kernel, 11, A.data.cl_mem_offset() // A.itemsize)
-    SetKernelArgWithScalarValue(kernel, 12, B.data.cl_mem_offset() // B.itemsize)
-    SetKernelArgWithScalarValue(kernel, 13, C.data.cl_mem_offset() // C.itemsize)
+    SetKernelArgWithScalarValue(kernel, 11,
+                                A.data.cl_mem_offset() // A.itemsize)
+    SetKernelArgWithScalarValue(kernel, 12,
+                                B.data.cl_mem_offset() // B.itemsize)
+    SetKernelArgWithScalarValue(kernel, 13,
+                                C.data.cl_mem_offset() // C.itemsize)
 
     cdef size_t lws[2]
     lws[0] = _local_work_size
@@ -130,7 +142,8 @@ cpdef size_t _generate_sgemm_kernel(transa, transb, alphaIsZero, betaIsZero):
     if betaIsZero:
         beta_expr = "acc[w]"
     elif not betaIsZero:
-        beta_expr = "acc[w] + beta * C[C_offset + I + (J + w * local_stride)* ld_c]"
+        beta_expr = "acc[w] + beta * " \
+                    "C[C_offset + I + (J + w * local_stride)* ld_c]"
 
     if alphaIsZero:
         alpha_expr = ""
@@ -143,12 +156,16 @@ cpdef size_t _generate_sgemm_kernel(transa, transb, alphaIsZero, betaIsZero):
                     const size_t i = local_work_size * t + iSub;//tiled row
                     const size_t j = local_work_size * t + jSub;//tiled col
                     if ((I < nA) && (j + w * local_stride < mA)){
-                        Asub[jSub + w * local_stride][iSub] = A[A_offset + ${indexA}]; // Asub(iSub, jSub) = A(I, j)
+                        // Asub(iSub, jSub) = A(I, j)
+                        Asub[jSub + w * local_stride][iSub]
+                            = A[A_offset + ${indexA}];
                     } else {
                         Asub[jSub + w * local_stride][iSub] = 0;
                     }
                     if ((i < nB) && (J + w * local_stride < mB)){
-                        Bsub[jSub + w * local_stride][iSub] = B[B_offset + ${indexB}]; // Bsub(iSub, jSub) = B(i , J)
+                        // Bsub(iSub, jSub) = B(i , J)
+                        Bsub[jSub + w * local_stride][iSub]
+                            = B[B_offset + ${indexB}];
                     } else {
                         Bsub[jSub + w * local_stride][iSub] = 0;
                     }
@@ -156,7 +173,8 @@ cpdef size_t _generate_sgemm_kernel(transa, transb, alphaIsZero, betaIsZero):
                 barrier(CLK_LOCAL_MEM_FENCE);
                 for(int k = 0;k < local_work_size;k++){
                     for(int w = 0;w < work_per_thread;w++){
-                        acc[w] += Asub[k][iSub] * Bsub[jSub + w * local_stride][k];
+                        acc[w] += Asub[k][iSub] *
+                            Bsub[jSub + w * local_stride][k];
                     }
                 }
             }
@@ -166,7 +184,9 @@ cpdef size_t _generate_sgemm_kernel(transa, transb, alphaIsZero, betaIsZero):
     dot_kernel_source = Template('''
     typedef ${typeof_size} kernel_arg_size_t;
     __kernel void dot_kernel(
-        const kernel_arg_size_t nC, const kernel_arg_size_t mC, const kernel_arg_size_t mA,
+        const kernel_arg_size_t nC,
+        const kernel_arg_size_t mC,
+        const kernel_arg_size_t mA,
         const float alpha,
         __global const float * const restrict A, const kernel_arg_size_t ld_a,
         __global const float * const restrict B, const kernel_arg_size_t ld_b,
@@ -208,13 +228,18 @@ cpdef size_t _generate_sgemm_kernel(transa, transb, alphaIsZero, betaIsZero):
             }
             }
         }
-    ''').substitute(alpha_expr=alpha_expr, beta_expr=beta_expr, typeof_size=clpy.backend.opencl.types.device_typeof_size, local_work_size=str(_local_work_size), work_per_thread=str(_work_per_thread)).encode('utf-8')
+    ''').substitute(alpha_expr=alpha_expr,
+                    beta_expr=beta_expr,
+                    typeof_size=clpy.backend.opencl.types.device_typeof_size,
+                    local_work_size=str(_local_work_size),
+                    work_per_thread=str(_work_per_thread)).encode('utf-8')
 
-    cdef clpy.backend.opencl.types.cl_program program = clpy.backend.opencl.utility.CreateProgram(
-        sources=[dot_kernel_source],
-        context=clpy.backend.opencl.env.get_context(),
-        num_devices=clpy.backend.opencl.env.num_devices,
-        devices_ptrs=clpy.backend.opencl.env.get_devices_ptrs())
+    cdef clpy.backend.opencl.types.cl_program program \
+        = clpy.backend.opencl.utility.CreateProgram(
+            sources=[dot_kernel_source],
+            context=clpy.backend.opencl.env.get_context(),
+            num_devices=clpy.backend.opencl.env.num_devices,
+            devices_ptrs=clpy.backend.opencl.env.get_devices_ptrs())
     return <size_t>program
 
 _sgemm_kernel = {
@@ -248,27 +273,36 @@ def sgeam(transa, transb, m, n, alpha, A, lda, beta, B, ldb, C, ldc):
     else:
         raise ValueError("transb should be n(0) or t(1)")
 
-    cdef size_t program_sizet = _sgeam_kernel[(name, alpha == 0.0, beta == 0.0)]
-    cdef clpy.backend.opencl.types.cl_program program = <clpy.backend.opencl.types.cl_program>program_sizet
-    cdef clpy.backend.opencl.types.cl_kernel kernel = clpy.backend.opencl.api.CreateKernel(
-        program=program,
-        kernel_name=b'geam_kernel')
+    cdef size_t program_sizet \
+        = _sgeam_kernel[(name, alpha == 0.0, beta == 0.0)]
+    cdef clpy.backend.opencl.types.cl_program program \
+        = <clpy.backend.opencl.types.cl_program>program_sizet
+    cdef clpy.backend.opencl.types.cl_kernel kernel \
+        = clpy.backend.opencl.api.CreateKernel(
+            program=program,
+            kernel_name=b'geam_kernel')
     SetKernelArgWithScalarValue(kernel, 0, m)
     SetKernelArgWithScalarValue(kernel, 1, n)
     SetKernelArgWithScalarValue(kernel, 2, alpha)
     cdef size_t Aptrtmp = A.data.buf.get()
-    clpy.backend.opencl.api.SetKernelArg(kernel, 3, sizeof(void*), <void*>&Aptrtmp)
+    clpy.backend.opencl.api.SetKernelArg(kernel, 3, sizeof(void*),
+                                         <void*>&Aptrtmp)
     SetKernelArgWithScalarValue(kernel, 4, lda)
     SetKernelArgWithScalarValue(kernel, 5, beta)
     cdef size_t Bptrtmp = B.data.buf.get()
-    clpy.backend.opencl.api.SetKernelArg(kernel, 6, sizeof(void*), <void*>&Bptrtmp)
+    clpy.backend.opencl.api.SetKernelArg(kernel, 6, sizeof(void*),
+                                         <void*>&Bptrtmp)
     SetKernelArgWithScalarValue(kernel, 7, ldb)
     cdef size_t Cptrtmp = C.data.buf.get()
-    clpy.backend.opencl.api.SetKernelArg(kernel, 8, sizeof(void*), <void*>&Cptrtmp)
+    clpy.backend.opencl.api.SetKernelArg(kernel, 8, sizeof(void*),
+                                         <void*>&Cptrtmp)
     SetKernelArgWithScalarValue(kernel, 9, ldc)
-    SetKernelArgWithScalarValue(kernel, 10, A.data.cl_mem_offset() // A.itemsize)
-    SetKernelArgWithScalarValue(kernel, 11, B.data.cl_mem_offset() // B.itemsize)
-    SetKernelArgWithScalarValue(kernel, 12, C.data.cl_mem_offset() // C.itemsize)
+    SetKernelArgWithScalarValue(kernel, 10,
+                                A.data.cl_mem_offset() // A.itemsize)
+    SetKernelArgWithScalarValue(kernel, 11,
+                                B.data.cl_mem_offset() // B.itemsize)
+    SetKernelArgWithScalarValue(kernel, 12,
+                                C.data.cl_mem_offset() // C.itemsize)
 
     cdef size_t gws[2]
     gws[0] = m
@@ -336,12 +370,16 @@ cpdef size_t _generate_sgeam_kernel(transa, transb, alphaIsZero, betaIsZero):
             ${alpha_expr}
             C[C_offset + i + j*ld_c] = ${beta_expr}; // column-major
         }
-    ''').substitute(alpha_expr=alpha_expr, beta_expr=beta_expr, typeof_size=clpy.backend.opencl.types.device_typeof_size).encode('utf-8')
-    cdef clpy.backend.opencl.types.cl_program program = clpy.backend.opencl.utility.CreateProgram(
-        sources=[geam_kernel_source],
-        context=clpy.backend.opencl.env.get_context(),
-        num_devices=clpy.backend.opencl.env.num_devices,
-        devices_ptrs=clpy.backend.opencl.env.get_devices_ptrs())
+    ''').substitute(alpha_expr=alpha_expr,
+                    beta_expr=beta_expr,
+                    typeof_size=clpy.backend.opencl.types.device_typeof_size) \
+        .encode('utf-8')
+    cdef clpy.backend.opencl.types.cl_program program \
+        = clpy.backend.opencl.utility.CreateProgram(
+            sources=[geam_kernel_source],
+            context=clpy.backend.opencl.env.get_context(),
+            num_devices=clpy.backend.opencl.env.num_devices,
+            devices_ptrs=clpy.backend.opencl.env.get_devices_ptrs())
 
     return <size_t>program
 

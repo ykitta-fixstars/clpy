@@ -35,15 +35,19 @@ cdef struct _CArray:
 cdef struct _CArray0:
     char unused
 
-cdef void _launch(clpy.backend.opencl.types.cl_kernel kernel, global_work_size, local_work_size, args, Py_ssize_t local_mem) except *:
+cdef void _launch(clpy.backend.opencl.types.cl_kernel kernel, global_work_size,
+                  local_work_size, args, Py_ssize_t local_mem) except *:
     global_dim = len(global_work_size)
     local_dim = len(local_work_size)
     if global_dim < 1 or 3 < global_dim:
-        raise ValueError("Global workitem dimension should be 1,2,3 but {0} was given".format(global_dim))
+        raise ValueError("Global workitem dimension should be 1,2,3"
+                         " but {0} was given".format(global_dim))
     elif local_dim < 0 or 3 < local_dim:
-        raise ValueError("Local workitem dimension should be 0,1,2,3 but {0} was given".format(local_dim))
+        raise ValueError("Local workitem dimension should be 0,1,2,3"
+                         " but {0} was given".format(local_dim))
     elif local_dim > 0 and global_dim != local_dim:
-        raise ValueError("global_work_size dim is {0} but local is {1}".format(global_dim, local_dim))
+        raise ValueError("global_work_size dim is {0} but local is {1}"
+                         .format(global_dim, local_dim))
 
     cdef size_t i = 0
     cdef _CIndexer indexer  # to keep lifetime until SetKernelArg
@@ -53,19 +57,26 @@ cdef void _launch(clpy.backend.opencl.types.cl_kernel kernel, global_work_size, 
     for a in args:
         if isinstance(a, core.ndarray):
             buffer_object = a.data.buf.get()
-            clpy.backend.opencl.api.SetKernelArg(kernel, i, sizeof(void*), <void*>&buffer_object)
+            clpy.backend.opencl.api.SetKernelArg(kernel, i, sizeof(void*),
+                                                 <void*>&buffer_object)
             i+=1
 
             ndim = len(a.strides)
             for d in range(ndim):
                 if a.strides[d] % a.itemsize != 0:
-                    raise ValueError("Stride of dim {0} = {1}, but item size is {2}".format(d, a.strides[d], a.itemsize))
+                    raise ValueError("Stride of dim {0} = {1},"
+                                     " but item size is {2}"
+                                     .format(d, a.strides[d], a.itemsize))
                 arrayInfo.shape_and_index[d] = a.shape[d]
-                arrayInfo.shape_and_index[d + ndim] = a.strides[d] // a.itemsize
+                arrayInfo.shape_and_index[d + ndim] = a.strides[d] \
+                    // a.itemsize
             arrayInfo.offset = a.data.cl_mem_offset() // a.itemsize
-            clpy.backend.opencl.api.SetKernelArg(kernel, i, cython.sizeof(Py_ssize_t)*(2*ndim+1), <void*>&arrayInfo)
+            clpy.backend.opencl.api.SetKernelArg(
+                kernel, i, cython.sizeof(Py_ssize_t)*(2*ndim+1),
+                <void*>&arrayInfo)
         elif isinstance(a, clpy.core.core.LocalMem):
-            clpy.backend.opencl.utility.SetKernelArgLocalMemory(kernel, i, local_mem)
+            clpy.backend.opencl.utility.SetKernelArgLocalMemory(kernel, i,
+                                                                local_mem)
         else:
             if isinstance(a, core.Indexer):
                 for d in range(a.ndim):
@@ -75,9 +86,11 @@ cdef void _launch(clpy.backend.opencl.types.cl_kernel kernel, global_work_size, 
                 size = a.get_size()
             else:
                 if isinstance(a, clpy.core.core.Size_t):
-                    if clpy.backend.opencl.types.device_typeof_size == 'uint':
+                    if clpy.backend.opencl.types.device_typeof_size \
+                            == 'uint':
                         a = numpy.uint32(a.val)
-                    elif clpy.backend.opencl.types.device_typeof_size == 'ulong':
+                    elif clpy.backend.opencl.types.device_typeof_size \
+                            == 'ulong':
                         a = numpy.uint64(a.val)
                     else:
                         raise "api_sizeof_size is illegal"
@@ -89,7 +102,8 @@ cdef void _launch(clpy.backend.opencl.types.cl_kernel kernel, global_work_size, 
                     a = numpy.bool_(a)
 
                 if numpy.issctype(type(a)):
-                    ptr = <size_t>numpy.array(a).ctypes.get_as_parameter().value
+                    ptr = <size_t>numpy.array(a).ctypes.get_as_parameter() \
+                                                       .value
                     size = a.nbytes
                 else:
                     raise TypeError('Unsupported type %s' % type(a))
@@ -126,7 +140,8 @@ cdef class Function:
 
     def __init__(self, Module module, str funcname):
         self.module = module  # to keep module loaded
-        self.kernel = clpy.backend.opencl.api.CreateKernel(module.program, funcname.encode('utf-8'))
+        self.kernel = clpy.backend.opencl.api.CreateKernel(
+            module.program, funcname.encode('utf-8'))
 
     def __call__(self, tuple grid, tuple block, args, size_t shared_mem=0,
                  stream=None):
@@ -140,7 +155,8 @@ cdef class Function:
 #            max(1, block[0]), max(1, block[1]), max(1, block[2]),
 #            args, shared_mem, s)
 
-    cpdef linear_launch(self, size_t size, args, size_t local_mem=0, size_t local_size=0):
+    cpdef linear_launch(self, size_t size, args, size_t local_mem=0,
+                        size_t local_size=0):
         # TODO(beam2d): Tune it
         if local_size == 0:
             local_work_size = []

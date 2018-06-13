@@ -1,11 +1,12 @@
 cimport exceptions
 
 
-################################################################################
+###############################################################################
 # thin wrappers
 # function name: s/cl([A-Za-z]+)/$1/
 
-cdef cl_uint GetPlatformIDs(size_t num_entries, cl_platform_id* platforms) except *:
+cdef cl_uint GetPlatformIDs(size_t num_entries,
+                            cl_platform_id* platforms) except *:
     cdef cl_uint num_platforms
     cdef cl_int status
     status = clGetPlatformIDs(
@@ -15,7 +16,10 @@ cdef cl_uint GetPlatformIDs(size_t num_entries, cl_platform_id* platforms) excep
     exceptions.check_status(status)
     return num_platforms
 
-cdef cl_uint GetDeviceIDs(cl_platform_id platform, size_t device_type, size_t num_entries, cl_device_id* devices) except *:
+cdef cl_uint GetDeviceIDs(cl_platform_id platform,
+                          size_t device_type,
+                          size_t num_entries,
+                          cl_device_id* devices) except *:
     cdef cl_uint num_devices
     cdef cl_int status
     status = clGetDeviceIDs(
@@ -116,7 +120,8 @@ cdef cl_kernel CreateKernel(cl_program program, char* kernel_name):
     exceptions.check_status(status)
     return kernel
 
-cdef void SetKernelArg(cl_kernel kernel, arg_index, arg_size, void* arg_value) except *:
+cdef void SetKernelArg(cl_kernel kernel, arg_index, arg_size,
+                       void* arg_value) except *:
     cdef cl_int status = clSetKernelArg(
         kernel,
         <cl_uint>arg_index,

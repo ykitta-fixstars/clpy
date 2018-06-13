@@ -14,24 +14,35 @@ cimport clpy.backend.opencl.utility
 cpdef _get_simple_reduction_kernel(
         name, local_size, reduce_type, params, identity,
         pre_map_expr, reduce_expr, post_map_expr,
-        type_preamble, input_expr, output_expr, output_store, preamble, options, ndim_in, ndim_out):
+        type_preamble, input_expr, output_expr, output_store, preamble,
+        options, ndim_in, ndim_out):
     if identity is None:
         identity = '0'
 
     # Workaround for reduction kernel by Chainer
     # TODO(LWisteria): More neat and generic solution
     #  C++ style cast -> C style cast
-    pre_map_expr = pre_map_expr .replace('T(', '(T)(').replace('_type_reduce(', '(_type_reduce)(')
-    reduce_expr = reduce_expr  .replace('T(', '(T)(').replace('_type_reduce(', '(_type_reduce)(')
-    post_map_expr = post_map_expr.replace('T(', '(T)(').replace('_type_reduce(', '(_type_reduce)(')
-    input_expr = input_expr   .replace('T(', '(T)(').replace('_type_reduce(', '(_type_reduce)(')
-    output_expr = output_expr  .replace('T(', '(T)(').replace('_type_reduce(', '(_type_reduce)(')
+    pre_map_expr = pre_map_expr .replace('T(', '(T)(') \
+                                .replace('_type_reduce(', '(_type_reduce)(')
+    reduce_expr = reduce_expr  .replace('T(', '(T)(') \
+                               .replace('_type_reduce(', '(_type_reduce)(')
+    post_map_expr = post_map_expr.replace('T(', '(T)(') \
+                                 .replace('_type_reduce(', '(_type_reduce)(')
+    input_expr = input_expr   .replace('T(', '(T)(') \
+                              .replace('_type_reduce(', '(_type_reduce)(')
+    output_expr = output_expr  .replace('T(', '(T)(') \
+                               .replace('_type_reduce(', '(_type_reduce)(')
     #  _ind.size() -> _in_size
-    pre_map_expr = pre_map_expr .replace('_in_ind.size()', '_in_size').replace('_out_ind.size()', '_out_size')
-    reduce_expr = reduce_expr  .replace('_in_ind.size()', '_in_size').replace('_out_ind.size()', '_out_size')
-    post_map_expr = post_map_expr.replace('_in_ind.size()', '_in_size').replace('_out_ind.size()', '_out_size')
-    input_expr = input_expr   .replace('_in_ind.size()', '_in_size').replace('_out_ind.size()', '_out_size')
-    output_expr = output_expr  .replace('_in_ind.size()', '_in_size').replace('_out_ind.size()', '_out_size')
+    pre_map_expr = pre_map_expr .replace('_in_ind.size()', '_in_size') \
+                                .replace('_out_ind.size()', '_out_size')
+    reduce_expr = reduce_expr  .replace('_in_ind.size()', '_in_size') \
+                               .replace('_out_ind.size()', '_out_size')
+    post_map_expr = post_map_expr.replace('_in_ind.size()', '_in_size') \
+                                 .replace('_out_ind.size()', '_out_size')
+    input_expr = input_expr   .replace('_in_ind.size()', '_in_size') \
+                              .replace('_out_ind.size()', '_out_size')
+    output_expr = output_expr  .replace('_in_ind.size()', '_in_size') \
+                               .replace('_out_ind.size()', '_out_size')
 
     module_code = string.Template(string.Template('''
     typedef ${typeof_size} kernel_arg_size_t;
@@ -71,7 +82,9 @@ cpdef _get_simple_reduction_kernel(
         if (_local_stride < ${local_size}) {
           _sdata[lid] = _s;
           barrier(CLK_LOCAL_MEM_FENCE);
-          for (size_t offset = (${local_size} >> 1); offset >= _local_stride; offset >>= 1) {
+          for (size_t offset = (${local_size} >> 1);
+               offset >= _local_stride;
+               offset >>= 1) {
             _REDUCE(offset);
             barrier(CLK_LOCAL_MEM_FENCE);
           }
@@ -164,8 +177,8 @@ cpdef list _get_inout_args(
 @util.memoize(for_each_device=True)
 def _get_simple_reduction_function(
         routine, params, args_info, in_arg_dtype, out_arg_dtype, out_types,
-        name, local_size, identity, input_expr, output_expr, output_store, _preamble,
-        options):
+        name, local_size, identity, input_expr, output_expr, output_store,
+        _preamble, options):
     reduce_type = routine[3]
     if reduce_type is None:
         reduce_type = _get_typename(out_types[0])
@@ -182,7 +195,8 @@ def _get_simple_reduction_function(
     return _get_simple_reduction_kernel(
         name, local_size, reduce_type, params, identity,
         routine[0], routine[1], routine[2],
-        type_preamble, input_expr, output_expr, output_store, _preamble, options, ndim_in, ndim_out)
+        type_preamble, input_expr, output_expr, output_store, _preamble,
+        options, ndim_in, ndim_out)
 
 
 class simple_reduction_function(object):
@@ -191,7 +205,8 @@ class simple_reduction_function(object):
     _block_size = _local_size  # to keep compatibility with clpy
 
     def __init__(self, name, ops, identity, preamble, default=False):
-        # TODO(tomoya.sakai): raw array may be possible for simple_reduction_function
+        # TODO(tomoya.sakai): raw array may be possible
+        #                     for simple_reduction_function
         self.name = name
         self._ops = ops
         self.identity = identity
@@ -206,9 +221,12 @@ class simple_reduction_function(object):
                 'CIndexer _in_ind, CIndexer _out_ind', False) +
             _get_param_info('kernel_arg_size_t _local_stride', True) +
             _get_param_info('LocalMem _sdata', True))
-        self._input_expr = 'const type_in0_data in0 = in0_data[get_CArrayIndex_{ndim}(&in0_info, &_in_ind)];'
-        self._output_expr = 'type_out0_data out0 = out0_data[get_CArrayIndex_{ndim}(&out0_info, &_out_ind)];'
-        self._output_store = 'out0_data[get_CArrayIndex_{ndim}(&out0_info, &_out_ind)] = out0;'
+        self._input_expr = 'const type_in0_data in0 = in0_data' \
+                           '[get_CArrayIndex_{ndim}(&in0_info, &_in_ind)];'
+        self._output_expr = 'type_out0_data out0 = out0_data' \
+                            '[get_CArrayIndex_{ndim}(&out0_info, &_out_ind)];'
+        self._output_store = 'out0_data[get_CArrayIndex_{ndim}' \
+                             '(&out0_info, &_out_ind)] = out0;'
         self._routine_cache = {}
         # default is True when identity for the kernel is None in clpy
         self.default = default
@@ -265,7 +283,8 @@ class simple_reduction_function(object):
             routine, self._params, args_info,
             in_args[0].dtype.type, out_args[0].dtype.type, out_types,
             self.name, local_size, self.identity,
-            self._input_expr, self._output_expr, self._output_store, self._preamble, ())
+            self._input_expr, self._output_expr, self._output_store,
+            self._preamble, ())
 
         # TODO(okuta) set actual size
         shared_mem = 32 * local_size
@@ -293,20 +312,29 @@ def _get_reduction_kernel(
         'typedef %s %s;' % (_get_typename(v), k)
         for k, v in types)
     input_expr = '\n'.join(
-        ['const {type} {name} = {name}_data[get_CArrayIndexI_{ndim}(&{name}_info, _j)];'.format(type=p.ctype, name=p.name, ndim=ndim_in)
+        ['const {type} {name} = '
+         '{name}_data[get_CArrayIndexI_{ndim}(&{name}_info, _j)];'
+         .format(type=p.ctype, name=p.name, ndim=ndim_in)
          for p in arrays if p.is_const])
     output_expr = '\n'.join(
-        ['{type} {name} = {name}_data[get_CArrayIndexI_{ndim}(&{name}_info, _i)];'.format(type=p.ctype, name=p.name, ndim=ndim_out)
+        ['{type} {name} = '
+         '{name}_data[get_CArrayIndexI_{ndim}(&{name}_info, _i)];'
+         .format(type=p.ctype, name=p.name, ndim=ndim_out)
          for p in arrays if not p.is_const])
     output_store = '\n'.join(
-        ['{name}_data[get_CArrayIndexI_{ndim}(&{name}_info, _i)] = {name};'.format(name=p.name, ndim=ndim_out)
+        ['{name}_data[get_CArrayIndexI_{ndim}(&{name}_info, _i)] = {name};'
+         .format(name=p.name, ndim=ndim_out)
          for p in arrays if not p.is_const])
-    map_expr = _get_raw_replaced_operation(map_expr, params, args_info, raw_indexers_params)
-    post_map_expr = _get_raw_replaced_operation(post_map_expr, params, args_info, raw_indexers_params)
+    map_expr = _get_raw_replaced_operation(map_expr, params, args_info,
+                                           raw_indexers_params)
+    post_map_expr = _get_raw_replaced_operation(post_map_expr, params,
+                                                args_info,
+                                                raw_indexers_params)
     return _get_simple_reduction_kernel(
         name, local_size, reduce_type, kernel_params, identity,
         map_expr, reduce_expr, post_map_expr,
-        type_preamble, input_expr, output_expr, output_store, preamble, options, ndim_in, ndim_out)
+        type_preamble, input_expr, output_expr, output_store, preamble,
+        options, ndim_in, ndim_out)
 
 
 class ReductionKernel(object):
@@ -358,7 +386,8 @@ class ReductionKernel(object):
             _get_param_info('CIndexer _in_ind, CIndexer _out_ind', False) +
             _get_param_info('kernel_arg_size_t _local_stride', True) +
             _get_param_info('LocalMem _sdata', True))
-        self.raw_indexers_params = _get_raw_indexers_params(self.in_params + self.out_params, map_expr + post_map_expr)
+        self.raw_indexers_params = _get_raw_indexers_params(
+            self.in_params + self.out_params, map_expr + post_map_expr)
         self.identity = identity
         self.reduce_expr = reduce_expr
         self.map_expr = map_expr

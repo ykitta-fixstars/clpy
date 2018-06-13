@@ -51,7 +51,8 @@ cdef cl_context __context = api.CreateContext(
 logging.info("SUCCESS")
 
 logging.info("Create command_queue...", end='')
-cdef cl_command_queue __command_queue = api.CreateCommandQueue(__context, __devices_ptr[0], 0)
+cdef cl_command_queue __command_queue \
+    = api.CreateCommandQueue(__context, __devices_ptr[0], 0)
 logging.info("SUCCESS")
 
 cdef cl_context get_context():

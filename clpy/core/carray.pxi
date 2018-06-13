@@ -25,7 +25,8 @@ cdef class Indexer:
         return len(self.shape)
 
     def get_size(self):
-        return cython.sizeof(Py_ssize_t) * (1 + self.ndim * 2)  # size + shape_and_stride
+        # size + shape_and_stride
+        return cython.sizeof(Py_ssize_t) * (1 + self.ndim * 2)
 
 cdef class Size_t:
     def __init__(self, size_t val):
@@ -133,7 +134,12 @@ cpdef function.Module compile_with_cache(
     options += (' -cl-fp32-correctly-rounded-divide-sqrt', )
     optionStr = functools.reduce(operator.add, options)
 
-    program = clpy.backend.opencl.utility.CreateProgram([source.encode('utf-8')], clpy.backend.opencl.env.get_context(), clpy.backend.opencl.env.num_devices, clpy.backend.opencl.env.get_devices_ptrs(), optionStr.encode('utf-8'))
+    program = clpy.backend.opencl.utility.CreateProgram(
+        [source.encode('utf-8')],
+        clpy.backend.opencl.env.get_context(),
+        clpy.backend.opencl.env.num_devices,
+        clpy.backend.opencl.env.get_devices_ptrs(),
+        optionStr.encode('utf-8'))
     cdef function.Module module = function.Module()
     module.set(program)
     return module

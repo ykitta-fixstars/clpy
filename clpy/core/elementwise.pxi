@@ -62,7 +62,9 @@ cdef dict _typenames_base = {
     numpy.dtype('uint32'): 'uint',
     numpy.dtype('uint16'): 'ushort',
     numpy.dtype('uint8'): 'uchar',
-    numpy.dtype('bool'): 'uchar',  # OpenCL deos not support bool in kernel param but sizeof(numpy.bool) = 1 (same as uchar)
+    numpy.dtype('bool'): 'uchar',
+    # OpenCL deos not support bool in kernel param but sizeof(numpy.bool) = 1
+    # (same as uchar)
 }
 
 cdef str _all_type_chars = 'dfqlihbQLIHB?'
@@ -453,8 +455,10 @@ cdef list _get_out_args_with_params(
     return out_args
 
 cdef tuple _get_raw_indexers_params(tuple params, operation):
-    # raw_indexers_params has tuple of ( name of raw array , index to access raw array)
-    # when operation is 'x[i] + x[n+i-1] + y[i];', raw_indexers_params has (('x', 'i'), ('x', 'n+i-1'), (y, 'i')).
+    # raw_indexers_params has tuple of
+    # ( name of raw array , index to access raw array)
+    # when operation is 'x[i] + x[n+i-1] + y[i];',
+    # raw_indexers_params has (('x', 'i'), ('x', 'n+i-1'), (y, 'i')).
     raw_indexers_params = ()
     cdef list raw_names = []
     for p in params:
@@ -464,11 +468,13 @@ cdef tuple _get_raw_indexers_params(tuple params, operation):
         for p_name in raw_names:
             target = p_name
             target_len = len(target)
-            # TODO(tomoya.sakai): Cannot find array name with white space, e.g. 'y = x [i]'
+            # TODO(tomoya.sakai): Cannot find array name with white space,
+            #                     e.g. 'y = x [i]'
             last_matched = op.find(target + '[')
             while last_matched != -1:
                 left_pos = last_matched + target_len
-                # TODO(tomoya.sakai): Nesting of '[' is not implemented. Wrong ']' is found if nested.
+                # TODO(tomoya.sakai): Nesting of '[' is not implemented.
+                #                     Wrong ']' is found if nested.
                 right_pos = op.find(']', left_pos)
                 if right_pos == -1:
                     raise RuntimeError('Cannot find \']\'')
@@ -478,7 +484,8 @@ cdef tuple _get_raw_indexers_params(tuple params, operation):
     return raw_indexers_params
 
 
-def _get_raw_replaced_operation(operation, params, args_info, raw_indexers_params):
+def _get_raw_replaced_operation(operation, params, args_info,
+                                raw_indexers_params):
     ndims={}
     for i in range(len(params)):
         if (params[i].raw):
@@ -488,7 +495,10 @@ def _get_raw_replaced_operation(operation, params, args_info, raw_indexers_param
         p_name, target_index = t
         target = p_name + '[' + target_index + ']'
         if operation.find(target) != -1:
-            replace_str = '{n}[get_CArrayIndexRaw_{ndim}(&{n}_info, {target_index})]'.format(n=p_name, ndim=ndims[p_name], target_index=target_index)
+            replace_str = '{n}[get_CArrayIndexRaw_{ndim}' \
+                          '(&{n}_info, {target_index})]' \
+                          .format(n=p_name, ndim=ndims[p_name],
+                                  target_index=target_index)
             operation = operation.replace(target, replace_str)
     return operation
 
@@ -505,11 +515,13 @@ def _get_elementwise_kernel(args_info, types, params, operation, name,
     op = []
     for p, a in zip(params, args_info):
         if not p.raw and a[0] == ndarray:
-            fmt = '{t} {n} = {n}_data[get_CArrayIndex_{ndim}(&{n}_info, &_ind)];'
+            fmt = '{t} {n} = {n}_data[get_CArrayIndex_{ndim}' \
+                  '(&{n}_info, &_ind)];'
             if p.is_const:
                 fmt = 'const ' + fmt
             op.append(fmt.format(t=p.ctype, n=p.name, ndim=ndim))
-    operation = _get_raw_replaced_operation(operation, params, args_info, raw_indexers_params)
+    operation = _get_raw_replaced_operation(operation, params, args_info,
+                                            raw_indexers_params)
     op.append(operation + ';')
     for p, a in zip(params, args_info):
         if not p.raw and a[0] == ndarray and not p.is_const:
@@ -585,7 +597,8 @@ cdef class ElementwiseKernel:
         param_rest = _get_param_info('CIndexer _ind', False)
         self.params = self.in_params + self.out_params + param_rest
 
-        self.raw_indexers_params = _get_raw_indexers_params(self.params, operation)
+        self.raw_indexers_params = _get_raw_indexers_params(self.params,
+                                                            operation)
         self.operation = operation
         self.name = name
         self.reduce_dims = reduce_dims
@@ -684,17 +697,20 @@ def _get_ufunc_kernel(
     for i, x in enumerate(in_types):
         types.append('typedef %s in%d_type;' % (_get_typename(x), i))
         if args_info[i][0] is ndarray:
-            op.append('const in{0}_type in{0} = in{0}_data[get_CArrayIndex_{1}(&in{0}_info, &_ind)];'.format(i, ndim))
+            op.append('const in{0}_type in{0} = in{0}_data[get_CArrayIndex_{1}'
+                      '(&in{0}_info, &_ind)];'.format(i, ndim))
 
     for i, x in enumerate(out_types):
         types.append('typedef %s out%d_type;' % (
             _get_typename(args_info[i + len(in_types)][1]), i))
-        op.append('out{0}_type out{0} = out{0}_data[get_CArrayIndex_{1}(&out{0}_info, &_ind)];'.format(i, ndim))
+        op.append('out{0}_type out{0} = out{0}_data[get_CArrayIndex_{1}'
+                  '(&out{0}_info, &_ind)];'.format(i, ndim))
 
     op.append(routine + ';')
 
     for i, x in enumerate(out_types):
-        op.append('out{0}_data[get_CArrayIndex_{1}(&out{0}_info, &_ind)] = out{0};'.format(i, ndim))
+        op.append('out{0}_data[get_CArrayIndex_{1}'
+                  '(&out{0}_info, &_ind)] = out{0};'.format(i, ndim))
 
     operation = '\n'.join(op)
 
