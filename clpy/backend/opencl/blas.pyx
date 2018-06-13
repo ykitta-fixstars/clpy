@@ -1,10 +1,12 @@
 # -*- coding: utf-8 -*-
-import sys
 from string import Template
+import sys
+
+import numpy
+
 import clpy.backend.opencl
 cimport clpy.backend.opencl.api
 cimport clpy.backend.opencl.utility
-import numpy
 import clpy.backend.opencl.env
 cimport clpy.backend.opencl.env
 import clpy.backend.opencl.types

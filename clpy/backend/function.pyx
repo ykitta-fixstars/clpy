@@ -9,7 +9,6 @@ import cython
 
 # from clpy.cuda cimport driver
 from clpy.core cimport core
-import clpy.core
 import clpy.backend.opencl
 cimport clpy.backend.opencl.api
 cimport clpy.backend.opencl.utility
@@ -17,6 +16,7 @@ import clpy.backend.opencl.env
 cimport clpy.backend.opencl.env
 import clpy.backend.opencl.types
 from clpy.backend.opencl.types cimport cl_event
+import clpy.core
 
 cdef inline size_t _get_stream(strm) except *:
     return 0 if strm is None else strm.ptr

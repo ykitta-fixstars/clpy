@@ -1,7 +1,9 @@
+import functools
+import operator
 import os
+import warnings
 
 from clpy import backend
-
 from clpy.backend cimport function
 # from clpy.backend cimport runtime
 cimport clpy.backend.opencl.api
@@ -9,9 +11,6 @@ cimport clpy.backend.opencl.utility
 import clpy.backend.opencl.env
 cimport clpy.backend.opencl.env
 
-import warnings
-import functools
-import operator
 
 cdef class Indexer:
     def __init__(self, tuple shape):

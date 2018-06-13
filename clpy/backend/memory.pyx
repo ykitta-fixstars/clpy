@@ -20,7 +20,8 @@ import clpy.backend.opencl
 cimport clpy.backend.opencl.utility
 import clpy.backend.opencl.env
 cimport clpy.backend.opencl.env
-from clpy.backend.opencl.types cimport cl_mem, cl_event
+from clpy.backend.opencl.types cimport cl_event
+from clpy.backend.opencl.types cimport cl_mem
 
 thread_local = threading.local()
 

@@ -6,7 +6,8 @@ import weakref
 from fastrlock cimport rlock
 
 # TODO(LWisteria): Use clEnqueueMapBuffer
-from libc.stdlib cimport malloc, free
+from libc.stdlib cimport free
+from libc.stdlib cimport malloc
 # from clpy.backend import runtime
 # from clpy.backend cimport runtime
 

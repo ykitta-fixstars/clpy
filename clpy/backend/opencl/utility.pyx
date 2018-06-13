@@ -1,9 +1,10 @@
+import os
+import re
+import tempfile
+import time
+
 cimport api
 cimport env
-import re
-import os
-import time
-import tempfile
 from cpython cimport array
 from exceptions cimport check_status
 from libc.stdlib cimport malloc
@@ -74,7 +75,8 @@ cdef cl_program CreateProgram(sources, cl_context context, num_devices, cl_devic
     options = options + b'\0'
     cdef char* options_cstr = options
 
-    from exceptions import OpenCLRuntimeError, OpenCLProgramBuildError
+    from exceptions import OpenCLProgramBuildError
+    from exceptions import OpenCLRuntimeError
     try:
         api.BuildProgram(program, num_devices, devices_ptrs, options_cstr, <void*>NULL, <void*>NULL)
     except OpenCLRuntimeError as err:
