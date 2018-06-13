@@ -456,7 +456,7 @@ cdef tuple _get_raw_indexers_params(tuple params, operation):
     # raw_indexers_params has tuple of ( name of raw array , index to access raw array)
     # when operation is 'x[i] + x[n+i-1] + y[i];', raw_indexers_params has (('x', 'i'), ('x', 'n+i-1'), (y, 'i')).
     raw_indexers_params = ()
-    cdef list raw_names = [];
+    cdef list raw_names = []
     for p in params:
         if p.raw:
             raw_names.append(p.name)
