@@ -20,10 +20,10 @@ logging.info("SUCCESS")
 
 logging.info("Get num_devices...", end='')
 cdef cl_uint __num_devices = api.GetDeviceIDs(
-        primary_platform,
-        CL_DEVICE_TYPE_DEFAULT,
-        0,
-        <cl_device_id*>NULL)
+    primary_platform,
+    CL_DEVICE_TYPE_DEFAULT,
+    0,
+    <cl_device_id*>NULL)
 logging.info("SUCCESS")
 logging.info("%d device(s) found" % __num_devices)
 
@@ -33,21 +33,21 @@ __num_devices = 1
 logging.info("Get the first device...", end='')
 cdef cl_device_id[1] __devices_ptr
 api.GetDeviceIDs(
-        primary_platform,
-        1,
-        __num_devices,
-        &__devices_ptr[0])
+    primary_platform,
+    1,
+    __num_devices,
+    &__devices_ptr[0])
 num_devices = __num_devices     # provide as pure python interface
 cdef cl_device_id __primary_device = __devices_ptr[0]
 logging.info("SUCCESS")
 
 logging.info("Create context...", end='')
 cdef cl_context __context = api.CreateContext(
-        properties=<cl_context_properties*>NULL,
-        num_devices=__num_devices,
-        devices=&__devices_ptr[0],
-        pfn_notify=<void*>NULL,
-        user_data=<void*>NULL)
+    properties=<cl_context_properties*>NULL,
+    num_devices=__num_devices,
+    devices=&__devices_ptr[0],
+    pfn_notify=<void*>NULL,
+    user_data=<void*>NULL)
 logging.info("SUCCESS")
 
 logging.info("Create command_queue...", end='')

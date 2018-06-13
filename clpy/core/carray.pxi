@@ -41,8 +41,8 @@ cdef class LocalMem:
         return 1
 
 cdef list _clpy_header_list = [
-# TODO(LWisteria): implement complex
-#    'clpy/complex.cuh',
+    # TODO(LWisteria): implement complex
+    # 'clpy/complex.cuh',
     'clpy/carray.clh',
 ]
 cdef str _clpy_header = ''.join(
@@ -51,27 +51,27 @@ cdef str _clpy_header = ''.join(
 # This is indirect include header list.
 # These header files are subject to a hash key.
 cdef list _clpy_extra_header_list = [
-# TODO(LWisteria): implement complex
-#    'clpy/complex/complex.h',
-#    'clpy/complex/math_private.h',
-#    'clpy/complex/complex_inl.h',
-#    'clpy/complex/arithmetic.h',
-#    'clpy/complex/cproj.h',
-#    'clpy/complex/cexp.h',
-#    'clpy/complex/cexpf.h',
-#    'clpy/complex/clog.h',
-#    'clpy/complex/clogf.h',
-#    'clpy/complex/cpow.h',
-#    'clpy/complex/ccosh.h',
-#    'clpy/complex/ccoshf.h',
-#    'clpy/complex/csinh.h',
-#    'clpy/complex/csinhf.h',
-#    'clpy/complex/ctanh.h',
-#    'clpy/complex/ctanhf.h',
-#    'clpy/complex/csqrt.h',
-#    'clpy/complex/csqrtf.h',
-#    'clpy/complex/catrig.h',
-#    'clpy/complex/catrigf.h',
+    # TODO(LWisteria): implement complex
+    # 'clpy/complex/complex.h',
+    # 'clpy/complex/math_private.h',
+    # 'clpy/complex/complex_inl.h',
+    # 'clpy/complex/arithmetic.h',
+    # 'clpy/complex/cproj.h',
+    # 'clpy/complex/cexp.h',
+    # 'clpy/complex/cexpf.h',
+    # 'clpy/complex/clog.h',
+    # 'clpy/complex/clogf.h',
+    # 'clpy/complex/cpow.h',
+    # 'clpy/complex/ccosh.h',
+    # 'clpy/complex/ccoshf.h',
+    # 'clpy/complex/csinh.h',
+    # 'clpy/complex/csinhf.h',
+    # 'clpy/complex/ctanh.h',
+    # 'clpy/complex/ctanhf.h',
+    # 'clpy/complex/csqrt.h',
+    # 'clpy/complex/csqrtf.h',
+    # 'clpy/complex/catrig.h',
+    # 'clpy/complex/catrigf.h',
 ]
 
 cdef str _header_path_cache = None

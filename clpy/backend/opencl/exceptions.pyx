@@ -11,7 +11,7 @@ class OpenCLRuntimeError(RuntimeError):
         self.status = status
         name = clGetErrorName(status)
         super(OpenCLRuntimeError, self).__init__(
-                '%s %s' % (name, detail))
+            '%s %s' % (name, detail))
 
 
 class OpenCLProgramBuildError(OpenCLRuntimeError):

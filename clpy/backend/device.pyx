@@ -78,15 +78,15 @@ cdef class Device:
 
     def __enter__(self):
         # TODO(LWisteria): Nothing to do until implement multi device
-#        cdef int id = get_device_id()
-#        self._device_stack.append(id)
-#        if self.id != id:
-#            self.use()
+        # cdef int id = get_device_id()
+        # self._device_stack.append(id)
+        # if self.id != id:
+        #     self.use()
         return self
 
     def __exit__(self, *args):
         pass  # TODO(LWisteria): Nothing to do until implement multi device
-#        runtime.setDevice(self._device_stack.pop())
+        # runtime.setDevice(self._device_stack.pop())
 
     def __repr__(self):
         return '<CUDA Device %d>' % self.id
@@ -98,13 +98,13 @@ cdef class Device:
 
         """
         pass  # TODO(LWisteria): Nothing to do until implement multi device
-#        runtime.setDevice(self.id)
+        # runtime.setDevice(self.id)
 
     cpdef synchronize(self):
         """Synchronizes the current thread to the device."""
         with self:
             raise NotImplementedError("clpy does not support this")
-#            runtime.deviceSynchronize()
+            # runtime.deviceSynchronize()
 
     @property
     def compute_capability(self):
@@ -116,9 +116,9 @@ cdef class Device:
 
         """
         raise NotImplementedError("clpy does not support this")
-#        major = runtime.deviceGetAttribute(75, self.id)
-#        minor = runtime.deviceGetAttribute(76, self.id)
-#        return '%d%d' % (major, minor)
+        # major = runtime.deviceGetAttribute(75, self.id)
+        # minor = runtime.deviceGetAttribute(76, self.id)
+        # return '%d%d' % (major, minor)
 
     @property
     def cublas_handle(self):
@@ -167,9 +167,9 @@ cdef class Device:
             return _cusparse_handles[self.id]
         with self:
             raise NotImplementedError("clpy does not support this")
-#            handle = cusparse.create()
-#            _cusparse_handles[self.id] = handle
-#            return handle
+            # handle = cusparse.create()
+            # _cusparse_handles[self.id] = handle
+            # return handle
 
     def __richcmp__(Device self, Device other, int op):
         if op == 0:
@@ -198,8 +198,8 @@ def from_pointer(ptr):
 
     """
     raise NotImplementedError("clpy does not support this")
-#    attrs = runtime.pointerGetAttributes(ptr)
-#    return Device(attrs.device)
+    # attrs = runtime.pointerGetAttributes(ptr)
+    # return Device(attrs.device)
 
 
 @atexit.register
@@ -208,7 +208,7 @@ def destroy_cublas_handles():
     global _cublas_handles
     for handle in _cublas_handles.itervalues():
         raise NotImplementedError("clpy does not support this")
-#        cublas.destroy(handle)
+        # cublas.destroy(handle)
     _cublas_handles = {}
 
 
@@ -218,5 +218,5 @@ def destroy_cusparse_handles():
     global _cusparse_handles
     for handle in six.itervalues(_cusparse_handles):
         raise NotImplementedError("clpy does not support this")
-#        cusparse.destroy(handle)
+        # cusparse.destroy(handle)
     _cusparse_handles = {}

@@ -2019,7 +2019,7 @@ _amin = create_reduction_func(
      ('Q->Q', ('create1_min_max_st_ulong(in0)', 'my_min(a, b, ulong)', None, 'min_max_st_ulong')),
      ('f->f', ('create1_min_max_st_float(in0)', 'my_min_float(a, b, float)', None, 'min_max_st_float')),
      ('d->d', ('create1_min_max_st_double(in0)', 'my_min_float(a, b, double)', None, 'min_max_st_double'))),
-              (None, None, 'out0 = a.value', None),
+    (None, None, 'out0 = a.value', None),
     'create0_${reduce_type}()', _min_max_preamble)
 
 _amax = create_reduction_func(
@@ -2037,7 +2037,7 @@ _amax = create_reduction_func(
      ('Q->Q', ('create1_min_max_st_ulong(in0)', 'my_max(a, b, ulong)', None, 'min_max_st_ulong')),
      ('f->f', ('create1_min_max_st_float(in0)', 'my_max_float(a, b, float)', None, 'min_max_st_float')),
      ('d->d', ('create1_min_max_st_double(in0)', 'my_max_float(a, b, double)', None, 'min_max_st_double'))),
-              (None, None, 'out0 = a.value', None),
+    (None, None, 'out0 = a.value', None),
     'create0_${reduce_type}()', _min_max_preamble)
 
 nanmin = create_reduction_func(
@@ -2055,7 +2055,7 @@ nanmin = create_reduction_func(
      ('Q->Q', ('create1_min_max_st_ulong(in0)', 'my_min(a, b, ulong)', None, 'min_max_st_ulong')),
      ('f->f', ('create1_min_max_st_float(in0)', 'my_min(a, b, float)', None, 'min_max_st_float')),
      ('d->d', ('create1_min_max_st_double(in0)', 'my_min(a, b, double)', None, 'min_max_st_double'))),
-              (None, None, 'out0 = a.value', None),
+    (None, None, 'out0 = a.value', None),
     'create0_${reduce_type}()', _min_max_preamble)
 
 nanmax = create_reduction_func(
@@ -2073,7 +2073,7 @@ nanmax = create_reduction_func(
      ('Q->Q', ('create1_min_max_st_ulong(in0)', 'my_max(a, b, ulong)', None, 'min_max_st_ulong')),
      ('f->f', ('create1_min_max_st_float(in0)', 'my_max(a, b, float)', None, 'min_max_st_float')),
      ('d->d', ('create1_min_max_st_double(in0)', 'my_max(a, b, double)', None, 'min_max_st_double'))),
-              (None, None, 'out0 = a.value', None),
+    (None, None, 'out0 = a.value', None),
     'create0_${reduce_type}()', _min_max_preamble)
 
 cdef _argmin = create_reduction_func(
@@ -2091,7 +2091,7 @@ cdef _argmin = create_reduction_func(
      ('Q->Q', ('create1_min_max_st_ulong(in0)', 'my_argmin(a, b, ulong)', None, 'min_max_st_ulong')),
      ('f->f', ('create1_min_max_st_float(in0)', 'my_argmin_float(a, b, float)', None, 'min_max_st_float')),
      ('d->d', ('create1_min_max_st_double(in0)', 'my_argmin_float(a, b, double)', None, 'min_max_st_double'))),
-              (None, None, 'out0 = a.index', None),
+    (None, None, 'out0 = a.index', None),
     'create0_${reduce_type}()', _min_max_preamble)
 
 cdef _argmax = create_reduction_func(
@@ -2109,7 +2109,7 @@ cdef _argmax = create_reduction_func(
      ('Q->q', ('create2_min_max_st_ulong(in0, _J)', 'my_argmax(a, b, ulong)', None, 'min_max_st_ulong')),
      ('f->q', ('create2_min_max_st_float(in0, _J)', 'my_argmax_float(a, b, float)', None, 'min_max_st_float')),
      ('d->q', ('create2_min_max_st_double(in0, _J)', 'my_argmax_float(a, b, double)', None, 'min_max_st_double'))),
-              (None, None, 'out0 = a.index', None),
+    (None, None, 'out0 = a.index', None),
     'create0_${reduce_type}()', _min_max_preamble, default=True)
 
 
@@ -3975,18 +3975,18 @@ if six.PY3:
 floor_divide = create_ufunc(
     'clpy_floor_divide',
     (
-     ('bb->b', 'out0 = _floor_divide_c(in0, in1)'),
-     ('BB->B', 'out0 = _floor_divide_C(in0, in1)'),
-     ('hh->h', 'out0 = _floor_divide_s(in0, in1)'),
-     ('HH->H', 'out0 = _floor_divide_S(in0, in1)'),
-     ('ii->i', 'out0 = _floor_divide_i(in0, in1)'),
-     ('II->I', 'out0 = _floor_divide_I(in0, in1)'),
-     ('ll->l', 'out0 = _floor_divide_l(in0, in1)'),
-     ('LL->L', 'out0 = _floor_divide_L(in0, in1)'),
-     ('qq->q', 'out0 = _floor_divide_l(in0, in1)'),
-     ('QQ->Q', 'out0 = _floor_divide_L(in0, in1)'),
-     ('ff->f', 'out0 = _floor_divide_f(in0, in1)'),
-     ('dd->d', 'out0 = _floor_divide_d(in0, in1)'),
+        ('bb->b', 'out0 = _floor_divide_c(in0, in1)'),
+        ('BB->B', 'out0 = _floor_divide_C(in0, in1)'),
+        ('hh->h', 'out0 = _floor_divide_s(in0, in1)'),
+        ('HH->H', 'out0 = _floor_divide_S(in0, in1)'),
+        ('ii->i', 'out0 = _floor_divide_i(in0, in1)'),
+        ('II->I', 'out0 = _floor_divide_I(in0, in1)'),
+        ('ll->l', 'out0 = _floor_divide_l(in0, in1)'),
+        ('LL->L', 'out0 = _floor_divide_L(in0, in1)'),
+        ('qq->q', 'out0 = _floor_divide_l(in0, in1)'),
+        ('QQ->Q', 'out0 = _floor_divide_L(in0, in1)'),
+        ('ff->f', 'out0 = _floor_divide_f(in0, in1)'),
+        ('dd->d', 'out0 = _floor_divide_d(in0, in1)'),
     ),
     doc='''Elementwise floor division (i.e. integer quotient).
 
@@ -3998,18 +3998,18 @@ floor_divide = create_ufunc(
 remainder = create_ufunc(
     'clpy_remainder',
     (
-     ('bb->b', 'out0 = (in0 - _floor_divide_c(in0, in1) * in1) * (in1 != 0)'),
-     ('BB->B', 'out0 = (in0 - _floor_divide_C(in0, in1) * in1) * (in1 != 0)'),
-     ('hh->h', 'out0 = (in0 - _floor_divide_s(in0, in1) * in1) * (in1 != 0)'),
-     ('HH->H', 'out0 = (in0 - _floor_divide_S(in0, in1) * in1) * (in1 != 0)'),
-     ('ii->i', 'out0 = (in0 - _floor_divide_i(in0, in1) * in1) * (in1 != 0)'),
-     ('II->I', 'out0 = (in0 - _floor_divide_I(in0, in1) * in1) * (in1 != 0)'),
-     ('ll->l', 'out0 = (in0 - _floor_divide_l(in0, in1) * in1) * (in1 != 0)'),
-     ('LL->L', 'out0 = (in0 - _floor_divide_L(in0, in1) * in1) * (in1 != 0)'),
-     ('qq->q', 'out0 = (in0 - _floor_divide_l(in0, in1) * in1) * (in1 != 0)'),
-     ('QQ->Q', 'out0 = (in0 - _floor_divide_L(in0, in1) * in1) * (in1 != 0)'),
-     ('ff->f', 'out0 =  in0 - _floor_divide_f(in0, in1) * in1'),
-     ('dd->d', 'out0 =  in0 - _floor_divide_d(in0, in1) * in1'),
+        ('bb->b', 'out0 = (in0 - _floor_divide_c(in0, in1) * in1) * (in1 != 0)'),
+        ('BB->B', 'out0 = (in0 - _floor_divide_C(in0, in1) * in1) * (in1 != 0)'),
+        ('hh->h', 'out0 = (in0 - _floor_divide_s(in0, in1) * in1) * (in1 != 0)'),
+        ('HH->H', 'out0 = (in0 - _floor_divide_S(in0, in1) * in1) * (in1 != 0)'),
+        ('ii->i', 'out0 = (in0 - _floor_divide_i(in0, in1) * in1) * (in1 != 0)'),
+        ('II->I', 'out0 = (in0 - _floor_divide_I(in0, in1) * in1) * (in1 != 0)'),
+        ('ll->l', 'out0 = (in0 - _floor_divide_l(in0, in1) * in1) * (in1 != 0)'),
+        ('LL->L', 'out0 = (in0 - _floor_divide_L(in0, in1) * in1) * (in1 != 0)'),
+        ('qq->q', 'out0 = (in0 - _floor_divide_l(in0, in1) * in1) * (in1 != 0)'),
+        ('QQ->Q', 'out0 = (in0 - _floor_divide_L(in0, in1) * in1) * (in1 != 0)'),
+        ('ff->f', 'out0 =  in0 - _floor_divide_f(in0, in1) * in1'),
+        ('dd->d', 'out0 =  in0 - _floor_divide_d(in0, in1) * in1'),
     ),
     doc='''Computes the remainder of Python division elementwise.
 

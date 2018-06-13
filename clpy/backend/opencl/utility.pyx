@@ -17,12 +17,11 @@ cdef cl_uint GetDeviceMemBaseAddrAlign(cl_device_id device):
     cdef cl_uint[1] valptrs
     cdef size_t[1] retptrs
     cdef cl_int status = api.clGetDeviceInfo(
-            device,
-            <cl_device_info>CL_DEVICE_MEM_BASE_ADDR_ALIGN,
-            <size_t>sizeof(cl_uint),
-            <void *>&valptrs[0],
-            <size_t *>&retptrs[0]
-            )
+        device,
+        <cl_device_info>CL_DEVICE_MEM_BASE_ADDR_ALIGN,
+        <size_t>sizeof(cl_uint),
+        <void *>&valptrs[0],
+        <size_t *>&retptrs[0])
     check_status(status)
 
     ret = valptrs[0]
@@ -32,12 +31,11 @@ cdef GetDeviceAddressBits(cl_device_id device):
     cdef cl_uint[1] valptrs
     cdef size_t[1] retptrs
     cdef cl_int status = api.clGetDeviceInfo(
-            device,
-            <cl_device_info>CL_DEVICE_ADDRESS_BITS,
-            <size_t>sizeof(cl_uint),
-            <void *>&valptrs[0],
-            <size_t *>&retptrs[0]
-            )
+        device,
+        <cl_device_info>CL_DEVICE_ADDRESS_BITS,
+        <size_t>sizeof(cl_uint),
+        <void *>&valptrs[0],
+        <size_t *>&retptrs[0])
     check_status(status)
 
     ret = valptrs[0]
@@ -90,23 +88,23 @@ cdef cl_program CreateProgram(sources, cl_context context, num_devices, cl_devic
 cdef GetProgramBuildLog(cl_program program):
     cdef size_t length;
     cdef cl_int status = api.clGetProgramBuildInfo(
-            program,
-            env.get_primary_device(),
-            CL_PROGRAM_BUILD_LOG,
-            0,
-            NULL,
-            &length)
+        program,
+        env.get_primary_device(),
+        CL_PROGRAM_BUILD_LOG,
+        0,
+        NULL,
+        &length)
     check_status(status)
 
     cdef array.array info = array.array('b')
     array.resize(info, length)
     status = api.clGetProgramBuildInfo(
-            program,
-            env.get_primary_device(),
-            CL_PROGRAM_BUILD_LOG,
-            length,
-            info.data.as_voidptr,
-            NULL)
+        program,
+        env.get_primary_device(),
+        CL_PROGRAM_BUILD_LOG,
+        length,
+        info.data.as_voidptr,
+        NULL)
     check_status(status)
     return info.tobytes().decode('utf8')
 

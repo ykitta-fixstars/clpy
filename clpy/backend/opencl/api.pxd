@@ -108,44 +108,40 @@ cdef extern from "CL/cl.h":
 cdef cl_uint GetPlatformIDs(size_t num_entries, cl_platform_id* platforms) except *
 cdef cl_uint GetDeviceIDs(cl_platform_id platform, size_t device_type, size_t num_entries, cl_device_id* devices) except *
 cdef cl_context CreateContext(
-        cl_context_properties* properties,
-        size_t num_devices,
-        cl_device_id* devices,
-        void* pfn_notify,
-        void* user_data
-        )
+    cl_context_properties* properties,
+    size_t num_devices,
+    cl_device_id* devices,
+    void* pfn_notify,
+    void* user_data)
 cdef cl_command_queue CreateCommandQueue(
-        cl_context context,
-        cl_device_id device,
-        cl_command_queue_properties properties
-        )
+    cl_context context,
+    cl_device_id device,
+    cl_command_queue_properties properties)
 cdef cl_mem CreateBuffer(
-        cl_context context,
-        size_t flags,
-        size_t size,
-        void* host_ptr)
+    cl_context context,
+    size_t flags,
+    size_t size,
+    void* host_ptr)
 cdef cl_program CreateProgramWithSource(
-        cl_context context,
-        cl_uint count,
-        char** strings,
-        size_t* lengths
-        )
+    cl_context context,
+    cl_uint count,
+    char** strings,
+    size_t* lengths)
 cdef void BuildProgram(
-        cl_program program,
-        cl_uint num_devices,
-        cl_device_id* device_list,
-        char* options,
-        void* pfn_notify,
-        void* user_data
-        ) except *
+    cl_program program,
+    cl_uint num_devices,
+    cl_device_id* device_list,
+    char* options,
+    void* pfn_notify,
+    void* user_data) except *
 cdef cl_kernel CreateKernel(cl_program program, char* kernel_name)
 cdef void SetKernelArg(cl_kernel kernel, arg_index, arg_size, void* arg_value) except *
 cdef void EnqueueTask(
-        cl_command_queue command_queue,
-        cl_kernel kernel,
-        cl_uint num_events_in_wait_list,
-        cl_event* event_wait_list,
-        cl_event* event) except *
+    cl_command_queue command_queue,
+    cl_kernel kernel,
+    cl_uint num_events_in_wait_list,
+    cl_event* event_wait_list,
+    cl_event* event) except *
 cdef void EnqueueNDRangeKernel(
     cl_command_queue command_queue,
     cl_kernel kernel,
@@ -155,39 +151,37 @@ cdef void EnqueueNDRangeKernel(
     size_t* local_work_size,
     cl_uint num_events_in_wait_list,
     cl_event* event_wait_list,
-    cl_event* event
-    ) except *
+    cl_event* event) except *
 cdef void EnqueueReadBuffer(
-        cl_command_queue command_queue,
-        cl_mem buffer,
-        blocking_read,
-        size_t offset,
-        size_t cb,
-        void* host_ptr,
-        cl_uint num_events_in_wait_list,
-        cl_event* event_wait_list,
-        cl_event* event) except *
+    cl_command_queue command_queue,
+    cl_mem buffer,
+    blocking_read,
+    size_t offset,
+    size_t cb,
+    void* host_ptr,
+    cl_uint num_events_in_wait_list,
+    cl_event* event_wait_list,
+    cl_event* event) except *
 cdef void EnqueueWriteBuffer(
-        cl_command_queue command_queue,
-        cl_mem buffer,
-        blocking_write,
-        size_t offset,
-        size_t cb,
-        void* host_ptr,
-        cl_uint num_events_in_wait_list,
-        cl_event* event_wait_list,
-        cl_event* event) except *
+    cl_command_queue command_queue,
+    cl_mem buffer,
+    blocking_write,
+    size_t offset,
+    size_t cb,
+    void* host_ptr,
+    cl_uint num_events_in_wait_list,
+    cl_event* event_wait_list,
+    cl_event* event) except *
 cdef void EnqueueCopyBuffer(
-        cl_command_queue command_queue,
-        cl_mem src_buffer,
-        cl_mem dst_buffer,
-        size_t src_offset,
-        size_t dst_offset,
-        size_t cb,
-        cl_uint num_events_in_wait_list,
-        cl_event* event_wait_list,
-        cl_event* event
-        ) except *
+    cl_command_queue command_queue,
+    cl_mem src_buffer,
+    cl_mem dst_buffer,
+    size_t src_offset,
+    size_t dst_offset,
+    size_t cb,
+    cl_uint num_events_in_wait_list,
+    cl_event* event_wait_list,
+    cl_event* event) except *
 cdef void Flush(cl_command_queue command_queue) except *
 cdef void Finish(cl_command_queue command_queue) except *
 cdef void ReleaseKernel(cl_kernel kernel) except *

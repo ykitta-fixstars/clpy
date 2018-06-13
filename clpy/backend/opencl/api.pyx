@@ -11,8 +11,7 @@ cdef cl_uint GetPlatformIDs(size_t num_entries, cl_platform_id* platforms) excep
     status = clGetPlatformIDs(
         <cl_uint>num_entries,
         platforms,
-        &num_platforms
-        )
+        &num_platforms)
     exceptions.check_status(status)
     return num_platforms
 
@@ -20,12 +19,11 @@ cdef cl_uint GetDeviceIDs(cl_platform_id platform, size_t device_type, size_t nu
     cdef cl_uint num_devices
     cdef cl_int status
     status = clGetDeviceIDs(
-            platform,
-            <cl_device_type>device_type,
-            <cl_uint>num_entries,
-            devices,
-            &num_devices
-            )
+        platform,
+        <cl_device_type>device_type,
+        <cl_uint>num_entries,
+        devices,
+        &num_devices)
     exceptions.check_status(status)
     return num_devices
 
@@ -34,8 +32,7 @@ cdef cl_context CreateContext(
         size_t num_devices,
         cl_device_id* devices,
         void* pfn_notify,
-        void* user_data
-        ):
+        void* user_data):
     cdef cl_int status
     cdef cl_context context = clCreateContext(
         properties,
@@ -43,23 +40,21 @@ cdef cl_context CreateContext(
         <const cl_device_id*>devices,
         <void(*)(const char*, const void*, size_t, void*)>pfn_notify,
         <void*>user_data,
-        &status
-        )
+        &status)
     exceptions.check_status(status)
     return context
 
 cdef cl_command_queue CreateCommandQueue(
         cl_context context,
         cl_device_id device,
-        cl_command_queue_properties properties
-        ):
+        cl_command_queue_properties properties):
+
     cdef cl_int status
     cdef cl_command_queue command_queue = clCreateCommandQueue(
         context,
         device,
         properties,
-        &status
-        )
+        &status)
     exceptions.check_status(status)
     return command_queue
 
@@ -68,14 +63,14 @@ cdef cl_mem CreateBuffer(
         size_t flags,
         size_t size,
         void* host_ptr):
+
     cdef cl_int status
     cdef cl_mem memobj = clCreateBuffer(
-            context,
-            <cl_mem_flags>flags,
-            <size_t>size,
-            host_ptr,
-            &status
-            )
+        context,
+        <cl_mem_flags>flags,
+        <size_t>size,
+        host_ptr,
+        &status)
     exceptions.check_status(status)
     return memobj
 
@@ -83,16 +78,15 @@ cdef cl_program CreateProgramWithSource(
         cl_context context,
         cl_uint count,
         char** strings,
-        size_t* lengths
-        ):
+        size_t* lengths):
+
     cdef cl_int status
     cdef cl_program program = clCreateProgramWithSource(
-            context,
-            <cl_uint>count,
-            <const char**>strings,
-            <const size_t*>lengths,
-            &status
-            )
+        context,
+        <cl_uint>count,
+        <const char**>strings,
+        <const size_t*>lengths,
+        &status)
     exceptions.check_status(status)
     return program
 
@@ -102,35 +96,32 @@ cdef void BuildProgram(
         cl_device_id* device_list,
         char* options,
         void* pfn_notify,
-        void* user_data
-        ) except *:
+        void* user_data) except *:
+
     cdef cl_int status = clBuildProgram(
-            program,
-            <cl_uint>num_devices,
-            <const cl_device_id*>device_list,
-            <const char*>options,
-            <void(*)(cl_program, void*)>pfn_notify,
-            <void*>user_data
-            )
+        program,
+        <cl_uint>num_devices,
+        <const cl_device_id*>device_list,
+        <const char*>options,
+        <void(*)(cl_program, void*)>pfn_notify,
+        <void*>user_data)
     exceptions.check_status(status)
 
 cdef cl_kernel CreateKernel(cl_program program, char* kernel_name):
     cdef cl_int status
     cdef cl_kernel kernel = clCreateKernel(
-            program,
-            <const char*>kernel_name,
-            &status
-            )
+        program,
+        <const char*>kernel_name,
+        &status)
     exceptions.check_status(status)
     return kernel
 
 cdef void SetKernelArg(cl_kernel kernel, arg_index, arg_size, void* arg_value) except *:
     cdef cl_int status = clSetKernelArg(
-            kernel,
-            <cl_uint>arg_index,
-            <size_t>arg_size,
-            <const void*>arg_value
-            )
+        kernel,
+        <cl_uint>arg_index,
+        <size_t>arg_size,
+        <const void*>arg_value)
     exceptions.check_status(status)
 
 cdef void EnqueueTask(
@@ -140,35 +131,33 @@ cdef void EnqueueTask(
         cl_event* event_wait_list,
         cl_event* event) except *:
     cdef cl_int status = clEnqueueTask(
-            command_queue,
-            kernel,
-            <cl_uint>num_events_in_wait_list,
-            <const cl_event*>event_wait_list,
-            event
-            )
+        command_queue,
+        kernel,
+        <cl_uint>num_events_in_wait_list,
+        <const cl_event*>event_wait_list,
+        event)
 
 cdef void EnqueueNDRangeKernel(
-    cl_command_queue command_queue,
-    cl_kernel kernel,
-    size_t work_dim,
-    size_t* global_work_offset,
-    size_t* global_work_size,
-    size_t* local_work_size,
-    cl_uint num_events_in_wait_list,
-    cl_event* event_wait_list,
-    cl_event* event
-    ) except *:
+        cl_command_queue command_queue,
+        cl_kernel kernel,
+        size_t work_dim,
+        size_t* global_work_offset,
+        size_t* global_work_size,
+        size_t* local_work_size,
+        cl_uint num_events_in_wait_list,
+        cl_event* event_wait_list,
+        cl_event* event) except *:
+
     cdef cl_int status = clEnqueueNDRangeKernel(
-    command_queue,
-    kernel,
-    <cl_uint>work_dim,
-    <const size_t *>global_work_offset,
-    <const size_t *>global_work_size,
-    <const size_t *>local_work_size,
-    <cl_uint>num_events_in_wait_list,
-    <const cl_event *>event_wait_list,
-    event
-    )
+        command_queue,
+        kernel,
+        <cl_uint>work_dim,
+        <const size_t *>global_work_offset,
+        <const size_t *>global_work_size,
+        <const size_t *>local_work_size,
+        <cl_uint>num_events_in_wait_list,
+        <const cl_event *>event_wait_list,
+        event)
     exceptions.check_status(status)
 
 cdef void EnqueueReadBuffer(
@@ -190,8 +179,7 @@ cdef void EnqueueReadBuffer(
         host_ptr,
         <cl_uint>num_events_in_wait_list,
         <const cl_event *>event_wait_list,
-        event
-        )
+        event)
     exceptions.check_status(status)
 
 cdef void EnqueueWriteBuffer(
@@ -213,8 +201,7 @@ cdef void EnqueueWriteBuffer(
         host_ptr,
         <cl_uint>num_events_in_wait_list,
         <const cl_event *>event_wait_list,
-        event
-        )
+        event)
     exceptions.check_status(status)
 
 cdef void EnqueueCopyBuffer(
@@ -226,8 +213,7 @@ cdef void EnqueueCopyBuffer(
         size_t cb,
         cl_uint num_events_in_wait_list,
         cl_event* event_wait_list,
-        cl_event* event
-        ) except *:
+        cl_event* event) except *:
     cdef cl_int status = clEnqueueCopyBuffer(
         command_queue,
         src_buffer,
@@ -237,8 +223,7 @@ cdef void EnqueueCopyBuffer(
         <size_t>cb,
         <cl_uint>num_events_in_wait_list,
         <const cl_event *>event_wait_list,
-        event
-        )
+        event)
     exceptions.check_status(status)
 
 cdef void Flush(cl_command_queue command_queue) except *:

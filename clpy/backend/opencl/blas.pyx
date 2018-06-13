@@ -74,9 +74,8 @@ cpdef sgemm(transa, transb, m, n, k, alpha, A, lda, B, ldb, beta, C, ldc):
     cdef size_t program_sizet = _sgemm_kernel[(name, alpha == 0.0, beta == 0.0)]
     cdef clpy.backend.opencl.types.cl_program program = <clpy.backend.opencl.types.cl_program>program_sizet
     cdef clpy.backend.opencl.types.cl_kernel kernel = clpy.backend.opencl.api.CreateKernel(
-            program=program,
-            kernel_name=b'dot_kernel'
-            )
+        program=program,
+        kernel_name=b'dot_kernel')
     SetKernelArgWithScalarValue(kernel, 0, m)
     SetKernelArgWithScalarValue(kernel, 1, n)
     SetKernelArgWithScalarValue(kernel, 2, k)
@@ -104,15 +103,14 @@ cpdef sgemm(transa, transb, m, n, k, alpha, A, lda, B, ldb, beta, C, ldc):
     gws[1] = computeGlobalWorkItemSize(n, _local_work_size) / _work_per_thread
 
     clpy.backend.opencl.utility.RunNDRangeKernel(
-            command_queue=clpy.backend.opencl.env.get_command_queue(),
-            kernel=kernel,
-            work_dim=2,  # in 1, 2, 3
-            global_work_offset=<size_t*>NULL,  # fixed
-            global_work_size=&gws[0],
-            local_work_size=&lws[0],
-            num_events_in_wait_list=0,
-            event_wait_list=<cl_event*>NULL
-            )
+        command_queue=clpy.backend.opencl.env.get_command_queue(),
+        kernel=kernel,
+        work_dim=2,  # in 1, 2, 3
+        global_work_offset=<size_t*>NULL,  # fixed
+        global_work_size=&gws[0],
+        local_work_size=&lws[0],
+        num_events_in_wait_list=0,
+        event_wait_list=<cl_event*>NULL)
 
 cpdef size_t _generate_sgemm_kernel(transa, transb, alphaIsZero, betaIsZero):
     if transa == 'n' or transa == 0:
@@ -213,11 +211,10 @@ cpdef size_t _generate_sgemm_kernel(transa, transb, alphaIsZero, betaIsZero):
     ''').substitute(alpha_expr=alpha_expr, beta_expr=beta_expr, typeof_size=clpy.backend.opencl.types.device_typeof_size, local_work_size=str(_local_work_size), work_per_thread=str(_work_per_thread)).encode('utf-8')
 
     cdef clpy.backend.opencl.types.cl_program program = clpy.backend.opencl.utility.CreateProgram(
-            sources=[dot_kernel_source],
-            context=clpy.backend.opencl.env.get_context(),
-            num_devices=clpy.backend.opencl.env.num_devices,
-            devices_ptrs=clpy.backend.opencl.env.get_devices_ptrs()
-            )
+        sources=[dot_kernel_source],
+        context=clpy.backend.opencl.env.get_context(),
+        num_devices=clpy.backend.opencl.env.num_devices,
+        devices_ptrs=clpy.backend.opencl.env.get_devices_ptrs())
     return <size_t>program
 
 _sgemm_kernel = {
@@ -256,9 +253,8 @@ def sgeam(transa, transb, m, n, alpha, A, lda, beta, B, ldb, C, ldc):
     cdef size_t program_sizet = _sgeam_kernel[(name, alpha == 0.0, beta == 0.0)]
     cdef clpy.backend.opencl.types.cl_program program = <clpy.backend.opencl.types.cl_program>program_sizet
     cdef clpy.backend.opencl.types.cl_kernel kernel = clpy.backend.opencl.api.CreateKernel(
-            program=program,
-            kernel_name=b'geam_kernel'
-            )
+        program=program,
+        kernel_name=b'geam_kernel')
     SetKernelArgWithScalarValue(kernel, 0, m)
     SetKernelArgWithScalarValue(kernel, 1, n)
     SetKernelArgWithScalarValue(kernel, 2, alpha)
@@ -281,15 +277,14 @@ def sgeam(transa, transb, m, n, alpha, A, lda, beta, B, ldb, C, ldc):
     gws[1] = n
 
     clpy.backend.opencl.utility.RunNDRangeKernel(
-            command_queue=clpy.backend.opencl.env.get_command_queue(),
-            kernel=kernel,
-            work_dim=2,  # in 1, 2, 3
-            global_work_offset=<size_t*>NULL,  # fixed
-            global_work_size=&gws[0],
-            local_work_size=<size_t*>NULL,
-            num_events_in_wait_list=0,
-            event_wait_list=<cl_event*>NULL
-            )
+        command_queue=clpy.backend.opencl.env.get_command_queue(),
+        kernel=kernel,
+        work_dim=2,  # in 1, 2, 3
+        global_work_offset=<size_t*>NULL,  # fixed
+        global_work_size=&gws[0],
+        local_work_size=<size_t*>NULL,
+        num_events_in_wait_list=0,
+        event_wait_list=<cl_event*>NULL)
 
 cpdef size_t _generate_sgeam_kernel(transa, transb, alphaIsZero, betaIsZero):
     if transa == 'n' or transa == 0:
@@ -345,11 +340,10 @@ cpdef size_t _generate_sgeam_kernel(transa, transb, alphaIsZero, betaIsZero):
         }
     ''').substitute(alpha_expr=alpha_expr, beta_expr=beta_expr, typeof_size=clpy.backend.opencl.types.device_typeof_size).encode('utf-8')
     cdef clpy.backend.opencl.types.cl_program program = clpy.backend.opencl.utility.CreateProgram(
-            sources=[geam_kernel_source],
-            context=clpy.backend.opencl.env.get_context(),
-            num_devices=clpy.backend.opencl.env.num_devices,
-            devices_ptrs=clpy.backend.opencl.env.get_devices_ptrs()
-            )
+        sources=[geam_kernel_source],
+        context=clpy.backend.opencl.env.get_context(),
+        num_devices=clpy.backend.opencl.env.num_devices,
+        devices_ptrs=clpy.backend.opencl.env.get_devices_ptrs())
 
     return <size_t>program
 

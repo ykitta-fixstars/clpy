@@ -51,9 +51,9 @@ cpdef _get_simple_elementwise_kernel(
 cdef dict _typenames_base = {
     numpy.dtype('float64'): 'double',
     numpy.dtype('float32'): 'float',
-#    numpy.dtype('float16'): 'half', # Extension type
-#    numpy.dtype('complex128'): 'complex<double>', # OpenCL does not support
-#    numpy.dtype('complex64'): 'complex<float>', # OpenCL does not support
+    # numpy.dtype('float16'): 'half', # Extension type
+    # numpy.dtype('complex128'): 'complex<double>', # OpenCL does not support
+    # numpy.dtype('complex64'): 'complex<float>', # OpenCL does not support
     numpy.dtype('int64'): 'long',
     numpy.dtype('int32'): 'int',
     numpy.dtype('int16'): 'short',
