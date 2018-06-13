@@ -227,9 +227,7 @@ _sgemm_kernel = {
 
 
 def sgeam(transa, transb, m, n, alpha, A, lda, beta, B, ldb, C, ldc):
-    '''
-    A, B, C: ndarray
-    '''
+    """A, B, C: ndarray"""
 
     m = numpy.intp(m)
     n = numpy.intp(n)

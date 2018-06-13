@@ -68,9 +68,7 @@ cdef cl_device_id get_primary_device():
 
 
 def release():
-    '''
-    Release command_queue and context automatically.
-    '''
+    """Release command_queue and context automatically."""
     logging.info("Flush...", end='')
     api.Flush(__command_queue)
     logging.info("SUCCESS")
