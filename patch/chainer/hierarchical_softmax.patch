@@ -1,0 +1,26 @@
+diff --git a/chainer/links/loss/hierarchical_softmax.py b/chainer/links/loss/hierarchical_softmax.py
+index 58e7491..8b1d494 100644
+--- a/chainer/links/loss/hierarchical_softmax.py
++++ b/chainer/links/loss/hierarchical_softmax.py
+@@ -193,8 +193,8 @@ class BinaryHierarchicalSoftmaxFunction(function.Function):
+ 
+               T wx = 0;
+               for (int j = 0; j < c; ++j) {
+-                int w_ind[] = {node, j};
+-                int x_ind[] = {ind, j};
++                ptrdiff_t w_ind[] = {node, j};
++                ptrdiff_t x_ind[] = {ind, j};
+                 wx += w[w_ind] * x[x_ind];
+               }
+               wxy = wx * codes[p];
+@@ -237,8 +237,8 @@ class BinaryHierarchicalSoftmaxFunction(function.Function):
+ 
+               T g = -gloss[0] * code / (1.0 + exp(wxy));
+               for (int j = 0; j < c; ++j) {
+-                int w_ind[] = {node, j};
+-                int x_ind[] = {ind, j};
++                ptrdiff_t w_ind[] = {node, j};
++                ptrdiff_t x_ind[] = {ind, j};
+                 atomicAdd(&gx[x_ind], g * w[w_ind]);
+                 atomicAdd(&gw[w_ind], g * x[x_ind]);
+               }

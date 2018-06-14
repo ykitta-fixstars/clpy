@@ -1,0 +1,22 @@
+diff --git a/chainer/functions/activation/lstm.py b/chainer/functions/activation/lstm.py
+index 68150ed..2eac21c 100644
+--- a/chainer/functions/activation/lstm.py
++++ b/chainer/functions/activation/lstm.py
+@@ -34,12 +34,12 @@ def _grad_grad_tanh(x, gx):
+ 
+ 
+ _preamble = '''
+-template <typename T> __device__ T sigmoid(T x) {
+-    const T half = 0.5;
+-    return tanh(x * half) * half + half;
++static T sigmoid(T x) {
++    const T half_ = 0.5;
++    return tanh(x * half_) * half_ + half_;
+ }
+-template <typename T> __device__ T grad_sigmoid(T y) { return y * (1 - y); }
+-template <typename T> __device__ T grad_tanh(T y) { return 1 - y * y; }
++static T grad_sigmoid(T y) { return y * (1 - y); }
++static T grad_tanh(T y) { return 1 - y * y; }
+ 
+ #define COMMON_ROUTINE \
+     T aa = tanh(a); \
