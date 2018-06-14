@@ -72,18 +72,8 @@ You don't need to replace codes if you install with `CLPY_GENERATE_CUPY_ALIAS=1`
 ### Woking with Chainer
 
 It's confirmed that ClPy works with [Chainer v3.3.0](https://github.com/chainer/chainer/tree/v3.3.0).
-There are a few patches required on Chainer codes for working with ClPy.
-Please install [Chainer v3.3.0](https://github.com/chainer/chainer/tree/v3.3.0) through the following operations.
-
-```console
-# If you have already installed Chainer, please uninstall it:
-# $ pip uninstall chainer
-$ git clone --depth=1 -b v3.3.0 https://github.com/chainer/chainer.git
-$ cd chainer
-$ patch -p1 < /path/to/clpy/patch/chainer/lstm.patch
-$ patch -p1 < /path/to/clpy/patch/chainer/hierarchical_softmax.patch
-$ python setup.py install
-```
+There are a few patches required on Chainer codes for working with **the current version of** ClPy.
+Please install [Chainer v3.3.0](https://github.com/chainer/chainer/tree/v3.3.0) along [the patching instructions](https://github.com/fixstars/clpy/blob/clpy/patch/chainer/README.md).
 
 ### Tests
 
