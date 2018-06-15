@@ -67,9 +67,15 @@ If you want `cupy` alias, set `export CLPY_GENERATE_CUPY_ALIAS=1` before install
 ## How to use
 
 Just replace `cupy` to `clpy` in your python codes and run it (e.g. `import cupy` -> `import clpy`).
-You don't need to replace codes if you install with `CLPY_GENERATE_CUPY_ALIAS`.
+You don't need to replace codes if you install with `CLPY_GENERATE_CUPY_ALIAS=1`.
 
-### tests
+### Woking with Chainer
+
+It's confirmed that ClPy works with [Chainer v3.3.0](https://github.com/chainer/chainer/tree/v3.3.0).
+There are a few patches required on Chainer codes for working with **the current version of** ClPy.
+Please install [Chainer v3.3.0](https://github.com/chainer/chainer/tree/v3.3.0) along [the patching instructions](https://github.com/fixstars/clpy/blob/clpy/patch/chainer/README.md).
+
+### Tests
 
 ```sh
 $ pip install pytest
