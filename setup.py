@@ -90,7 +90,7 @@ packages_cupy_aliasing = [
 if generate_cupy_alias:
     packages = packages_clpy + packages_cupy_aliasing
 else:
-    packages = packages_clpy
+    packages = packages_clpy + packages_cupy_aliasing
 
 setup(
     name='clpy',

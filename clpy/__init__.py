@@ -1,11 +1,16 @@
 from __future__ import division
 import sys
+import os
 
 import numpy
 import six
 
 from clpy import _version
 
+
+from importlib import import_module
+from importlib.abc import MetaPathFinder
+from importlib.machinery import ModuleSpec, SourceFileLoader
 
 try:
     from clpy import core  # NOQA
@@ -20,6 +25,39 @@ except ImportError:
            'original error: {}'.format(exc_info[1]))
 
     six.reraise(ImportError, ImportError(msg), exc_info[2])
+
+
+class CudaAliasMetaPathFinder(MetaPathFinder):
+    def find_spec(fullname, path, target=None):
+        pac_mod = fullname.split('.', maxsplit=1)
+        pac = pac_mod[0]
+        if pac == 'cupy':
+            name = fullname
+            path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), fullname.replace('.', os.sep))
+            if len(pac_mod)==2:
+                import_module(fullname.rsplit('.',maxsplit=1)[0])
+            print(path)
+            if os.path.isdir(path):
+                path = path
+                print(path)
+                return ModuleSpec(
+                    name=name,
+                    loader=None,
+                    origin=path,
+                    is_package=True
+                )
+            else:
+                path = path+'.py'
+                print(path)
+                return ModuleSpec(
+                    name=name,
+                    loader=SourceFileLoader(name, path),
+                    origin=path
+                )
+
+
+if sys.meta_path[0].__name__ != 'CudaAliasMetaPathFinder':
+    sys.meta_path.insert(0, CudaAliasMetaPathFinder)
 
 
 from clpy import backend
