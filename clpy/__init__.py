@@ -48,7 +48,6 @@ class CudaAliasMetaPathFinder(MetaPathFinder):
                 )
             else:
                 path = path+'.py'
-                print(path)
                 return ModuleSpec(
                     name=fullname,
                     loader=SourceFileLoader(fullname, path),
