@@ -26,22 +26,20 @@ except ImportError:
 
     six.reraise(ImportError, ImportError(msg), exc_info[2])
 
-
 class CudaAliasMetaPathFinder(MetaPathFinder):
     def find_spec(fullname, path, target=None):
-        if fullname.split('.', maxsplit=1)[0] == 'cupy':
-            print(fullname)
-            name = fullname
-            path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), fullname.replace('.', os.sep))
-            pac_mod = fullname.rsplit('.', maxsplit=1)
-            if len(pac_mod) == 2:
-                import_module(pac_mod[0])
+        split_name = fullname.split('.', maxsplit=1)
+        if split_name[0] == 'cupy':
+            alias_name = 'cupy_alias'
+            if len(split_name) == 2:
+                alias_name += '.' + split_name[1]
+                import_module(fullname.rsplit('.', maxsplit=1)[0])
+            path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), alias_name.replace('.', os.sep))
             if os.path.isdir(path):
                 path = os.path.join(path, '__init__.py')
-                print(path)
                 return ModuleSpec(
-                    name=name,
-                    loader=SourceFileLoader(name,path),
+                    name=fullname,
+                    loader=SourceFileLoader(fullname, path),
                     origin=path,
                     is_package=True
                 )
@@ -49,14 +47,14 @@ class CudaAliasMetaPathFinder(MetaPathFinder):
                 path = path+'.py'
                 print(path)
                 return ModuleSpec(
-                    name=name,
-                    loader=SourceFileLoader(name,path),
+                    name=fullname,
+                    loader=SourceFileLoader(fullname, path),
                     origin=path
-                )
+                )             
 
-
-if sys.meta_path[0].__name__ != 'CudaAliasMetaPathFinder':
-    sys.meta_path.insert(0, CudaAliasMetaPathFinder)
+if os.getenv('CLPY_NOT_HOOK_CUPY') != '1':
+    if sys.meta_path[0].__name__ != 'CudaAliasMetaPathFinder':
+        sys.meta_path.insert(0, CudaAliasMetaPathFinder)
 
 
 from clpy import backend

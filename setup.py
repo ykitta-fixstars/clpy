@@ -87,10 +87,35 @@ packages_cupy_aliasing = [
     'cupy.testing'
 ]
 
+packages_cupy_alias = [
+    'cupy_alias',
+    'cupy_alias.binary',
+    'cupy_alias.core',
+    'cupy_alias.creation',
+    'cupy_alias.backend',
+    #   'cupy_alias.backend.emory_hooks',
+    #   'cupy_alias.ext',
+    'cupy_alias.indexing',
+    #   'cupy_alias.io',
+    'cupy_alias.linalg',
+    'cupy_alias.logic',
+    'cupy_alias.manipulation',
+    'cupy_alias.math',
+    'cupy_alias.backend.opencl',
+    'cupy_alias.cuda',
+    #   'cupy_alias.padding',
+    #   'cupy_alias.prof',
+    'cupy_alias.random',
+    'cupy_alias.sorting',
+    'cupy_alias.sparse',
+    'cupy_alias.statistics',
+    'cupy_alias.testing'
+]
+
 if generate_cupy_alias:
     packages = packages_clpy + packages_cupy_aliasing
 else:
-    packages = packages_clpy + packages_cupy_aliasing
+    packages = packages_clpy + packages_cupy_alias
 
 setup(
     name='clpy',
