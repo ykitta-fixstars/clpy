@@ -67,7 +67,7 @@ packages_cupy_alias = [
     'cupy_alias.core',
     'cupy_alias.creation',
     'cupy_alias.backend',
-    #   'cupy_alias.backend.emory_hooks',
+    #   'cupy_alias.backend.memory_hooks',
     #   'cupy_alias.ext',
     'cupy_alias.indexing',
     #   'cupy_alias.io',
