@@ -19,7 +19,6 @@ set 1 to CUPY_PYTHON_350_FORCE environment variable."""
         print(msg)
         sys.exit(1)
 
-generate_cupy_alias = (os.getenv('CLPY_GENERATE_CUPY_ALIAS') == '1')
 
 setup_requires = [
     'fastrlock>=0.3',
@@ -62,31 +61,6 @@ packages_clpy = [
     'clpy.testing'
 ]
 
-packages_cupy_aliasing = [
-    'cupy',
-    'cupy.binary',
-    'cupy.core',
-    'cupy.creation',
-    'cupy.backend',
-    #   'cupy.backend.memory_hooks',
-    #   'cupy.ext',
-    'cupy.indexing',
-    #   'cupy.io',
-    'cupy.linalg',
-    'cupy.logic',
-    'cupy.manipulation',
-    'cupy.math',
-    'cupy.backend.opencl',
-    'cupy.cuda',
-    #   'cupy.padding',
-    #   'cupy.prof',
-    'cupy.random',
-    'cupy.sorting',
-    'cupy.sparse',
-    'cupy.statistics',
-    'cupy.testing'
-]
-
 packages_cupy_alias = [
     'cupy_alias',
     'cupy_alias.binary',
@@ -112,10 +86,7 @@ packages_cupy_alias = [
     'cupy_alias.testing'
 ]
 
-if generate_cupy_alias:
-    packages = packages_clpy + packages_cupy_aliasing
-else:
-    packages = packages_clpy + packages_cupy_alias
+packages = packages_clpy + packages_cupy_alias
 
 setup(
     name='clpy',
