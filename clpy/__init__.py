@@ -29,20 +29,19 @@ except ImportError:
 
 class CudaAliasMetaPathFinder(MetaPathFinder):
     def find_spec(fullname, path, target=None):
-        pac_mod = fullname.split('.', maxsplit=1)
-        pac = pac_mod[0]
-        if pac == 'cupy':
+        if fullname.split('.', maxsplit=1)[0] == 'cupy':
+            print(fullname)
             name = fullname
             path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), fullname.replace('.', os.sep))
-            if len(pac_mod)==2:
-                import_module(fullname.rsplit('.',maxsplit=1)[0])
-            print(path)
+            pac_mod = fullname.rsplit('.', maxsplit=1)
+            if len(pac_mod) == 2:
+                import_module(pac_mod[0])
             if os.path.isdir(path):
-                path = path
+                path = os.path.join(path, '__init__.py')
                 print(path)
                 return ModuleSpec(
                     name=name,
-                    loader=None,
+                    loader=SourceFileLoader(name,path),
                     origin=path,
                     is_package=True
                 )
@@ -51,7 +50,7 @@ class CudaAliasMetaPathFinder(MetaPathFinder):
                 print(path)
                 return ModuleSpec(
                     name=name,
-                    loader=SourceFileLoader(name, path),
+                    loader=SourceFileLoader(name,path),
                     origin=path
                 )
 
