@@ -7,7 +7,6 @@ import six
 
 from clpy import _version
 
-
 from importlib import import_module
 from importlib.abc import MetaPathFinder
 from importlib.machinery import ModuleSpec, SourceFileLoader
@@ -26,6 +25,9 @@ except ImportError:
 
     six.reraise(ImportError, ImportError(msg), exc_info[2])
 
+from clpy import backend
+
+
 class CudaAliasMetaPathFinder(MetaPathFinder):
     def find_spec(fullname, path, target=None):
         split_name = fullname.split('.', maxsplit=1)
@@ -34,7 +36,8 @@ class CudaAliasMetaPathFinder(MetaPathFinder):
             if len(split_name) == 2:
                 alias_name += '.' + split_name[1]
                 import_module(fullname.rsplit('.', maxsplit=1)[0])
-            path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), alias_name.replace('.', os.sep))
+            path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                                alias_name.replace('.', os.sep))
             if os.path.isdir(path):
                 path = os.path.join(path, '__init__.py')
                 return ModuleSpec(
@@ -50,14 +53,12 @@ class CudaAliasMetaPathFinder(MetaPathFinder):
                     name=fullname,
                     loader=SourceFileLoader(fullname, path),
                     origin=path
-                )             
+                )
+
 
 if os.getenv('CLPY_NOT_HOOK_CUPY') != '1':
     if sys.meta_path[0].__name__ != 'CudaAliasMetaPathFinder':
         sys.meta_path.insert(0, CudaAliasMetaPathFinder)
-
-
-from clpy import backend
 
 
 def is_available():
