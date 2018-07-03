@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import importlib
+import importlib.machinery as imm
 import os
 from setuptools import setup
 import sys
@@ -34,7 +34,7 @@ build_ext = clpy_setup_build.custom_build_ext
 sdist = clpy_setup_build.sdist_with_cython
 
 here = os.path.abspath(os.path.dirname(__file__))
-version = importlib.import_module(os.path.join(here, 'clpy', '_version.py'))
+version = imm.SourceFileLoader('version', os.path.join(here, 'clpy', '_version.py')).load_module()
 __version__ = version.__version__
 
 packages_clpy = [
