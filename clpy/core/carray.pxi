@@ -128,7 +128,8 @@ cpdef str _get_cuda_path():
 
 cpdef function.Module compile_with_cache(
         str source, tuple options=(), arch=None, cachd_dir=None):
-    source = _clpy_header + source
+    source = _clpy_header + '\nstatic void __clpy_begin_print_out() __attribute__((annotate("clpy_begin_print_out")));\n' + source + '\nstatic void __clpy_end_print_out() __attribute__((annotate("clpy_end_print_out")));\n'
+
     extra_source = _get_header_source()
     options += ('-I%s' % _get_header_dir_path(),)
     options += (' -cl-fp32-correctly-rounded-divide-sqrt', )

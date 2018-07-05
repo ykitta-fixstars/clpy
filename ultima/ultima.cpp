@@ -1646,6 +1646,7 @@ class decl_visitor : public clang::DeclVisitor<decl_visitor>{
   unsigned indentation;
   bool PrintInstantiation;
   stmt_visitor sv;
+  int print_out_counter = 0;
 
 public:
   decl_visitor(llvm::raw_ostream& os, const clang::PrintingPolicy& policy,
@@ -1783,10 +1784,32 @@ public:
 
       // Don't print implicit specializations, as they are printed when visiting
       // corresponding templates.
-      if (auto FD = clang::dyn_cast<clang::FunctionDecl>(x))
+      if (auto FD = clang::dyn_cast<clang::FunctionDecl>(x)){
         if (FD->getTemplateSpecializationKind() == clang::TSK_ImplicitInstantiation &&
             !clang::isa<clang::ClassTemplateSpecializationDecl>(DC))
           continue;
+        if ( FD->getStorageClass() == clang::SC_Static
+          && FD->getReturnType().getAsString() == "void"
+          && FD->getQualifiedNameAsString() == "__clpy_begin_print_out"
+          && has_annotation(FD, "clpy_begin_print_out")
+          && FD->param_size() == 0
+          && FD->hasBody() == false){
+          ++print_out_counter;
+          continue;
+        }
+        else if ( FD->getStorageClass() == clang::SC_Static
+               && FD->getReturnType().getAsString() == "void"
+               && FD->getQualifiedNameAsString() == "__clpy_end_print_out"
+               && has_annotation(FD, "clpy_end_print_out")
+               && FD->param_size() == 0
+               && FD->hasBody() == false){
+          --print_out_counter;
+          continue;
+        }
+      }
+
+      if(print_out_counter <= 0)
+        continue;
 
       ros.flush();
       os << os_source;
