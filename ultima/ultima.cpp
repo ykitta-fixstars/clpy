@@ -1710,37 +1710,30 @@ public:
       }
     }
   }
-  void prettyPrintPragmas(clang::Decl* D){
+  template<typename T>
+  std::vector<std::string> prettyPrintPragmas(T* D){
+    std::vector<std::string> annons;
     if (policy.PolishForDeclaration)
-      return;
+      return annons;
 
     for (auto* x : D->getAttrs()) {
       if(auto aa = clang::dyn_cast<clang::AnnotateAttr>(x)){
         auto an = aa->getAnnotation();
-        if(an == "cl_global"){
+        if(an == "cl_global")
           os << "__global ";
-          continue;
-        }
-        else if(an == "cl_kernel"){
+        else if(an == "cl_kernel")
           os << "__kernel ";
-          continue;
-        }
-        else if(an == "cl_local"){
+        else if(an == "cl_local")
           os << "__local ";
-          continue;
-        }
-        else if(an == "cu_global"){
+        else if(an == "cu_global")
           os << "__global__ ";
-          continue;
-        }
-        else if(an == "cu_device"){
+        else if(an == "cu_device")
           os << "__device__ ";
-          continue;
-        }
-        else if(an == "cu_shared"){
+        else if(an == "cu_shared")
           os << "__shared__ ";
-          continue;
-        }
+        else
+          annons.emplace_back(an);
+        continue;
       }
       switch (x->getKind()) {
 #define ATTR(X)
@@ -1755,6 +1748,7 @@ public:
         break;
       }
     }
+    return annons;
   }
 
   void printGroup(clang::Decl** Begin, unsigned NumDecls) {
