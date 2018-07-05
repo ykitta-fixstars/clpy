@@ -14,7 +14,7 @@ cimport clpy.backend.opencl.utility
 cpdef _get_simple_reduction_kernel(
         name, local_size, reduce_type, params, identity,
         pre_map_expr, reduce_expr, post_map_expr,
-        type_preamble, input_expr, output_expr, output_store, preamble, options):
+        type_preamble, input_expr, output_expr, output_store, preamble, options, clpy_variables_declaration):
     if identity is None:
         identity = '0'
 
@@ -32,6 +32,7 @@ cpdef _get_simple_reduction_kernel(
     typedef ${reduce_type} _type_reduce;
     __kernel void ${name}(${params}) {
       const size_t lid = get_local_id(0);
+      ${clpy_variables_declaration}
       __attribute__((annotate("clpy_reduction_tag"))) void __clpy_reduction_preprocess();
 
       const size_t _J_offset = lid / _local_stride;
@@ -82,7 +83,8 @@ cpdef _get_simple_reduction_kernel(
         output_expr=output_expr,
         output_store=output_store,
         preamble=preamble,
-        typeof_size=clpy.backend.opencl.types.device_typeof_size)
+        typeof_size=clpy.backend.opencl.types.device_typeof_size,
+        clpy_variables_declaration=clpy_variables_declaration)
     module = compile_with_cache(module_code, options)
     return module.get_function(name)
 
@@ -147,7 +149,7 @@ cpdef list _get_inout_args(
 def _get_simple_reduction_function(
         routine, params, args_info, in_arg_dtype, out_arg_dtype, out_types,
         name, local_size, identity, input_expr, output_expr, output_store, _preamble,
-        options):
+        options, clpy_variables_declaration = ''):
     reduce_type = routine[3]
     if reduce_type is None:
         reduce_type = _get_typename(out_types[0])
@@ -161,10 +163,11 @@ def _get_simple_reduction_function(
     input_expr = input_expr.format(ndim=ndim_in)
     output_expr = output_expr.format(ndim=ndim_out)
     output_store = output_store.format(ndim=ndim_out)
+    clpy_variables_declaration = clpy_variables_declaration.format(ndim_in = ndim_in, ndim_out = ndim_out)
     return _get_simple_reduction_kernel(
         name, local_size, reduce_type, params, identity,
         routine[0], routine[1], routine[2],
-        type_preamble, input_expr, output_expr, output_store, _preamble, options)
+        type_preamble, input_expr, output_expr, output_store, _preamble, options, clpy_variables_declaration)
 
 
 class simple_reduction_function(object):
@@ -190,6 +193,7 @@ class simple_reduction_function(object):
             _get_param_info('LocalMem _sdata', True))
         self._input_expr = 'const type_in0_data in0 = in0_data[get_CArrayIndex_{ndim}(&in0_info, &_in_ind)];'
         self._output_expr = 'type_out0_data out0 = out0_data[get_CArrayIndex_{ndim}(&out0_info, &_out_ind)];'
+        self._clpy_variables_declaration = '__attribute__((annotate("clpy_ignore"))) type_in0_data* in0_data;__attribute__((annotate("clpy_ignore"))) CArray_{ndim_in} in0_info;__attribute__((annotate("clpy_ignore"))) type_out0_data* out0_data;__attribute__((annotate("clpy_ignore"))) CArray_{ndim_out} out0_info;'
         self._output_store = 'out0_data[get_CArrayIndex_{ndim}(&out0_info, &_out_ind)] = out0;'
         self._routine_cache = {}
         # default is True when identity for the kernel is None in clpy
@@ -247,7 +251,7 @@ class simple_reduction_function(object):
             routine, self._params, args_info,
             in_args[0].dtype.type, out_args[0].dtype.type, out_types,
             self.name, local_size, self.identity,
-            self._input_expr, self._output_expr, self._output_store, self._preamble, ())
+            self._input_expr, self._output_expr, self._output_store, self._preamble, (), self._clpy_variables_declaration)
 
         # TODO(okuta) set actual size
         shared_mem = 32 * local_size
@@ -285,10 +289,13 @@ def _get_reduction_kernel(
          for p in arrays if not p.is_const])
     map_expr = _get_raw_replaced_operation(map_expr, params, args_info, raw_indexers_params)
     post_map_expr = _get_raw_replaced_operation(post_map_expr, params, args_info, raw_indexers_params)
+    clpy_variables_declaration = '\n'.join(
+        ['__attribute__((annotate("clpy_ignore"))) {type}* {name}_data;__attribute__((annotate("clpy_ignore"))) CArray_{ndim} {name}_info;'.format(type=p.ctype, name=p.name, ndim=a[2])
+         for p, a in zip(params, args_info) if a[0] is ndarray])
     return _get_simple_reduction_kernel(
         name, local_size, reduce_type, kernel_params, identity,
         map_expr, reduce_expr, post_map_expr,
-        type_preamble, input_expr, output_expr, output_store, preamble, options)
+        type_preamble, input_expr, output_expr, output_store, preamble, options, clpy_variables_declaration)
 
 
 class ReductionKernel(object):

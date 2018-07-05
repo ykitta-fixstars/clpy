@@ -129,6 +129,8 @@ struct function_special_argument_info{
   std::string name;
   std::string type;
   enum{
+    raw,
+    ind,
     cindex
   }arg_flag;
   int ndim;
@@ -1042,6 +1044,22 @@ public:
       }
       os << ')';
     } else if (Kind == clang::OO_Subscript) {
+      if(auto CArray = Node->getArg(0)->getType()->getAs<clang::TemplateSpecializationType>())
+      if(CArray->getTemplateName().getAsTemplateDecl()->getQualifiedNameAsString() == "CArray"){
+        const auto decl_ref = clang::dyn_cast<clang::DeclRefExpr>(dig_expr(Node->getArg(0)));
+        if(decl_ref == nullptr)
+          throw std::runtime_error("Current ultima only support array subscription with 'raw' CArray object.");
+        const auto name = decl_ref->getNameInfo().getAsString();
+        auto var_info = std::find_if(func_arg_info.back().begin(), func_arg_info.back().end(), [name](const function_special_argument_info& t){
+          return t.name == name && t.arg_flag == function_special_argument_info::raw;
+        });
+        if(var_info == func_arg_info.back().end())
+          throw std::runtime_error("only 'raw' CArray can subscript");
+        os << name << "[get_CArrayIndexRaw_" << var_info->ndim << "(&" << name << "_info, ";
+        PrintExpr(Node->getArg(1));
+        os << ")]";
+        return;
+      }
       PrintExpr(Node->getArg(0));
       os << '[';
       PrintExpr(Node->getArg(1));
@@ -2463,14 +2481,38 @@ public:
     {
       const auto annons = prettyPrintPragmas(D);
       auto template_type = D->getType()->getAs<clang::TemplateSpecializationType>();
-      if(annons.empty())
-        if(template_type)
+      auto carray_argument = [this](const clang::TemplateSpecializationType* tt, const std::string& name, bool is_raw, bool is_input){
+        auto val_type = tt->begin()->getAsType().getAsString(policy);
+        const auto ndim = clang::dyn_cast<clang::IntegerLiteral>((tt->begin()+1)->getAsExpr())->getValue().getLimitedValue();
+        func_arg_info.back().emplace_back(function_special_argument_info{name, val_type, is_raw ? function_special_argument_info::raw : function_special_argument_info::ind, static_cast<int>(ndim), is_input});
+        //TODO: Add const to val_type when is_input is true
+        os << "__global " << val_type << "* const __restrict__ " << name << (is_raw ? "" : "_data")
+           << ", const CArray_" << ndim << ' ' << name << "_info";
+      };
+      static constexpr char clpy_arg_tag[] = "clpy_arg:";
+      if(annons.empty()){
+        if(template_type){
           if(template_type->getTemplateName().getAsTemplateDecl()->getQualifiedNameAsString() == "CIndexer"){
             const auto ndim = clang::dyn_cast<clang::IntegerLiteral>(template_type->begin()->getAsExpr())->getValue().getLimitedValue();
             func_arg_info.back().emplace_back(function_special_argument_info{D->getNameAsString(), "", function_special_argument_info::cindex, static_cast<int>(ndim), true});
             os << "CIndexer_" << ndim << ' ' << D->getName();
             return;
           }
+        }
+      }
+      else for(auto&& x : annons) if(x == "clpy_ignore") return;
+        else if(x.find(clpy_arg_tag) == 0){
+          static constexpr std::size_t clpy_arg_tag_length = sizeof(clpy_arg_tag)-1;
+          static constexpr std::size_t tag_prefix_length = clpy_arg_tag_length + 3/*"ind" or "raw"*/ + 1/*space*/;
+          const bool is_raw = x.find("ind", clpy_arg_tag_length) == std::string::npos;
+          const auto name_end = std::min(x.find(' ', tag_prefix_length), x.size());
+          const auto var_name = x.substr(tag_prefix_length, name_end - tag_prefix_length);
+          const bool is_input = x.find("const", name_end) != std::string::npos;
+          if(!template_type || template_type->getTemplateName().getAsTemplateDecl()->getQualifiedNameAsString() != "CArray")
+            throw std::runtime_error("invalid \"clpy_arg\" annotation (it is only for CArray argument)");
+          carray_argument(template_type, var_name, is_raw, is_input);
+          return;
+        }
     }
 
     clang::QualType T = D->getTypeSourceInfo()
