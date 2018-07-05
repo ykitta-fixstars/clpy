@@ -125,18 +125,28 @@ static inline void prettyPrintAttributes(clang::DeclVisitor<T>& t, U* u){
   static_cast<T&>(t).prettyPrintAttributes(u);
 }
 
+struct function_special_argument_info{
+  std::string name;
+  std::string type;
+  enum{
+    cindex
+  }arg_flag;
+  int ndim;
+  bool is_input;
+};
 
 class stmt_visitor : public clang::StmtVisitor<stmt_visitor> {
   ostreams& os;
   unsigned& IndentLevel;
   clang::PrintingPolicy& Policy;
   clang::DeclVisitor<decl_visitor>& dv;
-
+  const std::vector<std::vector<function_special_argument_info>>& func_arg_info;
 public:
   stmt_visitor(ostreams& os,
               clang::PrintingPolicy &Policy,
-              unsigned& Indentation, clang::DeclVisitor<decl_visitor>& dv)
-    : os(os), IndentLevel(Indentation), Policy(Policy), dv{dv} {}
+              unsigned& Indentation, clang::DeclVisitor<decl_visitor>& dv,
+              const std::vector<std::vector<function_special_argument_info>>& func_arg_info)
+    : os(os), IndentLevel(Indentation), Policy(Policy), dv{dv}, func_arg_info{func_arg_info} {}
 
   void PrintStmt(clang::Stmt *S) {
     PrintStmt(S, Policy.Indentation);
@@ -1671,6 +1681,7 @@ class decl_visitor : public clang::DeclVisitor<decl_visitor>{
   clang::PrintingPolicy policy;
   unsigned indentation;
   bool PrintInstantiation;
+  std::vector<std::vector<function_special_argument_info>> func_arg_info;
   stmt_visitor sv;
   int print_out_counter = 0;
 
@@ -1679,7 +1690,7 @@ public:
                unsigned indentation = 0, bool PrintInstantiation = false)
     : os(os), policy(policy), indentation(indentation),
       PrintInstantiation(PrintInstantiation),
-      sv{this->os, this->policy, this->indentation, *this} { }
+      sv{this->os, this->policy, this->indentation, *this, this->func_arg_info} { }
 
   llvm::raw_ostream& indent(unsigned indentation) {
     for (unsigned i = 0; i != indentation; ++i)
@@ -2067,6 +2078,12 @@ public:
     if (!D->getDescribedFunctionTemplate() &&
         !D->isFunctionTemplateSpecialization())
       prettyPrintPragmas(D);
+
+    struct auto_popper{
+      std::vector<std::vector<function_special_argument_info>>& f;
+      auto_popper(std::vector<std::vector<function_special_argument_info>>& fsai):f{fsai}{f.emplace_back();}
+      ~auto_popper(){f.pop_back();}
+    }_{func_arg_info};
 
     if (D->isFunctionTemplateSpecialization())
       os << "template<> ";
