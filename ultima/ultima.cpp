@@ -74,6 +74,34 @@ struct ostreams{
   auto_popper scoped_push(llvm::raw_ostream& os){return {*this, os};}
 };
 
+class preprocessor : public clang::PPCallbacks{
+  void output(char start, llvm::StringRef filename, char end){
+    llvm::outs() << start << filename << end << '\n';
+  }
+ public:
+  constexpr preprocessor() = default;
+  void InclusionDirective(
+    clang::SourceLocation,
+    const clang::Token&,
+    llvm::StringRef filename,
+    bool is_angled,
+    clang::CharSourceRange,
+    const clang::FileEntry*,
+    llvm::StringRef,
+    llvm::StringRef,
+    const clang::Module*
+  )override{
+    if(filename == "cuda_stub.hpp" || filename == "cl_stub.hpp")
+      return;
+    llvm::outs() << "#include";
+    output(
+      is_angled ? '<'             : '"',
+      filename,
+      is_angled ? '>'             : '"'
+    );
+  }
+};
+
 class decl_visitor;
 
 template<typename T>
@@ -2717,7 +2745,9 @@ class ast_consumer : public clang::ASTConsumer{
     return pp;
   }
  public:
-  explicit ast_consumer(clang::CompilerInstance& ci) : visit{new decl_visitor{llvm::outs(), ppolicy(ci.getASTContext().getPrintingPolicy())}}{}
+  explicit ast_consumer(clang::CompilerInstance& ci) : visit{new decl_visitor{llvm::outs(), ppolicy(ci.getASTContext().getPrintingPolicy())}}{
+    ci.getPreprocessor().addPPCallbacks(llvm::make_unique<preprocessor>());
+  }
   virtual void HandleTranslationUnit(clang::ASTContext& context)override{
     visit->Visit(context.getTranslationUnitDecl());
   }
