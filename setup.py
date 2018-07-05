@@ -129,6 +129,9 @@ setup(
             'core/include/clpy/carray.clh',
         ],
     },
+    data_files = [
+        ('ultima', ['ultima/ultima']),
+    ],
     zip_safe=False,
     setup_requires=setup_requires,
     install_requires=install_requires,

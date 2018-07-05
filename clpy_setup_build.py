@@ -13,6 +13,11 @@ from setuptools.command import sdist
 from install import build
 from install import utils
 
+import subprocess
+
+print("building ultima");
+if subprocess.Popen('clang++ -std=c++11 -Wall -Wextra -O3 -pedantic-errors ultima.cpp -lclangTooling -lclangFrontendTool -lclangFrontend -lclangDriver -lclangSerialization -lclangCodeGen -lclangParse -lclangSema -lclangStaticAnalyzerFrontend -lclangStaticAnalyzerCheckers -lclangStaticAnalyzerCore -lclangAnalysis -lclangARCMigrate -lclangRewrite -lclangEdit -lclangAST -lclangLex -lclangBasic -lclang `llvm-config --libs --system-libs` -fno-rtti -o ultima', cwd=os.path.dirname(__file__)+"/ultima", shell=True).wait() != 0:
+    raise RuntimeError('Build ultima is failed.')
 
 required_cython_version = pkg_resources.parse_version('0.24.0')
 ignore_cython_versions = [

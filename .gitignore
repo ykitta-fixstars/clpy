@@ -18,3 +18,4 @@ dist/
 htmlcov/
 .idea/
 !ultima/ultima.cpp
+ultima/ultima
