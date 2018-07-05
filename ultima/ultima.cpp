@@ -1714,29 +1714,30 @@ public:
     if (policy.PolishForDeclaration)
       return;
 
-    for (auto *x : D->getAttrs()) {
+    for (auto* x : D->getAttrs()) {
       if(auto aa = clang::dyn_cast<clang::AnnotateAttr>(x)){
-        if(aa->getAnnotation() == "cl_global"){
+        auto an = aa->getAnnotation();
+        if(an == "cl_global"){
           os << "__global ";
           continue;
         }
-        else if(aa->getAnnotation() == "cl_kernel"){
+        else if(an == "cl_kernel"){
           os << "__kernel ";
           continue;
         }
-        else if(aa->getAnnotation() == "cl_local"){
+        else if(an == "cl_local"){
           os << "__local ";
           continue;
         }
-        else if(aa->getAnnotation() == "cu_global"){
+        else if(an == "cu_global"){
           os << "__global__ ";
           continue;
         }
-        else if(aa->getAnnotation() == "cu_device"){
+        else if(an == "cu_device"){
           os << "__device__ ";
           continue;
         }
-        else if(aa->getAnnotation() == "cu_shared"){
+        else if(an == "cu_shared"){
           os << "__shared__ ";
           continue;
         }
