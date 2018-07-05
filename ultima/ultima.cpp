@@ -2130,6 +2130,21 @@ public:
           os << "set_CIndexer_" << _ind->ndim << "(&_ind, i);\n";
           indent() << "const size_t _ind_size = size_CIndexer_" << _ind->ndim << "(&_ind)";
         }
+        else if(D->getReturnType().getAsString() == "void"
+             && D->getQualifiedNameAsString() == "__clpy_elementwise_postprocess"
+             && D->param_size() == 0
+             && D->hasBody() == false){
+          bool first = true;
+          for(auto&& x : func_arg_info.back()) if(x.arg_flag == function_special_argument_info::ind && !x.is_input){
+            if(first)
+              first = false;
+            else{
+              os << ";\n";
+              indent();
+            }
+            os << x.name << "_data[get_CArrayIndex_" << x.ndim << "(&" << x.name << "_info, &_ind)] = " << x.name << ";\n";
+          }
+        }
         return;
       }
       else if(x == "clpy_reduction_tag"){
@@ -2160,6 +2175,39 @@ public:
              && D->param_size() == 0
              && D->hasBody() == false)
           os << "set_CIndexer_" << _out_ind->ndim << "(&_out_ind, _i)";
+        return;
+      }
+      else if(D->getReturnType().getAsString() == "void"
+           && D->getQualifiedNameAsString() == "__clpy_reduction_postprocess"
+           && D->param_size() == 0
+           && D->hasBody() == false){
+        const bool is_simple = x == "clpy_simple_reduction_tag";
+        const bool is_standard = x == "clpy_standard_reduction_tag";
+        if(!is_simple && !is_standard)
+          continue;
+        auto _in_ind = std::find_if(func_arg_info.back().begin(), func_arg_info.back().end(), [](const function_special_argument_info& x){
+          return x.arg_flag == function_special_argument_info::cindex && x.name == "_in_ind";
+        });
+        if(_in_ind == func_arg_info.back().end())
+          throw std::runtime_error("the function declaration annotated \"" + x + "\" must be in a function which has CIndexer argument named \"_in_ind\"");
+        auto _out_ind = std::find_if(func_arg_info.back().begin(), func_arg_info.back().end(), [](const function_special_argument_info& x){
+          return x.arg_flag == function_special_argument_info::cindex && x.name == "_out_ind";
+        });
+        if(_out_ind == func_arg_info.back().end())
+          throw std::runtime_error("the function declaration annotated \"" + x + "\" must be in a function which has CIndexer argument named \"_out_ind\"");
+        bool first = true;
+        for(auto&& x : func_arg_info.back()) if(x.arg_flag == function_special_argument_info::ind && !x.is_input){
+          if(first)
+            first = false;
+          else{
+            os << ";\n";
+            indent();
+          }
+          if(is_simple)
+            os << x.name << "_data[get_CArrayIndex_" << _out_ind->ndim << "(&" << x.name << "_info, &_out_ind)] = " << x.name;
+          else
+            os << x.name << "_data[get_CArrayIndexI_" << _out_ind->ndim << "(&" << x.name << "_info, _i)] = " << x.name;
+        }
         return;
       }
     }
@@ -2477,7 +2525,9 @@ public:
     os << *D << ':';
   }
 
-  void VisitVarDecl(clang::VarDecl *D) {
+  void VisitVarDecl(clang::VarDecl *D, bool parameter = false) {
+    bool is_const = false;
+    std::string init_str;
     {
       const auto annons = prettyPrintPragmas(D);
       auto template_type = D->getType()->getAs<clang::TemplateSpecializationType>();
@@ -2490,18 +2540,26 @@ public:
            << ", const CArray_" << ndim << ' ' << name << "_info";
       };
       static constexpr char clpy_arg_tag[] = "clpy_arg:";
+      static constexpr char clpy_simple_reduction_tag[] = "clpy_simple_reduction_tag:";
+      static constexpr char clpy_standard_reduction_tag[] = "clpy_standard_reduction_tag:";
       if(annons.empty()){
-        if(template_type){
-          if(template_type->getTemplateName().getAsTemplateDecl()->getQualifiedNameAsString() == "CIndexer"){
+        if(parameter && template_type){
+          auto template_type_name = template_type->getTemplateName().getAsTemplateDecl()->getQualifiedNameAsString();
+          if(template_type_name == "CIndexer"){
             const auto ndim = clang::dyn_cast<clang::IntegerLiteral>(template_type->begin()->getAsExpr())->getValue().getLimitedValue();
             func_arg_info.back().emplace_back(function_special_argument_info{D->getNameAsString(), "", function_special_argument_info::cindex, static_cast<int>(ndim), true});
             os << "CIndexer_" << ndim << ' ' << D->getName();
             return;
           }
+          else if(template_type_name == "CArray"){
+            //TODO: Add const(is_input == true) if it should be
+            carray_argument(template_type, D->getNameAsString(), true, false);
+            return;
+          }
         }
       }
       else for(auto&& x : annons) if(x == "clpy_ignore") return;
-        else if(x.find(clpy_arg_tag) == 0){
+        else if(parameter && x.find(clpy_arg_tag) == 0){
           static constexpr std::size_t clpy_arg_tag_length = sizeof(clpy_arg_tag)-1;
           static constexpr std::size_t tag_prefix_length = clpy_arg_tag_length + 3/*"ind" or "raw"*/ + 1/*space*/;
           const bool is_raw = x.find("ind", clpy_arg_tag_length) == std::string::npos;
@@ -2512,6 +2570,37 @@ public:
             throw std::runtime_error("invalid \"clpy_arg\" annotation (it is only for CArray argument)");
           carray_argument(template_type, var_name, is_raw, is_input);
           return;
+        }
+        else if(!parameter && x == "clpy_elementwise_tag"){
+          auto var_info = std::find_if(func_arg_info.back().begin(), func_arg_info.back().end(), [D](const function_special_argument_info& t){
+            return t.name == D->getName();
+          });
+          if(var_info == func_arg_info.back().end())
+            throw std::runtime_error("invalid \"clpy_elementwise_tag\" annotation (there is no related argument)");
+          is_const = var_info->is_input;
+          init_str = " = " + var_info->name + "_data[get_CArrayIndex_" + std::to_string(var_info->ndim) + "(&" + var_info->name + "_info, &_ind)]";
+        }
+        else if(!parameter && x.find(clpy_simple_reduction_tag) == 0){
+          static constexpr std::size_t tag_length = sizeof(clpy_simple_reduction_tag)-1;
+          auto var_info = std::find_if(func_arg_info.back().begin(), func_arg_info.back().end(), [D](const function_special_argument_info& t){
+            return t.name == D->getName();
+          });
+          if(var_info == func_arg_info.back().end())
+            throw std::runtime_error("invalid \"clpy_simple_reduction_tag\" annotation (there is no related argument)");
+          const auto& name = var_info->name;
+          is_const = var_info->is_input;
+          init_str = " = " + name + "_data[get_CArrayIndex_" + std::to_string(var_info->ndim) + "(&" + name + "_info, &_" + x.substr(tag_length) + "_ind)]";
+        }
+        else if(!parameter && x.find(clpy_standard_reduction_tag) == 0){
+          static constexpr std::size_t tag_length = sizeof(clpy_standard_reduction_tag)-1;
+          auto var_info = std::find_if(func_arg_info.back().begin(), func_arg_info.back().end(), [D](const function_special_argument_info& t){
+            return t.name == D->getName();
+          });
+          if(var_info == func_arg_info.back().end())
+            throw std::runtime_error("invalid \"clpy_simple_reduction_tag\" annotation (there is no related argument)");
+          const auto& name = var_info->name;
+          is_const = var_info->is_input;
+          init_str = " = " + name + "_data[get_CArrayIndexI_" + std::to_string(var_info->ndim) + "(&" + name + "_info, _" + x.substr(tag_length) + ")]";
         }
     }
 
@@ -2546,6 +2635,9 @@ public:
         T.removeLocalConst();
       }
     }
+
+    if(is_const)
+      os << "const ";
 
     if(auto r = get_unnamed_record_decl(D)){
       VisitCXXRecordDecl(r, true);
@@ -2583,11 +2675,13 @@ public:
           os << ')';
       }
     }
+    else if(!init_str.empty())
+      os << init_str;
     prettyPrintAttributes(D);
   }
 
   void VisitParmVarDecl(clang::ParmVarDecl *D) {
-    VisitVarDecl(D);
+    VisitVarDecl(D, true);
   }
 
   void VisitFileScopeAsmDecl(clang::FileScopeAsmDecl *D) {

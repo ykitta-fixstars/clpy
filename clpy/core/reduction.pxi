@@ -160,9 +160,9 @@ def _get_simple_reduction_function(
     params, ndims = _get_kernel_params(params, args_info)
     ndim_in = ndims['_in_ind']
     ndim_out = ndims['_out_ind']
-    input_expr = input_expr.format(ndim=ndim_in)
-    output_expr = output_expr.format(ndim=ndim_out)
-    output_store = output_store.format(ndim=ndim_out)
+    input_expr = input_expr
+    output_expr = output_expr
+    output_store = output_store
     clpy_variables_declaration = clpy_variables_declaration.format(ndim_in = ndim_in, ndim_out = ndim_out)
     return _get_simple_reduction_kernel(
         name, local_size, reduce_type, params, identity,
@@ -191,10 +191,10 @@ class simple_reduction_function(object):
                 'CIndexer _in_ind, CIndexer _out_ind', False) +
             _get_param_info('kernel_arg_size_t _local_stride', True) +
             _get_param_info('LocalMem _sdata', True))
-        self._input_expr = 'const type_in0_data in0 = in0_data[get_CArrayIndex_{ndim}(&in0_info, &_in_ind)];'
-        self._output_expr = 'type_out0_data out0 = out0_data[get_CArrayIndex_{ndim}(&out0_info, &_out_ind)];'
+        self._input_expr = '__attribute__((annotate("clpy_simple_reduction_tag:in"))) type_in0_data in0;'
+        self._output_expr = '__attribute__((annotate("clpy_simple_reduction_tag:out"))) type_out0_data out0;'
         self._clpy_variables_declaration = '__attribute__((annotate("clpy_ignore"))) type_in0_data* in0_data;__attribute__((annotate("clpy_ignore"))) CArray_{ndim_in} in0_info;__attribute__((annotate("clpy_ignore"))) type_out0_data* out0_data;__attribute__((annotate("clpy_ignore"))) CArray_{ndim_out} out0_info;'
-        self._output_store = 'out0_data[get_CArrayIndex_{ndim}(&out0_info, &_out_ind)] = out0;'
+        self._output_store = '__attribute__((annotate("clpy_simple_reduction_tag"))) void __clpy_reduction_postprocess();'
         self._routine_cache = {}
         # default is True when identity for the kernel is None in clpy
         self.default = default
@@ -279,16 +279,12 @@ def _get_reduction_kernel(
         'typedef %s %s;' % (_get_typename(v), k)
         for k, v in types)
     input_expr = '\n'.join(
-        ['const {type} {name} = {name}_data[get_CArrayIndexI_{ndim}(&{name}_info, _j)];'.format(type=p.ctype, name=p.name, ndim=ndim_in)
+        ['__attribute__((annotate("clpy_standard_reduction_tag:j"))) {type} {name};'.format(type=p.ctype, name=p.name)
          for p in arrays if p.is_const])
     output_expr = '\n'.join(
-        ['{type} {name} = {name}_data[get_CArrayIndexI_{ndim}(&{name}_info, _i)];'.format(type=p.ctype, name=p.name, ndim=ndim_out)
+        ['__attribute__((annotate("clpy_standard_reduction_tag:i"))) {type} {name};'.format(type=p.ctype, name=p.name)
          for p in arrays if not p.is_const])
-    output_store = '\n'.join(
-        ['{name}_data[get_CArrayIndexI_{ndim}(&{name}_info, _i)] = {name};'.format(name=p.name, ndim=ndim_out)
-         for p in arrays if not p.is_const])
-    map_expr = _get_raw_replaced_operation(map_expr, params, args_info, raw_indexers_params)
-    post_map_expr = _get_raw_replaced_operation(post_map_expr, params, args_info, raw_indexers_params)
+    output_store = '__attribute__((annotate("clpy_standard_reduction_tag"))) void __clpy_reduction_postprocess();'
     clpy_variables_declaration = '\n'.join(
         ['__attribute__((annotate("clpy_ignore"))) {type}* {name}_data;__attribute__((annotate("clpy_ignore"))) CArray_{ndim} {name}_info;'.format(type=p.ctype, name=p.name, ndim=a[2])
          for p, a in zip(params, args_info) if a[0] is ndarray])

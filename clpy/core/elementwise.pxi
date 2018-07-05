@@ -27,6 +27,7 @@ cpdef _get_simple_elementwise_kernel(
       const size_t i = get_global_id(0); // TODO: Add offset and/or stride
       __attribute__((annotate("clpy_elementwise_tag"))) void __clpy_elementwise_preprocess();
       ${operation};
+      __attribute__((annotate("clpy_elementwise_tag"))) void __clpy_elementwise_postprocess();
       ${after_loop};
     }
     ''').substitute(
@@ -501,19 +502,11 @@ def _get_elementwise_kernel(args_info, types, params, operation, name,
     for p, a in zip(params, args_info):
         if a[0] == ndarray:
             if not p.raw:
-                fmt = '{t} {n} = {n}_data[get_CArrayIndex_{ndim}(&{n}_info, &_ind)];'
-                if p.is_const:
-                    fmt = 'const ' + fmt
-                op.append(fmt.format(t=p.ctype, n=p.name, ndim=ndim))
+                fmt = '__attribute__((annotate("clpy_elementwise_tag"))) {t} {n};'
+                op.append(fmt.format(t=p.ctype, n=p.name))
                 clvd.append('__attribute__((annotate("clpy_ignore"))) {t}* {n}_data;'.format(t=p.ctype, n=p.name))
             clvd.append('__attribute__((annotate("clpy_ignore"))) CArray_{ndim} {n}_info;'.format(n=p.name, ndim=a[2]))
-    operation = _get_raw_replaced_operation(operation, params, args_info, raw_indexers_params)
-    op.append(operation + ';')
-    for p, a in zip(params, args_info):
-        if not p.raw and a[0] == ndarray and not p.is_const:
-            fmt = '{n}_data[get_CArrayIndex_{ndim}(&{n}_info, &_ind)] = {n};'
-            op.append(fmt.format(n=p.name, ndim=ndim))
-    operation = '\n'.join(op)
+    operation = '\n'.join(op) + operation
     clpy_variables_declaration = '\n'.join(clvd)
     return _get_simple_elementwise_kernel(
         kernel_params, operation, name,
@@ -684,22 +677,17 @@ def _get_ufunc_kernel(
     for i, x in enumerate(in_types):
         types.append('typedef %s in%d_type;' % (_get_typename(x), i))
         if args_info[i][0] is ndarray:
-            op.append('const in{0}_type in{0} = in{0}_data[get_CArrayIndex_{1}(&in{0}_info, &_ind)];'.format(i, ndim))
+            op.append('__attribute__((annotate("clpy_elementwise_tag"))) in{0}_type in{0};'.format(i))
             clvd.append('__attribute__((annotate("clpy_ignore")))in{0}_type* in{0}_data;__attribute__((annotate("clpy_ignore")))CArray_{1} in{0}_info;'.format(i,args_info[i][2]))
 
     for i, x in enumerate(out_types):
         types.append('typedef %s out%d_type;' % (
             _get_typename(args_info[i + len(in_types)][1]), i))
-        op.append('out{0}_type out{0} = out{0}_data[get_CArrayIndex_{1}(&out{0}_info, &_ind)];'.format(i, ndim))
+        op.append('__attribute__((annotate("clpy_elementwise_tag"))) out{0}_type out{0};'.format(i))
         if args_info[i + len(in_types)][0] is ndarray:
             clvd.append('__attribute__((annotate("clpy_ignore")))out{0}_type* out{0}_data;__attribute__((annotate("clpy_ignore")))CArray_{1} out{0}_info;'.format(i,args_info[i + len(in_types)][2]))
 
-    op.append(routine + ';')
-
-    for i, x in enumerate(out_types):
-        op.append('out{0}_data[get_CArrayIndex_{1}(&out{0}_info, &_ind)] = out{0};'.format(i, ndim))
-
-    operation = '\n'.join(op)
+    operation = '\n'.join(op) + routine
 
     types.append(preamble)
     preamble = '\n'.join(types)
