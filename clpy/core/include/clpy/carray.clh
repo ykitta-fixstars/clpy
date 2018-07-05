@@ -346,10 +346,11 @@ typedef struct { \
   size_t shape_[_NDIM]; \
   size_t strides_[_NDIM]; \
 } CArray_##_NDIM; \
-static size_t get_CArrayIndexRaw_##_NDIM(const CArray_##_NDIM* const __restrict__ info, const ptrdiff_t idx[_NDIM]) { \
+static size_t get_CArrayIndexRaw_##_NDIM(const CArray_##_NDIM* const __restrict__ info, const void* idx_) { \
+  const size_t* idx = (const size_t*)idx_; \
   size_t offset = info->offset; \
   for (size_t dim = 0; dim < _NDIM; dim++) { \
-    offset += info->strides_[dim] * (size_t)idx[dim]; \
+    offset += info->strides_[dim] * idx[dim]; \
   } \
   return offset; \
 } \
