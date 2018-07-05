@@ -22,6 +22,7 @@
 #include "llvm/Support/Format.h"
 #include <memory>
 #include <utility>
+#include <sstream>
 
 namespace ultima{
 
@@ -726,6 +727,56 @@ public:
     os << ']';
   }
 
+  static std::string to_identifier(const std::string& s){
+    std::stringstream ss;
+    for(auto c : s)switch(c){
+    case '<': ss << "__left_angle__"; break;
+    case '>': ss << "__right_angle__"; break;
+    case '(': ss << "__left_paren__"; break;
+    case ')': ss << "__right_paren__"; break;
+    case ',': ss << "__comma__"; break;
+    case ' ': break;
+    case '*': ss << "__pointer__"; break;
+    case '[': ss << "__left_square__"; break;
+    case ']': ss << "__right_square__"; break;
+    default: ss << c; break;
+    }
+    return ss.str();
+  }
+
+  void print_template_argument(const clang::TemplateArgument& targ){
+    switch(targ.getKind()){
+    case clang::TemplateArgument::ArgKind::Type:
+      os << to_identifier(targ.getAsType().getAsString(Policy));
+      break;
+    case clang::TemplateArgument::ArgKind::Expression:
+      PrintExpr(targ.getAsExpr());
+      break;
+    case clang::TemplateArgument::ArgKind::Integral:
+      os << targ.getAsIntegral();
+      break;
+    case clang::TemplateArgument::ArgKind::NullPtr:
+      os << "NULL";
+      break;
+    case clang::TemplateArgument::ArgKind::Declaration:
+      llvm_unreachable("Current ultima doesn't support declaration in template");
+    case clang::TemplateArgument::ArgKind::Template:
+      llvm_unreachable("Current ultima doesn't support template template parameter");
+    case clang::TemplateArgument::ArgKind::Null:
+      llvm_unreachable("Oops! something is wrong... /* clang::TemplateArgument::ArgKind::Null */");
+    case clang::TemplateArgument::ArgKind::TemplateExpansion:
+    case clang::TemplateArgument::ArgKind::Pack:
+      llvm_unreachable("Current ultima doesn't support parameter pack");
+    }
+  }
+
+  void print_template_arguments(const clang::TemplateArgumentList* tal){
+    for(auto&& x : tal->asArray()){
+      os << '_';
+      print_template_argument(x);
+    }
+  }
+
   void PrintCallArgs(clang::CallExpr *Call) {
     for (unsigned i = 0, e = Call->getNumArgs(); i != e; ++i) {
       if (clang::isa<clang::CXXDefaultArgExpr>(Call->getArg(i))) {
@@ -740,6 +791,9 @@ public:
 
   void VisitCallExpr(clang::CallExpr *Call) {
     PrintExpr(Call->getCallee());
+    if(auto f = clang::dyn_cast<clang::FunctionDecl>(Call->getCalleeDecl()))
+    if(auto list = f->getTemplateSpecializationArgs())
+      print_template_arguments(list);
     os << '(';
     PrintCallArgs(Call);
     os << ')';
@@ -2218,14 +2272,6 @@ public:
       ~auto_popper(){f.pop_back();}
     }_{func_arg_info};
 
-    if (D->isFunctionTemplateSpecialization())
-      os << "template<> ";
-    else if (!D->getDescribedFunctionTemplate()) {
-      for (unsigned I = 0, NumTemplateParams = D->getNumTemplateParameterLists();
-           I < NumTemplateParams; ++I)
-        printTemplateParameters(D->getTemplateParameterList(I));
-    }
-
     clang::CXXConstructorDecl *CDecl = clang::dyn_cast<clang::CXXConstructorDecl>(D);
     clang::CXXConversionDecl *ConversionDecl = clang::dyn_cast<clang::CXXConversionDecl>(D);
     if (!policy.SuppressSpecifiers) {
@@ -2256,12 +2302,14 @@ public:
       }
     }
     Proto += D->getNameInfo().getAsString();
+
     if(auto TArgs = D->getTemplateSpecializationArgs()) {
       auto backup = policy;
       policy.SuppressSpecifiers = false;
       llvm::raw_string_ostream Pos(Proto);
       auto _ = os.scoped_push(Pos);
-      printTemplateArguments(*TArgs);
+      sv.print_template_arguments(TArgs);
+      Pos.flush();
       policy = backup;
     }
 
@@ -2900,30 +2948,21 @@ public:
   }
 
   void VisitFunctionTemplateDecl(clang::FunctionTemplateDecl *D) {
-    prettyPrintPragmas(D->getTemplatedDecl());
-    // Print any leading template parameter lists.
-    if(auto FD = D->getTemplatedDecl()) {
-      for (unsigned I = 0, NumTemplateParams = FD->getNumTemplateParameterLists();
-           I < NumTemplateParams; ++I)
-        printTemplateParameters(FD->getTemplateParameterList(I));
-    }
-    VisitRedeclarableTemplateDecl(D);
-
-    // Never print "instantiations" for deduction guides (they don't really
-    // have them).
-    if (PrintInstantiation) {
-      clang::FunctionDecl *PrevDecl = D->getTemplatedDecl();
-      const clang::FunctionDecl *Def;
-      if (PrevDecl->isDefined(Def) && Def != PrevDecl)
-        return;
-      for (auto *I : D->specializations())
-        if (I->getTemplateSpecializationKind() == clang::TSK_ImplicitInstantiation) {
-          if (!PrevDecl->isThisDeclarationADefinition())
-            os << ";\n";
-          indent();
-          prettyPrintPragmas(I);
-          Visit(I);
-        }
+    bool first = true;
+    std::string str;
+    llvm::raw_string_ostream ros(str);
+    for(auto&& x : D->specializations()){
+      auto _ = os.scoped_push(ros);
+      if(first)
+        first = false;
+      else{
+        indent();
+        os << '\n';
+      }
+      Visit(x);
+      ros.flush();
+      *os.oss.front() << str;
+      str.clear();
     }
   }
 
