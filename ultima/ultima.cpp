@@ -2109,7 +2109,8 @@ public:
         && D->getQualifiedNameAsString() == "__clpy_elementwise_preprocess"
         && D->param_size() == 0
         && D->hasBody() == false){
-          os << "set_CIndexer_" << _ind->ndim << "(&_ind, i)";
+          os << "set_CIndexer_" << _ind->ndim << "(&_ind, i);\n";
+          indent() << "const size_t _ind_size = size_CIndexer_" << _ind->ndim << "(&_ind)";
         }
         return;
       }
@@ -2125,9 +2126,16 @@ public:
         if(_out_ind == func_arg_info.back().end())
           throw std::runtime_error("the function declaration annotated \"clpy_reduction_tag\" must be in a function which has CIndexer argument named \"_out_ind\"");
         if(D->getReturnType().getAsString() == "void"
-        && D->getQualifiedNameAsString() == "__clpy_reduction_set_cindex_in"
+        && D->getQualifiedNameAsString() == "__clpy_reduction_preprocess"
         && D->param_size() == 0
-        && D->hasBody() == false)
+        && D->hasBody() == false){
+          os << "const size_t _in_ind_size = size_CIndexer_" << _in_ind->ndim << "(&_in_ind);\n";
+          indent() << "const size_t _out_ind_size = size_CIndexer_" << _out_ind->ndim << "(&_out_ind)";
+        }
+        else if(D->getReturnType().getAsString() == "void"
+             && D->getQualifiedNameAsString() == "__clpy_reduction_set_cindex_in"
+             && D->param_size() == 0
+             && D->hasBody() == false)
           os << "set_CIndexer_" << _in_ind->ndim << "(&_in_ind, _j)";
         else if(D->getReturnType().getAsString() == "void"
              && D->getQualifiedNameAsString() == "__clpy_reduction_set_cindex_out"

@@ -25,7 +25,6 @@ cpdef _get_simple_elementwise_kernel(
       ${loop_prep};
       const size_t i = get_global_id(0); // TODO: Add offset and/or stride
       __attribute__((annotate("clpy_elementwise_tag"))) void __clpy_elementwise_preprocess();
-      const size_t _ind_size = size_CIndexer_${ndim}(&_ind);
       ${operation};
       ${after_loop};
     }
