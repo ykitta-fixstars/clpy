@@ -6,9 +6,9 @@ ERRORS_FILENAME=$WORKSPACE/erros.log
 # This script is kicked with $1=0 
 # only if "bash build_and_test.sh" has exited successfully.
 if [[ $1 -eq 0 ]]; then
-  BODY="Test(${BUILD_DISPLAY_NAME}, ${GIT_COMMIT}) passed in $(uname -n)."
+  BODY="Test (for ${GIT_COMMIT}) passed in $(uname -n)."
 else
-  BODY="Test(${BUILD_DISPLAY_NAME}, ${GIT_COMMIT}) failed in $(uname -n). 
+  BODY="Test (for ${GIT_COMMIT}) failed in $(uname -n). 
 \`\`\`$(cat ${ERRORS_FILENAME})\`\`\`"
 fi
 
