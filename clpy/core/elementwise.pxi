@@ -447,47 +447,6 @@ cdef list _get_out_args_with_params(
             raise ValueError('Out shape is mismatched')
     return out_args
 
-cdef tuple _get_raw_indexers_params(tuple params, operation):
-    # raw_indexers_params has tuple of ( name of raw array , index to access raw array)
-    # when operation is 'x[i] + x[n+i-1] + y[i];', raw_indexers_params has (('x', 'i'), ('x', 'n+i-1'), (y, 'i')).
-    raw_indexers_params = ()
-    cdef list raw_names = [];
-    for p in params:
-        if p.raw:
-            raw_names.append(p.name)
-    for op in operation.split(';'):
-        for p_name in raw_names:
-            target = p_name
-            target_len = len(target)
-            # TODO(tomoya.sakai): Cannot find array name with white space, e.g. 'y = x [i]'
-            last_matched = op.find(target + '[')
-            while last_matched != -1:
-                left_pos = last_matched + target_len
-                # TODO(tomoya.sakai): Nesting of '[' is not implemented. Wrong ']' is found if nested.
-                right_pos = op.find(']', left_pos)
-                if right_pos == -1:
-                    raise RuntimeError('Cannot find \']\'')
-                index = op[(left_pos+1):(right_pos)]
-                raw_indexers_params = raw_indexers_params + ((p_name, index), )
-                last_matched = op.find(target + '[', last_matched + target_len)
-    return raw_indexers_params
-
-
-def _get_raw_replaced_operation(operation, params, args_info, raw_indexers_params):
-    ndims={}
-    for i in range(len(params)):
-        if (params[i].raw):
-            type, dtype, ndim = <tuple>(args_info[i])
-            ndims[params[i].name] = ndim
-    for t in raw_indexers_params:
-        p_name, target_index = t
-        target = p_name + '[' + target_index + ']'
-        if operation.find(target) != -1:
-            replace_str = '{n}[get_CArrayIndexRaw_{ndim}(&{n}_info, {target_index})]'.format(n=p_name, ndim=ndims[p_name], target_index=target_index)
-            operation = operation.replace(target, replace_str)
-    return operation
-
-
 @util.memoize(for_each_device=True)
 def _get_elementwise_kernel(args_info, types, params, operation, name,
                             preamble, kwargs):
