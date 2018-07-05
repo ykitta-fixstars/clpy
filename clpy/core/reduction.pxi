@@ -14,7 +14,7 @@ cimport clpy.backend.opencl.utility
 cpdef _get_simple_reduction_kernel(
         name, local_size, reduce_type, params, identity,
         pre_map_expr, reduce_expr, post_map_expr,
-        type_preamble, input_expr, output_expr, output_store, preamble, options, ndim_in, ndim_out):
+        type_preamble, input_expr, output_expr, output_store, preamble, options):
     if identity is None:
         identity = '0'
 
@@ -82,8 +82,6 @@ cpdef _get_simple_reduction_kernel(
         output_expr=output_expr,
         output_store=output_store,
         preamble=preamble,
-        ndim_in=ndim_in,
-        ndim_out=ndim_out,
         typeof_size=clpy.backend.opencl.types.device_typeof_size)
     module = compile_with_cache(module_code, options)
     return module.get_function(name)
@@ -166,7 +164,7 @@ def _get_simple_reduction_function(
     return _get_simple_reduction_kernel(
         name, local_size, reduce_type, params, identity,
         routine[0], routine[1], routine[2],
-        type_preamble, input_expr, output_expr, output_store, _preamble, options, ndim_in, ndim_out)
+        type_preamble, input_expr, output_expr, output_store, _preamble, options)
 
 
 class simple_reduction_function(object):
@@ -290,7 +288,7 @@ def _get_reduction_kernel(
     return _get_simple_reduction_kernel(
         name, local_size, reduce_type, kernel_params, identity,
         map_expr, reduce_expr, post_map_expr,
-        type_preamble, input_expr, output_expr, output_store, preamble, options, ndim_in, ndim_out)
+        type_preamble, input_expr, output_expr, output_store, preamble, options)
 
 
 class ReductionKernel(object):

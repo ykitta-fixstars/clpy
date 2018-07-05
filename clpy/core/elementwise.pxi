@@ -14,7 +14,7 @@ import clpy.backend.opencl.types
 cimport clpy.backend.opencl.utility
 
 cpdef _get_simple_elementwise_kernel(
-        params, operation, name, preamble, ndim,
+        params, operation, name, preamble,
         loop_prep='', after_loop='', options=()):
     if loop_prep != '' or after_loop != '':
         raise NotImplementedError("clpy does not support this")
@@ -33,7 +33,6 @@ cpdef _get_simple_elementwise_kernel(
         operation=operation,
         name=name,
         preamble=preamble,
-        ndim=ndim,
         loop_prep=loop_prep,
         after_loop=after_loop)
     module = compile_with_cache(module_code, options)
@@ -510,7 +509,7 @@ def _get_elementwise_kernel(args_info, types, params, operation, name,
     operation = '\n'.join(op)
     return _get_simple_elementwise_kernel(
         kernel_params, operation, name,
-        preamble, ndim, **dict(kwargs))
+        preamble, **dict(kwargs))
 
 
 cdef class ElementwiseKernel:
@@ -694,7 +693,7 @@ def _get_ufunc_kernel(
     preamble = '\n'.join(types)
 
     return _get_simple_elementwise_kernel(
-        kernel_params, operation, name, preamble, ndim)
+        kernel_params, operation, name, preamble)
 
 
 cdef tuple _guess_routine_from_in_types(list ops, tuple in_types):
