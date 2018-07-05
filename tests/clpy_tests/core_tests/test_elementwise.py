@@ -594,7 +594,7 @@ class TestClpyElementwiseKernelwithChunk(unittest.TestCase):
                 'raw T x',
                 'T z',
                 "z = x[i * y;",     # second operation
-                'vector_mul_add')
+                'vector_mul_add')(x, dummy)
 
 
 @testing.gpu
