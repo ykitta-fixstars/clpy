@@ -1047,27 +1047,11 @@ public:
   }
 
   void VisitCXXNamedCastExpr(clang::CXXNamedCastExpr *Node) {
-    os << Node->getCastName() << '<';
+    os << '(';
     Node->getTypeAsWritten().print(os, Policy);
-    os << ">(";
+    os << ")(";
     PrintExpr(Node->getSubExpr());
     os << ')';
-  }
-
-  void VisitCXXStaticCastExpr(clang::CXXStaticCastExpr *Node) {
-    VisitCXXNamedCastExpr(Node);
-  }
-
-  void VisitCXXDynamicCastExpr(clang::CXXDynamicCastExpr *Node) {
-    VisitCXXNamedCastExpr(Node);
-  }
-
-  void VisitCXXReinterpretCastExpr(clang::CXXReinterpretCastExpr *Node) {
-    VisitCXXNamedCastExpr(Node);
-  }
-
-  void VisitCXXConstCastExpr(clang::CXXConstCastExpr *Node) {
-    VisitCXXNamedCastExpr(Node);
   }
 
   void VisitCXXTypeidExpr(clang::CXXTypeidExpr *Node) {
@@ -1184,7 +1168,9 @@ public:
   }
 
   void VisitCXXFunctionalCastExpr(clang::CXXFunctionalCastExpr *Node) {
-    Node->getType().print(os, Policy);
+    os << '(';
+    Node->getTypeAsWritten().print(os, Policy);
+    os << ')';
     // If there are no parens, this is list-initialization, and the braces are
     // part of the syntax of the inner construct.
     if (Node->getLParenLoc().isValid())

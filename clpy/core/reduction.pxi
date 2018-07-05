@@ -20,12 +20,6 @@ cpdef _get_simple_reduction_kernel(
 
     # Workaround for reduction kernel by Chainer
     # TODO(LWisteria): More neat and generic solution
-    #  C++ style cast -> C style cast
-    pre_map_expr = pre_map_expr .replace('T(', '(T)(').replace('_type_reduce(', '(_type_reduce)(')
-    reduce_expr = reduce_expr  .replace('T(', '(T)(').replace('_type_reduce(', '(_type_reduce)(')
-    post_map_expr = post_map_expr.replace('T(', '(T)(').replace('_type_reduce(', '(_type_reduce)(')
-    input_expr = input_expr   .replace('T(', '(T)(').replace('_type_reduce(', '(_type_reduce)(')
-    output_expr = output_expr  .replace('T(', '(T)(').replace('_type_reduce(', '(_type_reduce)(')
     #  _ind.size() -> _in_size
     pre_map_expr = pre_map_expr .replace('_in_ind.size()', '_in_size').replace('_out_ind.size()', '_out_size')
     reduce_expr = reduce_expr  .replace('_in_ind.size()', '_in_size').replace('_out_ind.size()', '_out_size')

@@ -21,8 +21,6 @@ cpdef _get_simple_elementwise_kernel(
 
     # Workaround for reduction kernel by Chainer
     # TODO(LWisteria): More neat and generic solution
-    #  C++ style cast -> C style cast
-    operation = operation .replace('T(', '(T)(')
     #  _ind.size() -> _ind_size
     operation = operation .replace('_ind.size()', '_ind_size')
 
