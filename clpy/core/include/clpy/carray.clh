@@ -339,6 +339,7 @@ CREATE_CINDXER(13)
 CREATE_CINDXER(14)
 CREATE_CINDXER(15)
 
+#undef CREATE_CINDEXER
 
 #define CREATE_CARRAY(_NDIM) \
 typedef struct { \
@@ -402,6 +403,8 @@ CREATE_CARRAY(13)
 CREATE_CARRAY(14)
 CREATE_CARRAY(15)
 
+#undef CREATE_CARRAY
+
 #ifdef __ULTIMA
 #define CREATE_CARRAY_FUNCTION(_NDIM) \
 template<typename T>\
@@ -436,6 +439,8 @@ CREATE_CARRAY_FUNCTION(14)
 CREATE_CARRAY_FUNCTION(15)
 static void __clpy_end_print_out() __attribute__((annotate("clpy_end_print_out")));
 #endif
+
+#undef CREATE_CARRAY_FUNCTION
 
 static char _floor_divide_c(const char x, const char y) {
   if (y == 0) return 0;
