@@ -6,10 +6,21 @@ ERRORS_FILENAME=$WORKSPACE/erros.log
 # This script is kicked with $1=0 
 # only if "bash build_and_test.sh" has exited successfully.
 if [[ $1 -eq 0 ]]; then
-  BODY="Test (for ${GIT_COMMIT}) passed in $(uname -n)."
+  BODY="Test (commit ${GIT_COMMIT}) passed in *$(uname -n)*."
 else
-  BODY="Test (for ${GIT_COMMIT}) failed in $(uname -n). 
-\`\`\`$(cat ${ERRORS_FILENAME})\`\`\`"
+  N_ERRORFILE_LINES=$(cat ${ERRORS_FILENAME} | wc -l)
+  N_CROP=50
+  BODY="Test (commit ${GIT_COMMIT}) failed in *$(uname -n)*.
+\`\`\`$(head -n ${N_CROP} ${ERRORS_FILENAME})\`\`\`"
+
+  # If the error file is too long,
+  # mention that there are more lines.
+  if [[ $N_ERRORFILE_LINES -gt $N_CROP ]]; then
+    BODY="$BODY
+
+... and more $(($N_ERRORFILE_LINES - $N_CROP)) lines"
+  fi
+
 fi
 
 
