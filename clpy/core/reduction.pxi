@@ -269,7 +269,7 @@ class simple_reduction_function(object):
 def _get_reduction_kernel(
         params, args_info, types,
         name, local_size, reduce_type, identity, map_expr, reduce_expr,
-        post_map_expr, preamble, options, raw_indexers_params):
+        post_map_expr, preamble, options):
     kernel_params, ndims = _get_kernel_params(params, args_info)
     ndim_in = ndims['_in_ind']
     ndim_out = ndims['_out_ind']
@@ -343,7 +343,6 @@ class ReductionKernel(object):
             _get_param_info('CIndexer _in_ind, CIndexer _out_ind', False) +
             _get_param_info('kernel_arg_size_t _local_stride', True) +
             _get_param_info('LocalMem _sdata', True))
-        self.raw_indexers_params = _get_raw_indexers_params(self.in_params + self.out_params, map_expr + post_map_expr)
         self.identity = identity
         self.reduce_expr = reduce_expr
         self.map_expr = map_expr
@@ -445,7 +444,7 @@ class ReductionKernel(object):
             self.params, args_info, types,
             self.name, local_size, self.reduce_type, self.identity,
             self.map_expr, self.reduce_expr, self.post_map_expr,
-            self.preamble, self.options, self.raw_indexers_params)
+            self.preamble, self.options)
 
         # TODO(okuta) set actual size
         shared_mem = 32 * local_size

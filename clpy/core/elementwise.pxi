@@ -490,7 +490,7 @@ def _get_raw_replaced_operation(operation, params, args_info, raw_indexers_param
 
 @util.memoize(for_each_device=True)
 def _get_elementwise_kernel(args_info, types, params, operation, name,
-                            preamble, raw_indexers_params, kwargs):
+                            preamble, kwargs):
     kernel_params, ndims = _get_kernel_params(params, args_info)
     ndim = ndims['_ind']
     types_preamble = '\n'.join(
@@ -561,7 +561,6 @@ cdef class ElementwiseKernel:
         readonly bint reduce_dims
         readonly str preamble
         readonly object kwargs
-        readonly tuple raw_indexers_params
 
     def __init__(self, in_params, out_params, operation,
                  name='kernel', reduce_dims=True, preamble='', **kwargs):
@@ -577,7 +576,6 @@ cdef class ElementwiseKernel:
         param_rest = _get_param_info('CIndexer _ind', False)
         self.params = self.in_params + self.out_params + param_rest
 
-        self.raw_indexers_params = _get_raw_indexers_params(self.params, operation)
         self.operation = operation
         self.name = name
         self.reduce_dims = reduce_dims
@@ -660,7 +658,7 @@ cdef class ElementwiseKernel:
 
         kern = _get_elementwise_kernel(
             args_info, types, self.params, self.operation,
-            self.name, self.preamble, self.raw_indexers_params, self.kwargs)
+            self.name, self.preamble, self.kwargs)
         kern.linear_launch(indexer.size, inout_args)
         return ret
 
@@ -669,7 +667,6 @@ cdef class ElementwiseKernel:
 def _get_ufunc_kernel(
         in_types, out_types, routine, args_info, params, name, preamble):
     kernel_params, ndims = _get_kernel_params(params, args_info)
-    ndim = ndims['_ind']
 
     types = []
     op = []
