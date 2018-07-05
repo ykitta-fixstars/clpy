@@ -11,6 +11,8 @@ typedef unsigned long ulong;
 typedef unsigned long size_t;
 typedef long ptrdiff_t;
 
+#define half __clpy__half
+
 static unsigned int atomic_cmpxchg(volatile __global unsigned int*, unsigned int, unsigned int);
 static double abs(double);
 static float abs(float);
