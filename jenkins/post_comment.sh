@@ -11,7 +11,9 @@ else
   N_ERRORFILE_LINES=$(cat ${ERRORS_FILENAME} | wc -l)
   N_CROP=50
   BODY="Test (commit ${GIT_COMMIT}) failed in *$(uname -n)*.
-\`\`\`$(head -n ${N_CROP} ${ERRORS_FILENAME})\`\`\`"
+\`\`\`
+$(head -n ${N_CROP} ${ERRORS_FILENAME})
+\`\`\`"
 
   # If the error file is too long,
   # mention that there are more lines.
