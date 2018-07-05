@@ -25,6 +25,38 @@
 
 namespace ultima{
 
+namespace detail{
+
+template<std::size_t N>struct priority : priority<N-1>{};
+template<>struct priority<0>{};
+
+struct hasPrintTemplateArgumentList{
+  template<typename T, typename... Args>
+  static auto check(priority<1>, Args&&...) -> decltype(T::PrintTemplateArgumentList(std::declval<Args>()...), std::true_type{});
+  template<typename T, typename... Args>
+  static std::false_type check(priority<0>, Args&&...);
+};
+
+template<typename T, typename... Args>
+static inline auto printTemplateArgumentList(Args&&... args)->decltype(T::PrintTemplateArgumentList(std::forward<Args>(args)...)){
+  return T::PrintTemplateArgumentList(std::forward<Args>(args)...);
+}
+
+}
+
+}
+
+namespace clang{
+
+template<typename... Args, typename std::enable_if<decltype(ultima::detail::hasPrintTemplateArgumentList::check<clang::TemplateSpecializationType>(ultima::detail::priority<1>{}, std::declval<Args>()...))::value, std::nullptr_t>::type = nullptr>
+static inline auto printTemplateArgumentList(Args&&... args)->decltype(ultima::detail::printTemplateArgumentList<clang::TemplateSpecializationType>(std::forward<Args>(args)...)){
+  return ultima::detail::printTemplateArgumentList<clang::TemplateSpecializationType>(std::forward<Args>(args)...);
+}
+
+}
+
+namespace ultima{
+
 struct ostreams{
   std::vector<llvm::raw_ostream*> oss;
   ostreams(llvm::raw_ostream& os):oss{&os}{}
@@ -457,8 +489,7 @@ public:
       os << "template ";
     os << Node->getNameInfo();
     if (Node->hasExplicitTemplateArgs())
-      clang::TemplateSpecializationType::PrintTemplateArgumentList(
-          os, Node->template_arguments(), Policy);
+      clang::printTemplateArgumentList(os, Node->template_arguments(), Policy);
   }
 
   void VisitDependentScopeDeclRefExpr(clang::DependentScopeDeclRefExpr *Node) {
@@ -468,8 +499,7 @@ public:
       os << "template ";
     os << Node->getNameInfo();
     if (Node->hasExplicitTemplateArgs())
-      clang::TemplateSpecializationType::PrintTemplateArgumentList(
-          os, Node->template_arguments(), Policy);
+      clang::printTemplateArgumentList(os, Node->template_arguments(), Policy);
   }
 
   void VisitUnresolvedLookupExpr(clang::UnresolvedLookupExpr *Node) {
@@ -479,8 +509,7 @@ public:
       os << "template ";
     os << Node->getNameInfo();
     if (Node->hasExplicitTemplateArgs())
-      clang::TemplateSpecializationType::PrintTemplateArgumentList(
-          os, Node->template_arguments(), Policy);
+      clang::printTemplateArgumentList(os, Node->template_arguments(), Policy);
   }
 
   void VisitPredefinedExpr(clang::PredefinedExpr *Node) {
@@ -688,8 +717,7 @@ public:
       os << "template ";
     os << Node->getMemberNameInfo();
     if (Node->hasExplicitTemplateArgs())
-      clang::TemplateSpecializationType::PrintTemplateArgumentList(
-          os, Node->template_arguments(), Policy);
+      clang::printTemplateArgumentList(os, Node->template_arguments(), Policy);
   }
   void VisitExtVectorElementExpr(clang::ExtVectorElementExpr *Node) {
     PrintExpr(Node->getBase());
@@ -1066,8 +1094,7 @@ public:
 
       if (Args->size() != 1) {
         os << "operator\"\"" << Node->getUDSuffix()->getName();
-        clang::TemplateSpecializationType::PrintTemplateArgumentList(
-            os, Args->asArray(), Policy);
+        clang::printTemplateArgumentList(os, Args->asArray(), Policy);
         os << "()";
         return;
       }
@@ -1386,8 +1413,7 @@ public:
       os << "template ";
     os << Node->getMemberNameInfo();
     if (Node->hasExplicitTemplateArgs())
-      clang::TemplateSpecializationType::PrintTemplateArgumentList(
-          os, Node->template_arguments(), Policy);
+      clang::printTemplateArgumentList(os, Node->template_arguments(), Policy);
   }
 
   void VisitUnresolvedMemberExpr(clang::UnresolvedMemberExpr *Node) {
@@ -1404,8 +1430,7 @@ public:
       os << "template ";
     os << Node->getMemberNameInfo();
     if (Node->hasExplicitTemplateArgs())
-      clang::TemplateSpecializationType::PrintTemplateArgumentList(
-          os, Node->template_arguments(), Policy);
+      clang::printTemplateArgumentList(os, Node->template_arguments(), Policy);
   }
 
   static const char *getTypeTraitName(clang::TypeTrait TT) {
