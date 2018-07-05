@@ -57,7 +57,7 @@ cpdef _get_simple_reduction_kernel(
         size_t  _J = _J_offset;
         for (size_t _j = _i + _j_offset; _j < _in_size;
              _j += _j_stride, _J += _J_stride) {
-          set_CIndexer_${ndim_in}(&_in_ind, _j);
+          __attribute__((annotate("clpy_reduction_tag"))) void __clpy_reduction_set_cindex_in();
           ${input_expr}
           _type_reduce _a = ${pre_map_expr};
           _s = REDUCE(_s, _a);
@@ -73,7 +73,7 @@ cpdef _get_simple_reduction_kernel(
           barrier(CLK_LOCAL_MEM_FENCE);
         }
         if (_J_offset == 0 && _i < _out_size) {
-          set_CIndexer_${ndim_out}(&_out_ind, _i);
+          __attribute__((annotate("clpy_reduction_tag"))) void __clpy_reduction_set_cindex_out();
           ${output_expr}
           POST_MAP(_s);
           ${output_store}

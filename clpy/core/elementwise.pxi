@@ -28,8 +28,8 @@ cpdef _get_simple_elementwise_kernel(
     ${preamble}
     __kernel void ${name}(${params}) {
       ${loop_prep};
-      set_CIndexer_${ndim}(&_ind, get_global_id(0));
       const size_t i = get_global_id(0); // TODO: Add offset and/or stride
+      __attribute__((annotate("clpy_elementwise_tag"))) void __clpy_elementwise_preprocess();
       const size_t _ind_size = size_CIndexer_${ndim}(&_ind);
       ${operation};
       ${after_loop};
@@ -178,7 +178,7 @@ cpdef _get_kernel_params(tuple params, tuple args_info):
         type, dtype, ndim = <tuple>(args_info[i])
         name = p.name
         if type is Indexer:
-            t = 'CIndexer_%d' % ndim
+            t = 'CIndexer<%d>' % ndim
             ndims[name] = ndim
         elif type is Size_t:
             t = 'kernel_arg_size_t'

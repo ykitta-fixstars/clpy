@@ -2076,8 +2076,46 @@ public:
 
   void VisitFunctionDecl(clang::FunctionDecl *D) {
     if (!D->getDescribedFunctionTemplate() &&
-        !D->isFunctionTemplateSpecialization())
-      prettyPrintPragmas(D);
+        !D->isFunctionTemplateSpecialization()){
+      const auto annons = prettyPrintPragmas(D);
+      for(auto&& x : annons) if(x == "clpy_elementwise_tag"){
+        auto _ind = std::find_if(func_arg_info.back().begin(), func_arg_info.back().end(), [](const function_special_argument_info& x){
+          return x.arg_flag == function_special_argument_info::cindex && x.name == "_ind";
+        });
+        if(_ind == func_arg_info.back().end())
+          throw std::runtime_error("the function declaration annotated \"clpy_elementwise_tag\" must be in a function which has CIndexer argument named \"_ind\"");
+        if(D->getReturnType().getAsString() == "void"
+        && D->getQualifiedNameAsString() == "__clpy_elementwise_preprocess"
+        && D->param_size() == 0
+        && D->hasBody() == false){
+          os << "set_CIndexer_" << _ind->ndim << "(&_ind, i)";
+        }
+        return;
+      }
+      else if(x == "clpy_reduction_tag"){
+        auto _in_ind = std::find_if(func_arg_info.back().begin(), func_arg_info.back().end(), [](const function_special_argument_info& x){
+          return x.arg_flag == function_special_argument_info::cindex && x.name == "_in_ind";
+        });
+        if(_in_ind == func_arg_info.back().end())
+          throw std::runtime_error("the function declaration annotated \"clpy_reduction_tag\" must be in a function which has CIndexer argument named \"_in_ind\"");
+        auto _out_ind = std::find_if(func_arg_info.back().begin(), func_arg_info.back().end(), [](const function_special_argument_info& x){
+          return x.arg_flag == function_special_argument_info::cindex && x.name == "_out_ind";
+        });
+        if(_out_ind == func_arg_info.back().end())
+          throw std::runtime_error("the function declaration annotated \"clpy_reduction_tag\" must be in a function which has CIndexer argument named \"_out_ind\"");
+        if(D->getReturnType().getAsString() == "void"
+        && D->getQualifiedNameAsString() == "__clpy_reduction_set_cindex_in"
+        && D->param_size() == 0
+        && D->hasBody() == false)
+          os << "set_CIndexer_" << _in_ind->ndim << "(&_in_ind, _j)";
+        else if(D->getReturnType().getAsString() == "void"
+             && D->getQualifiedNameAsString() == "__clpy_reduction_set_cindex_out"
+             && D->param_size() == 0
+             && D->hasBody() == false)
+          os << "set_CIndexer_" << _out_ind->ndim << "(&_out_ind, _i)";
+        return;
+      }
+    }
 
     struct auto_popper{
       std::vector<std::vector<function_special_argument_info>>& f;
@@ -2393,7 +2431,18 @@ public:
   }
 
   void VisitVarDecl(clang::VarDecl *D) {
-    prettyPrintPragmas(D);
+    {
+      const auto annons = prettyPrintPragmas(D);
+      auto template_type = D->getType()->getAs<clang::TemplateSpecializationType>();
+      if(annons.empty())
+        if(template_type)
+          if(template_type->getTemplateName().getAsTemplateDecl()->getQualifiedNameAsString() == "CIndexer"){
+            const auto ndim = clang::dyn_cast<clang::IntegerLiteral>(template_type->begin()->getAsExpr())->getValue().getLimitedValue();
+            func_arg_info.back().emplace_back(function_special_argument_info{D->getNameAsString(), "", function_special_argument_info::cindex, static_cast<int>(ndim), true});
+            os << "CIndexer_" << ndim << ' ' << D->getName();
+            return;
+          }
+    }
 
     clang::QualType T = D->getTypeSourceInfo()
       ? D->getTypeSourceInfo()->getType()
