@@ -2721,6 +2721,8 @@ int main(int argc, const char** argv){
   params.emplace_back("-std=c++14");
   params.emplace_back("-w");
   params.emplace_back("-Wno-narrowing");
+  params.emplace_back("-includecl_stub.hpp");
+  params.emplace_back("-includecuda_stub.hpp");
   clang::tooling::CommonOptionsParser options_parser(argc = static_cast<int>(params.size()), params.data(), tool_category);
   clang::tooling::ClangTool tool(options_parser.getCompilations(), options_parser.getSourcePathList());
   return tool.run(clang::tooling::newFrontendActionFactory<ultima::registrar::ast_frontend_action>().get());
