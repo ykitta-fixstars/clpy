@@ -127,6 +127,7 @@ setup(
             # 'core/include/clpy/complex/ctanhf.h',
             # 'core/include/clpy/complex/math_private.h',
             'core/include/clpy/carray.clh',
+            'core/include/cupy/carray.hpp',
         ],
     },
     data_files = [
