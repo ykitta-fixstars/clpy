@@ -1058,7 +1058,28 @@ public:
     }
   }
 
+  static clang::Expr* dig_expr(clang::Expr* e){
+    if(auto p = clang::dyn_cast<clang::ParenExpr>(e))
+      return dig_expr(p->getSubExpr());
+    if(auto ic = clang::dyn_cast<clang::ImplicitCastExpr>(e))
+      return dig_expr(ic->getSubExpr());
+    return e;
+  }
+
   void VisitCXXMemberCallExpr(clang::CXXMemberCallExpr *Node) {
+    auto member_expr = clang::dyn_cast<clang::MemberExpr>(Node->getCallee());
+    auto base = member_expr->getBase();
+    auto CIndexer = base->getType()->getUnqualifiedDesugaredType()->getAs<clang::RecordType>();
+    if(CIndexer
+    && CIndexer->getDecl()->getName() == "CIndexer"
+    && member_expr->getMemberNameInfo().getAsString() == "size"){
+      auto ind = dig_expr(base);
+      if(clang::dyn_cast<clang::DeclRefExpr>(ind) == nullptr)
+        throw std::runtime_error("Current ultima only support calling CIndexer::size() with a CIndexer object.");
+      Visit(ind);
+      os << "_size";
+      return;
+    }
     // If we have a conversion operator call only print the argument.
     auto *MD = Node->getMethodDecl();
     if (MD && clang::isa<clang::CXXConversionDecl>(MD)) {

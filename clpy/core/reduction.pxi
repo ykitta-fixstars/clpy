@@ -18,15 +18,6 @@ cpdef _get_simple_reduction_kernel(
     if identity is None:
         identity = '0'
 
-    # Workaround for reduction kernel by Chainer
-    # TODO(LWisteria): More neat and generic solution
-    #  _ind.size() -> _in_size
-    pre_map_expr = pre_map_expr .replace('_in_ind.size()', '_in_size').replace('_out_ind.size()', '_out_size')
-    reduce_expr = reduce_expr  .replace('_in_ind.size()', '_in_size').replace('_out_ind.size()', '_out_size')
-    post_map_expr = post_map_expr.replace('_in_ind.size()', '_in_size').replace('_out_ind.size()', '_out_size')
-    input_expr = input_expr   .replace('_in_ind.size()', '_in_size').replace('_out_ind.size()', '_out_size')
-    output_expr = output_expr  .replace('_in_ind.size()', '_in_size').replace('_out_ind.size()', '_out_size')
-
     module_code = string.Template(string.Template('''
     typedef ${typeof_size} kernel_arg_size_t;
     ${type_preamble}
@@ -41,21 +32,21 @@ cpdef _get_simple_reduction_kernel(
     typedef ${reduce_type} _type_reduce;
     __kernel void ${name}(${params}) {
       const size_t lid = get_local_id(0);
-      const size_t _in_size = size_CIndexer_${ndim_in}(&_in_ind);
-      const size_t _out_size = size_CIndexer_${ndim_out}(&_out_ind);
+      const size_t _in_ind_size = size_CIndexer_${ndim_in}(&_in_ind);
+      const size_t _out_ind_size = size_CIndexer_${ndim_out}(&_out_ind);
 
       const size_t _J_offset = lid / _local_stride;
-      const size_t  _j_offset = _J_offset * _out_size;
+      const size_t  _j_offset = _J_offset * _out_ind_size;
       const size_t  _J_stride = ${local_size};
-      const size_t  _j_stride = ${local_size} * _out_size;
+      const size_t  _j_stride = ${local_size} * _out_ind_size;
 
       for (size_t _i_base = get_group_id(0) * _local_stride;
-           _i_base < _out_size;
+           _i_base < _out_ind_size;
            _i_base += get_num_groups(0) * _local_stride) {
         _type_reduce _s = (_type_reduce)${identity};
         const size_t  _i = _i_base + lid % _local_stride;
         size_t  _J = _J_offset;
-        for (size_t _j = _i + _j_offset; _j < _in_size;
+        for (size_t _j = _i + _j_offset; _j < _in_ind_size;
              _j += _j_stride, _J += _J_stride) {
           __attribute__((annotate("clpy_reduction_tag"))) void __clpy_reduction_set_cindex_in();
           ${input_expr}
@@ -72,7 +63,7 @@ cpdef _get_simple_reduction_kernel(
           _s = _sdata[lid];
           barrier(CLK_LOCAL_MEM_FENCE);
         }
-        if (_J_offset == 0 && _i < _out_size) {
+        if (_J_offset == 0 && _i < _out_ind_size) {
           __attribute__((annotate("clpy_reduction_tag"))) void __clpy_reduction_set_cindex_out();
           ${output_expr}
           POST_MAP(_s);

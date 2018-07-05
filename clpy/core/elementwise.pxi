@@ -19,11 +19,6 @@ cpdef _get_simple_elementwise_kernel(
     if loop_prep != '' or after_loop != '':
         raise NotImplementedError("clpy does not support this")
 
-    # Workaround for reduction kernel by Chainer
-    # TODO(LWisteria): More neat and generic solution
-    #  _ind.size() -> _ind_size
-    operation = operation .replace('_ind.size()', '_ind_size')
-
     module_code = string.Template('''
     ${preamble}
     __kernel void ${name}(${params}) {
