@@ -12,6 +12,9 @@ cimport clpy.backend.opencl.env
 import warnings
 import functools
 import operator
+import subprocess
+import tempfile
+import time
 
 cdef class Indexer:
     def __init__(self, tuple shape):
@@ -126,9 +129,34 @@ cpdef str _get_cuda_path():
 
     return _cuda_path
 
+class TempFile:
+    def __init__(self, filename, source):
+        self.fn = filename
+        self.s = source
+    def __enter__(self):
+        with open(self.fn, 'w') as f:
+            f.write(self.s)
+    def __exit__(self, exception_type, exception_value, traceback):
+        if os.getenv("CLPY_SAVE_PRE_KERNEL_SOURCE") != "1":
+            os.remove(self.fn)
+
 cpdef function.Module compile_with_cache(
         str source, tuple options=(), arch=None, cachd_dir=None):
     source = _clpy_header + '\nstatic void __clpy_begin_print_out() __attribute__((annotate("clpy_begin_print_out")));\n' + source + '\nstatic void __clpy_end_print_out() __attribute__((annotate("clpy_end_print_out")));\n'
+
+    filename = tempfile.gettempdir() + "/" + str(time.monotonic()) + ".cpp"
+
+    with TempFile(filename, source) as tf:
+        proc = subprocess.Popen('{0}/ultima/ultima {1} -- -I {0}/clpy/core/include'.format(clpy.__path__[0]+"/../", filename).strip().split(" "), stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
+        try:
+            source, errstream = proc.communicate(timeout=15)
+            proc.wait()
+        except subprocess.TimeoutExpired:
+            proc.kill()
+            source, errstream = proc.communicate()
+
+        if proc.returncode != 0 and len(errstream) > 0:
+            raise clpy.backend.ultima.exceptions.UltimaRuntimeError(proc.returncode, errstream)
 
     extra_source = _get_header_source()
     options += ('-I%s' % _get_header_dir_path(),)
