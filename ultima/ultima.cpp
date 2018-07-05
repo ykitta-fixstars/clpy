@@ -1697,6 +1697,8 @@ public:
     for (auto *x : D->getAttrs()) {
       if (x->isInherited() || x->isImplicit())
         continue;
+      if(auto aa = clang::dyn_cast<clang::AnnotateAttr>(x))
+        continue;
       switch (x->getKind()) {
 #define ATTR(X)
 #define PRAGMA_SPELLING_ATTR(X) case clang::attr::X:
@@ -1715,6 +1717,32 @@ public:
       return;
 
     for (auto *x : D->getAttrs()) {
+      if(auto aa = clang::dyn_cast<clang::AnnotateAttr>(x)){
+        if(aa->getAnnotation() == "cl_global"){
+          os << "__global ";
+          continue;
+        }
+        else if(aa->getAnnotation() == "cl_kernel"){
+          os << "__kernel ";
+          continue;
+        }
+        else if(aa->getAnnotation() == "cl_local"){
+          os << "__local ";
+          continue;
+        }
+        else if(aa->getAnnotation() == "cu_global"){
+          os << "__global__ ";
+          continue;
+        }
+        else if(aa->getAnnotation() == "cu_device"){
+          os << "__device__ ";
+          continue;
+        }
+        else if(aa->getAnnotation() == "cu_shared"){
+          os << "__shared__ ";
+          continue;
+        }
+      }
       switch (x->getKind()) {
 #define ATTR(X)
 #define PRAGMA_SPELLING_ATTR(X) case clang::attr::X:
