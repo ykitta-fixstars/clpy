@@ -1,5 +1,9 @@
 #pragma once
 
+#ifdef __ULTIMA
+#include<clpy/carray.clh>
+#endif
+
 // CArray
 template <typename T, int _ndim>
 class CArray {

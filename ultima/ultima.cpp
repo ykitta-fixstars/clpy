@@ -94,9 +94,21 @@ class preprocessor : public clang::PPCallbacks{
     if(filename == "cuda_stub.hpp" || filename == "cl_stub.hpp")
       return;
     llvm::outs() << "#include";
+    std::string fn;
+    static constexpr const char cupy_dir[] = "cupy/";
+    static constexpr std::size_t cupy_dir_length = sizeof(cupy_dir)-1;
+    static constexpr const char hpp_ext[] = ".hpp";
+    static constexpr std::size_t hpp_ext_length = sizeof(hpp_ext)-1;
+    if(filename.startswith(cupy_dir))
+      if(filename.endswith(hpp_ext))
+        fn = "clpy/" + filename.substr(cupy_dir_length, filename.size()-cupy_dir_length-hpp_ext_length).str() + ".clh";
+      else
+        fn = "clpy/" + filename.substr(cupy_dir_length, filename.size()-cupy_dir_length).str();
+    else
+      fn = filename;
     output(
       is_angled ? '<'             : '"',
-      filename,
+      fn,
       is_angled ? '>'             : '"'
     );
   }

@@ -47,7 +47,7 @@ cdef class LocalMem:
 cdef list _clpy_header_list = [
 # TODO(LWisteria): implement complex
 #    'clpy/complex.cuh',
-    'clpy/carray.clh',
+    'cupy/carray.hpp',
 ]
 cdef str _clpy_header = ''.join(
     ['#include <%s>\n' % i for i in _clpy_header_list])
