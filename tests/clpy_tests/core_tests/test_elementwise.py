@@ -6,6 +6,7 @@ import six
 import clpy
 # from clpy import backend
 from clpy.backend.opencl.exceptions import OpenCLProgramBuildError
+from clpy.backend.ultima.exceptions import UltimaRuntimeError
 # from clpy import core
 from clpy import testing
 
@@ -600,7 +601,7 @@ class TestClpyElementwiseKernelwithChunk(unittest.TestCase):
 class TestElementwiseRaiseExceptions(unittest.TestCase):
 
     def test_undeclared_identifier(self):
-        with six.assertRaisesRegex(self, OpenCLProgramBuildError,
+        with six.assertRaisesRegex(self, UltimaRuntimeError,
                                    'undeclared identifier'):
             x = clpy.core.array(numpy.array([1], dtype="float32"))
             clpy.ElementwiseKernel(
