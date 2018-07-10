@@ -55,7 +55,19 @@ export LIBRARY_PATH=${LIBRARY_PATH}:${AMDAPPSDKROOT}/lib/x86_64
 
 and add ldconfig on `/etc/ldconf.so.d/` and `$ sudo ldconfig`.
 
-After OpenCL is successfully installed, install ClPy.
+Second, install LLVM/Clang.
+Current ClPy requires LLVM/Clang 4.0, 5.0, or 6.0.
+We **strongly** recommend that you build LLVM/Clang from the source codes and install it.
+However, at least in Ubuntu 16.04, you can use the LLVM/Clang from the Ubuntu official package repository.
+In that case, you need to set `PATH` and `CPLUS_INCLUDE_PATH` environment variables like below.
+
+```console
+# apt install clang-6.0 libclang-6.0-dev
+$ export PATH=/usr/lib/llvm-6.0/bin:$PATH
+$ export CPLUS_INCLUDE_PATH=/usr/lib/llvm-6.0/include
+```
+
+After OpenCL and LLVM/Clang is successfully installed, install ClPy.
 
 ```console
 $ pip install cython
