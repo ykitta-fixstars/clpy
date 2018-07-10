@@ -305,7 +305,7 @@ from clpy.linalg.product import dot  # NOQA
 # from clpy.linalg.product import kron  # NOQA
 # from clpy.linalg.product import matmul  # NOQA
 # from clpy.linalg.product import outer  # NOQA
-# from clpy.linalg.product import tensordot  # NOQA
+from clpy.linalg.product import tensordot  # NOQA
 from clpy.linalg.product import vdot  # NOQA
 
 # from clpy.linalg.norms import trace  # NOQA
