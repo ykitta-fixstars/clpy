@@ -57,7 +57,7 @@ and add ldconfig on `/etc/ldconf.so.d/` and `$ sudo ldconfig`.
 
 After OpenCL is successfully installed, install ClPy.
 
-```sh
+```console
 $ pip install cython
 $ python setup.py install
 ```
@@ -75,7 +75,7 @@ It's confirmed that ClPy works with [Chainer v3.3.0](https://github.com/chainer/
 
 ### Tests
 
-```sh
+```console
 $ pip install pytest
 $ cd tests/you/want
 $ python -m pytest test_you_want.py
