@@ -125,7 +125,7 @@ cpdef inline bint get_c_contiguity(
 cpdef vector.vector[Py_ssize_t] infer_unknown_dimension(
         vector.vector[Py_ssize_t]& shape, Py_ssize_t size) except *:
     cdef vector.vector[Py_ssize_t] ret = shape
-    cdef Py_ssize_t cnt=0, index=-1, new_size=1
+    cdef Py_ssize_t cnt = 0, index = -1, new_size = 1
     for i in range(shape.size()):
         if shape[i] < 0:
             cnt += 1
@@ -152,7 +152,7 @@ cpdef int _extract_slice_element(x) except *:
 
 @cython.profile(False)
 cpdef slice complete_slice(slice slc, Py_ssize_t dim):
-    cpdef Py_ssize_t start=0, stop=0, step=0
+    cpdef Py_ssize_t start = 0, stop = 0, step = 0
     cpdef bint start_none, stop_none
     if slc.step is None:
         step = 1

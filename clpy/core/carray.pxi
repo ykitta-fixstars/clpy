@@ -1,7 +1,9 @@
+import functools
+import operator
 import os
+import warnings
 
 from clpy import backend
-
 from clpy.backend cimport function
 # from clpy.backend cimport runtime
 cimport clpy.backend.opencl.api
@@ -9,9 +11,6 @@ cimport clpy.backend.opencl.utility
 import clpy.backend.opencl.env
 cimport clpy.backend.opencl.env
 
-import warnings
-import functools
-import operator
 
 cdef class Indexer:
     def __init__(self, tuple shape):
@@ -26,7 +25,8 @@ cdef class Indexer:
         return len(self.shape)
 
     def get_size(self):
-        return cython.sizeof(Py_ssize_t) * (1 + self.ndim * 2)  # size + shape_and_stride
+        # size + shape_and_stride
+        return cython.sizeof(Py_ssize_t) * (1 + self.ndim * 2)
 
 cdef class Size_t:
     def __init__(self, size_t val):
@@ -42,8 +42,8 @@ cdef class LocalMem:
         return 1
 
 cdef list _clpy_header_list = [
-# TODO(LWisteria): implement complex
-#    'clpy/complex.cuh',
+    # TODO(LWisteria): implement complex
+    # 'clpy/complex.cuh',
     'clpy/carray.clh',
 ]
 cdef str _clpy_header = ''.join(
@@ -52,27 +52,27 @@ cdef str _clpy_header = ''.join(
 # This is indirect include header list.
 # These header files are subject to a hash key.
 cdef list _clpy_extra_header_list = [
-# TODO(LWisteria): implement complex
-#    'clpy/complex/complex.h',
-#    'clpy/complex/math_private.h',
-#    'clpy/complex/complex_inl.h',
-#    'clpy/complex/arithmetic.h',
-#    'clpy/complex/cproj.h',
-#    'clpy/complex/cexp.h',
-#    'clpy/complex/cexpf.h',
-#    'clpy/complex/clog.h',
-#    'clpy/complex/clogf.h',
-#    'clpy/complex/cpow.h',
-#    'clpy/complex/ccosh.h',
-#    'clpy/complex/ccoshf.h',
-#    'clpy/complex/csinh.h',
-#    'clpy/complex/csinhf.h',
-#    'clpy/complex/ctanh.h',
-#    'clpy/complex/ctanhf.h',
-#    'clpy/complex/csqrt.h',
-#    'clpy/complex/csqrtf.h',
-#    'clpy/complex/catrig.h',
-#    'clpy/complex/catrigf.h',
+    # TODO(LWisteria): implement complex
+    # 'clpy/complex/complex.h',
+    # 'clpy/complex/math_private.h',
+    # 'clpy/complex/complex_inl.h',
+    # 'clpy/complex/arithmetic.h',
+    # 'clpy/complex/cproj.h',
+    # 'clpy/complex/cexp.h',
+    # 'clpy/complex/cexpf.h',
+    # 'clpy/complex/clog.h',
+    # 'clpy/complex/clogf.h',
+    # 'clpy/complex/cpow.h',
+    # 'clpy/complex/ccosh.h',
+    # 'clpy/complex/ccoshf.h',
+    # 'clpy/complex/csinh.h',
+    # 'clpy/complex/csinhf.h',
+    # 'clpy/complex/ctanh.h',
+    # 'clpy/complex/ctanhf.h',
+    # 'clpy/complex/csqrt.h',
+    # 'clpy/complex/csqrtf.h',
+    # 'clpy/complex/catrig.h',
+    # 'clpy/complex/catrigf.h',
 ]
 
 cdef str _header_path_cache = None
@@ -134,7 +134,12 @@ cpdef function.Module compile_with_cache(
     options += (' -cl-fp32-correctly-rounded-divide-sqrt', )
     optionStr = functools.reduce(operator.add, options)
 
-    program = clpy.backend.opencl.utility.CreateProgram([source.encode('utf-8')], clpy.backend.opencl.env.get_context(), clpy.backend.opencl.env.num_devices, clpy.backend.opencl.env.get_devices_ptrs(), optionStr.encode('utf-8'))
+    program = clpy.backend.opencl.utility.CreateProgram(
+        [source.encode('utf-8')],
+        clpy.backend.opencl.env.get_context(),
+        clpy.backend.opencl.env.num_devices,
+        clpy.backend.opencl.env.get_devices_ptrs(),
+        optionStr.encode('utf-8'))
     cdef function.Module module = function.Module()
     module.set(program)
     return module
