@@ -1,27 +1,27 @@
+import os
+import re
+import tempfile
+import time
+
 cimport api
 cimport env
-import re
-import os
-import time
-import tempfile
 from cpython cimport array
 from exceptions cimport check_status
 from libc.stdlib cimport malloc
 from libc.string cimport memcpy
 
-################################################################################
+###############################################################################
 # helpers
 
 cdef cl_uint GetDeviceMemBaseAddrAlign(cl_device_id device):
     cdef cl_uint[1] valptrs
     cdef size_t[1] retptrs
     cdef cl_int status = api.clGetDeviceInfo(
-            device,
-            <cl_device_info>CL_DEVICE_MEM_BASE_ADDR_ALIGN,
-            <size_t>sizeof(cl_uint),
-            <void *>&valptrs[0],
-            <size_t *>&retptrs[0]
-            )
+        device,
+        <cl_device_info>CL_DEVICE_MEM_BASE_ADDR_ALIGN,
+        <size_t>sizeof(cl_uint),
+        <void *>&valptrs[0],
+        <size_t *>&retptrs[0])
     check_status(status)
 
     ret = valptrs[0]
@@ -31,19 +31,18 @@ cdef GetDeviceAddressBits(cl_device_id device):
     cdef cl_uint[1] valptrs
     cdef size_t[1] retptrs
     cdef cl_int status = api.clGetDeviceInfo(
-            device,
-            <cl_device_info>CL_DEVICE_ADDRESS_BITS,
-            <size_t>sizeof(cl_uint),
-            <void *>&valptrs[0],
-            <size_t *>&retptrs[0]
-            )
+        device,
+        <cl_device_info>CL_DEVICE_ADDRESS_BITS,
+        <size_t>sizeof(cl_uint),
+        <void *>&valptrs[0],
+        <size_t *>&retptrs[0])
     check_status(status)
 
     ret = valptrs[0]
     return ret
 
 
-################################################################################
+###############################################################################
 # utility
 
 cdef void SetKernelArgLocalMemory(cl_kernel kernel, arg_index, size_t size):
@@ -52,7 +51,9 @@ cdef void SetKernelArgLocalMemory(cl_kernel kernel, arg_index, size_t size):
 cdef is_valid_kernel_name(name):
     return re.match('^[a-zA-Z_][a-zA-Z_0-9]*$', name) is not None
 
-cdef cl_program CreateProgram(sources, cl_context context, num_devices, cl_device_id* devices_ptrs, options=b"") except *:
+cdef cl_program CreateProgram(sources, cl_context context, num_devices,
+                              cl_device_id* devices_ptrs,
+                              options=b"") except *:
     cdef size_t length = len(sources)
     cdef char** src
     cdef size_t* src_size
@@ -66,17 +67,21 @@ cdef cl_program CreateProgram(sources, cl_context context, num_devices, cl_devic
     cdef bytes py_string
     if os.getenv("CLPY_SAVE_CL_KERNEL_SOURCE") == "1":
         for i in range(length):
-            with open(tempfile.gettempdir() + "/" + str(time.monotonic()) + ".cl", 'w') as f:
+            with open(tempfile.gettempdir() + "/" +
+                      str(time.monotonic()) + ".cl", 'w') as f:
                 py_string = sources[i]
                 f.write(py_string.decode('utf-8'))
 
-    program = api.CreateProgramWithSource(context=context, count=length, strings=src, lengths=src_size)
+    program = api.CreateProgramWithSource(context=context, count=length,
+                                          strings=src, lengths=src_size)
     options = options + b'\0'
     cdef char* options_cstr = options
 
-    from exceptions import OpenCLRuntimeError, OpenCLProgramBuildError
+    from exceptions import OpenCLProgramBuildError
+    from exceptions import OpenCLRuntimeError
     try:
-        api.BuildProgram(program, num_devices, devices_ptrs, options_cstr, <void*>NULL, <void*>NULL)
+        api.BuildProgram(program, num_devices, devices_ptrs, options_cstr,
+                         <void*>NULL, <void*>NULL)
     except OpenCLRuntimeError as err:
         if err.status == CL_BUILD_PROGRAM_FAILURE:
             log = GetProgramBuildLog(program)
@@ -86,25 +91,25 @@ cdef cl_program CreateProgram(sources, cl_context context, num_devices, cl_devic
     return program
 
 cdef GetProgramBuildLog(cl_program program):
-    cdef size_t length;
+    cdef size_t length
     cdef cl_int status = api.clGetProgramBuildInfo(
-            program,
-            env.get_primary_device(),
-            CL_PROGRAM_BUILD_LOG,
-            0,
-            NULL,
-            &length)
+        program,
+        env.get_primary_device(),
+        CL_PROGRAM_BUILD_LOG,
+        0,
+        NULL,
+        &length)
     check_status(status)
 
     cdef array.array info = array.array('b')
     array.resize(info, length)
     status = api.clGetProgramBuildInfo(
-            program,
-            env.get_primary_device(),
-            CL_PROGRAM_BUILD_LOG,
-            length,
-            info.data.as_voidptr,
-            NULL)
+        program,
+        env.get_primary_device(),
+        CL_PROGRAM_BUILD_LOG,
+        length,
+        info.data.as_voidptr,
+        NULL)
     check_status(status)
     return info.tobytes().decode('utf8')
 

@@ -20,11 +20,13 @@ import clpy.backend.opencl
 cimport clpy.backend.opencl.utility
 import clpy.backend.opencl.env
 cimport clpy.backend.opencl.env
-from clpy.backend.opencl.types cimport cl_mem, cl_event
+from clpy.backend.opencl.types cimport cl_event
+from clpy.backend.opencl.types cimport cl_mem
 
 thread_local = threading.local()
 
-subbuffer_alignment = clpy.backend.opencl.utility.GetDeviceMemBaseAddrAlign(clpy.backend.opencl.env.get_primary_device()) // 8
+subbuffer_alignment = clpy.backend.opencl.utility.GetDeviceMemBaseAddrAlign(
+    clpy.backend.opencl.env.get_primary_device()) // 8
 
 cdef inline _ensure_context(int device_id):
 
@@ -80,8 +82,7 @@ class Memory(object):
                 clpy.backend.opencl.env.get_context(),
                 clpy.backend.opencl.api.MEM_READ_WRITE,
                 size,
-                <void*>NULL)
-                )
+                <void*>NULL))
 
     def __del__(self):
         if not self.buf.isNull():
@@ -90,7 +91,7 @@ class Memory(object):
     def __int__(self):
         """Returns the pointer value to the head of the allocation."""
         raise NotImplementedError("clpy does not support this")
-#        return self.ptr
+        # return self.ptr
 
 
 class ManagedMemory(Memory):
@@ -113,7 +114,7 @@ class ManagedMemory(Memory):
         if size > 0:
             self.device = device.Device()
             raise NotImplementedError("clpy does not support this")
-#            self.ptr = runtime.mallocManaged(size)
+            # self.ptr = runtime.mallocManaged(size)
 
     def prefetch(self, stream):
         """(experimental) Prefetch memory.
@@ -122,8 +123,8 @@ class ManagedMemory(Memory):
             stream (clpy.cuda.Stream): CUDA stream.
         """
         raise NotImplementedError("clpy does not support this")
-#        runtime.memPrefetchAsync(self.ptr, self.size, self.device.id,
-#                                 stream.ptr)
+        # runtime.memPrefetchAsync(self.ptr, self.size, self.device.id,
+        #                          stream.ptr)
 
     def advise(self, int advise, device.Device device):
         """(experimental) Advise about the usage of this memory.
@@ -134,7 +135,7 @@ class ManagedMemory(Memory):
 
         """
         raise NotImplementedError("clpy does not support this")
-#        runtime.memAdvise(self.ptr, self.size, advise, device.id)
+        # runtime.memAdvise(self.ptr, self.size, advise, device.id)
 
 
 cdef set _peer_access_checked = set()
@@ -146,17 +147,17 @@ cpdef _set_peer_access(int device, int peer):
     if device_pair in _peer_access_checked:
         return
     raise NotImplementedError("clpy does not support this")
-#    cdef int can_access = runtime.deviceCanAccessPeer(device, peer)
-#    _peer_access_checked.add(device_pair)
-#    if not can_access:
-#        return
-#
-#    cdef int current = runtime.getDevice()
-#    runtime.setDevice(device)
-#    try:
-#        runtime.deviceEnablePeerAccess(peer)
-#    finally:
-#        runtime.setDevice(current)
+    # cdef int can_access = runtime.deviceCanAccessPeer(device, peer)
+    # _peer_access_checked.add(device_pair)
+    # if not can_access:
+    #     return
+    #
+    # cdef int current = runtime.getDevice()
+    # runtime.setDevice(device)
+    # try:
+    #     runtime.deviceEnablePeerAccess(peer)
+    # finally:
+    #     runtime.setDevice(current)
 
 cdef class Buf:
     def __init__(self, size_t ptr=0):
@@ -310,15 +311,15 @@ cdef class MemoryPointer:
         cdef size_t host_ptr = mem.value
         if size > 0:
             clpy.backend.opencl.api.EnqueueWriteBuffer(
-                    command_queue=clpy.backend.opencl.env.get_command_queue(),
-                    buffer=self.buf.ptr,
-                    blocking_write=clpy.backend.opencl.api.BLOCKING,
-                    offset=self.cl_mem_offset(),
-                    cb=size,
-                    host_ptr=<void*>host_ptr,
-                    num_events_in_wait_list=0,
-                    event_wait_list=<cl_event*>NULL,
-                    event=<cl_event*>NULL)
+                command_queue=clpy.backend.opencl.env.get_command_queue(),
+                buffer=self.buf.ptr,
+                blocking_write=clpy.backend.opencl.api.BLOCKING,
+                offset=self.cl_mem_offset(),
+                cb=size,
+                host_ptr=<void*>host_ptr,
+                num_events_in_wait_list=0,
+                event_wait_list=<cl_event*>NULL,
+                event=<cl_event*>NULL)
 
     cpdef copy_from_host_async(self, mem, size_t size, stream):
         """Copies a memory sequence from the host memory asynchronously.
@@ -382,15 +383,15 @@ cdef class MemoryPointer:
         cdef size_t host_ptr = mem.value
         if size > 0:
             clpy.backend.opencl.api.EnqueueReadBuffer(
-                    command_queue=clpy.backend.opencl.env.get_command_queue(),
-                    buffer=self.buf.ptr,
-                    blocking_read=clpy.backend.opencl.api.BLOCKING,
-                    offset=self.cl_mem_offset(),
-                    cb=size,
-                    host_ptr=<void*>host_ptr,
-                    num_events_in_wait_list=0,
-                    event_wait_list=<cl_event*>NULL,
-                    event=<cl_event*>NULL)
+                command_queue=clpy.backend.opencl.env.get_command_queue(),
+                buffer=self.buf.ptr,
+                blocking_read=clpy.backend.opencl.api.BLOCKING,
+                offset=self.cl_mem_offset(),
+                cb=size,
+                host_ptr=<void*>host_ptr,
+                num_events_in_wait_list=0,
+                event_wait_list=<cl_event*>NULL,
+                event=<cl_event*>NULL)
 
     cpdef copy_to_host_async(self, mem, size_t size, stream):
         """Copies a memory sequence to the host memory asynchronously.
@@ -633,57 +634,57 @@ cdef class SingleDeviceMemoryPool:
         return merged
 
     cpdef MemoryPointer _alloc(self, Py_ssize_t rounded_size):
-         return self._allocator(rounded_size)
-#        hooks = memory_hook.get_memory_hooks()
-#        if hooks:
-#            memptr = None
-#            device_id = self._device_id
-#            hooks_values = hooks.values()  # avoid six for performance
-#            for hook in hooks_values:
-#                hook.alloc_preprocess(device_id=device_id,
-#                                      mem_size=rounded_size)
-#            try:
-#                memptr = self._allocator(rounded_size)
-#            finally:
-#                for hook in hooks_values:
-#                    mem_ptr = memptr.ptr if memptr is not None else 0
-#                    hook.alloc_postprocess(device_id=device_id,
-#                                           mem_size=rounded_size,
-#                                           mem_ptr=mem_ptr)
-#            return memptr
-#        else:
-#            return self._allocator(rounded_size)
+        return self._allocator(rounded_size)
+        # hooks = memory_hook.get_memory_hooks()
+        # if hooks:
+        #     memptr = None
+        #     device_id = self._device_id
+        #     hooks_values = hooks.values()  # avoid six for performance
+        #     for hook in hooks_values:
+        #         hook.alloc_preprocess(device_id=device_id,
+        #                               mem_size=rounded_size)
+        #     try:
+        #         memptr = self._allocator(rounded_size)
+        #     finally:
+        #         for hook in hooks_values:
+        #             mem_ptr = memptr.ptr if memptr is not None else 0
+        #             hook.alloc_postprocess(device_id=device_id,
+        #                                    mem_size=rounded_size,
+        #                                    mem_ptr=mem_ptr)
+        #     return memptr
+        # else:
+        #     return self._allocator(rounded_size)
 
     cpdef MemoryPointer malloc(self, Py_ssize_t size):
         rounded_size = self._round_size(size)
         return self._malloc(rounded_size)
-#        hooks = memory_hook.get_memory_hooks()
-#        if hooks:
-#            memptr = None
-#            device_id = self._device_id
-#            hooks_values = hooks.values()  # avoid six for performance
-#            for hook in hooks_values:
-#                hook.malloc_preprocess(device_id=device_id,
-#                                       size=size,
-#                                       mem_size=rounded_size)
-#            try:
-#                memptr = self._malloc(rounded_size)
-#            finally:
-#                if memptr is None:
-#                    mem_ptr = 0
-#                    pmem_id = 0
-#                else:
-#                    mem_ptr = memptr.ptr
-#                    pmem_id = id(memptr.mem)
-#                for hook in hooks_values:
-#                    hook.malloc_postprocess(device_id=device_id,
-#                                            size=size,
-#                                            mem_size=rounded_size,
-#                                            mem_ptr=mem_ptr,
-#                                            pmem_id=pmem_id)
-#            return memptr
-#        else:
-#            return self._malloc(rounded_size)
+        # hooks = memory_hook.get_memory_hooks()
+        # if hooks:
+        #     memptr = None
+        #     device_id = self._device_id
+        #     hooks_values = hooks.values()  # avoid six for performance
+        #     for hook in hooks_values:
+        #         hook.malloc_preprocess(device_id=device_id,
+        #                                size=size,
+        #                                mem_size=rounded_size)
+        #     try:
+        #         memptr = self._malloc(rounded_size)
+        #     finally:
+        #         if memptr is None:
+        #             mem_ptr = 0
+        #             pmem_id = 0
+        #         else:
+        #             mem_ptr = memptr.ptr
+        #             pmem_id = id(memptr.mem)
+        #         for hook in hooks_values:
+        #             hook.malloc_postprocess(device_id=device_id,
+        #                                     size=size,
+        #                                     mem_size=rounded_size,
+        #                                     mem_ptr=mem_ptr,
+        #                                     pmem_id=pmem_id)
+        #     return memptr
+        # else:
+        #     return self._malloc(rounded_size)
 
     cpdef MemoryPointer _malloc(self, Py_ssize_t size):
         cdef set free_list = None
@@ -709,31 +710,32 @@ cdef class SingleDeviceMemoryPool:
                     rlock.unlock_fastrlock(self._free_lock)
 
         if chunk is not None:
-#            _ensure_context(self._device_id) # TODO(LWisteria): need on OpenCL?
+            # # TODO(LWisteria): need on OpenCL?
+            # _ensure_context(self._device_id)
             chunk, remaining = self._split(chunk, size)
         else:
             # cudaMalloc if a cache is not found
             mem = self._alloc(size).mem
-#            try:
-#                mem = self._alloc(size).mem
-#            except runtime.CUDARuntimeError as e:
-#                if e.status != runtime.errorMemoryAllocation:
-#                    raise
-#                self.free_all_blocks()
-#                try:
-#                    mem = self._alloc(size).mem
-#                except runtime.CUDARuntimeError as e:
-#                    if e.status != runtime.errorMemoryAllocation:
-#                        raise
-#                    gc.collect()
-#                    try:
-#                        mem = self._alloc(size).mem
-#                    except runtime.CUDARuntimeError as e:
-#                        if e.status != runtime.errorMemoryAllocation:
-#                            raise
-#                        else:
-#                            total = size + self.total_bytes()
-#                            raise OutOfMemoryError(size, total)
+            # try:
+            #     mem = self._alloc(size).mem
+            # except runtime.CUDARuntimeError as e:
+            #     if e.status != runtime.errorMemoryAllocation:
+            #         raise
+            #     self.free_all_blocks()
+            #     try:
+            #         mem = self._alloc(size).mem
+            #     except runtime.CUDARuntimeError as e:
+            #         if e.status != runtime.errorMemoryAllocation:
+            #             raise
+            #         gc.collect()
+            #         try:
+            #             mem = self._alloc(size).mem
+            #         except runtime.CUDARuntimeError as e:
+            #             if e.status != runtime.errorMemoryAllocation:
+            #                 raise
+            #             else:
+            #                 total = size + self.total_bytes()
+            #                 raise OutOfMemoryError(size, total)
             chunk = Chunk(mem, 0, size)
 
         try:

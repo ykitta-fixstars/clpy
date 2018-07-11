@@ -81,7 +81,8 @@ cdef class ndarray:
     """
 
     def __init__(self, shape, dtype=float, memptr=None, order='C'):
-        buf = memptr  # TODO(LWisteria): rename param memptr if keyword argument is not used
+        # TODO(LWisteria): rename param memptr if keyword argument is not used
+        buf = memptr
         cdef Py_ssize_t x
         self._shape = internal.get_size(shape)
         for x in self._shape:
@@ -1677,8 +1678,9 @@ cdef class ndarray:
         """Returns a copy of the array on host memory.
 
         Args:
-            stream (clpy.backend.Stream): CUDA stream object. If it is given, the
-                copy runs asynchronously. Otherwise, the copy is synchronous.
+            stream (clpy.backend.Stream): CUDA stream object. If it is given,
+                the copy runs asynchronously. Otherwise, the copy is
+                synchronous.
 
         Returns:
             numpy.ndarray: Copy of the array on host memory.
@@ -1703,8 +1705,9 @@ cdef class ndarray:
 
         Args:
             arr (numpy.ndarray): The source array on the host memory.
-            stream (clpy.backend.Stream): CUDA stream object. If it is given, the
-                copy runs asynchronously. Otherwise, the copy is synchronous.
+            stream (clpy.backend.Stream): CUDA stream object. If it is given,
+                the copy runs asynchronously. Otherwise, the copy is
+                synchronous.
 
         """
         if not isinstance(arr, numpy.ndarray):
@@ -1892,18 +1895,30 @@ cdef _divmod_float = string.Template('''
 
 divmod = create_ufunc(
     'clpy_divmod',
-    (('bb->bb', _divmod_int  .substitute(floor_divide_expr='_floor_divide_c(in0, in1)')),
-     ('BB->BB', _divmod_int  .substitute(floor_divide_expr='_floor_divide_C(in0, in1)')),
-     ('hh->hh', _divmod_int  .substitute(floor_divide_expr='_floor_divide_s(in0, in1)')),
-     ('HH->HH', _divmod_int  .substitute(floor_divide_expr='_floor_divide_S(in0, in1)')),
-     ('ii->ii', _divmod_int  .substitute(floor_divide_expr='_floor_divide_i(in0, in1)')),
-     ('II->II', _divmod_int  .substitute(floor_divide_expr='_floor_divide_I(in0, in1)')),
-     ('ll->ll', _divmod_int  .substitute(floor_divide_expr='_floor_divide_l(in0, in1)')),
-     ('LL->LL', _divmod_int  .substitute(floor_divide_expr='_floor_divide_L(in0, in1)')),
-     ('qq->qq', _divmod_int  .substitute(floor_divide_expr='_floor_divide_l(in0, in1)')),
-     ('QQ->QQ', _divmod_int  .substitute(floor_divide_expr='_floor_divide_L(in0, in1)')),
-     ('ff->ff', _divmod_float.substitute(floor_divide_expr='_floor_divide_f(in0, in1)')),
-     ('dd->dd', _divmod_float.substitute(floor_divide_expr='_floor_divide_d(in0, in1)')))
+    (('bb->bb', _divmod_int  .substitute
+      (floor_divide_expr='_floor_divide_c(in0, in1)')),
+     ('BB->BB', _divmod_int  .substitute
+      (floor_divide_expr='_floor_divide_C(in0, in1)')),
+     ('hh->hh', _divmod_int  .substitute
+      (floor_divide_expr='_floor_divide_s(in0, in1)')),
+     ('HH->HH', _divmod_int  .substitute
+      (floor_divide_expr='_floor_divide_S(in0, in1)')),
+     ('ii->ii', _divmod_int  .substitute
+      (floor_divide_expr='_floor_divide_i(in0, in1)')),
+     ('II->II', _divmod_int  .substitute
+      (floor_divide_expr='_floor_divide_I(in0, in1)')),
+     ('ll->ll', _divmod_int  .substitute
+      (floor_divide_expr='_floor_divide_l(in0, in1)')),
+     ('LL->LL', _divmod_int  .substitute
+      (floor_divide_expr='_floor_divide_L(in0, in1)')),
+     ('qq->qq', _divmod_int  .substitute
+      (floor_divide_expr='_floor_divide_l(in0, in1)')),
+     ('QQ->QQ', _divmod_int  .substitute
+      (floor_divide_expr='_floor_divide_L(in0, in1)')),
+     ('ff->ff', _divmod_float.substitute
+      (floor_divide_expr='_floor_divide_f(in0, in1)')),
+     ('dd->dd', _divmod_float.substitute
+      (floor_divide_expr='_floor_divide_d(in0, in1)')))
 )
 
 
@@ -1976,13 +1991,15 @@ CREATE_MIN_MAX_ST(bool)
 #define my_argmin(a, b, T) \\
     ( ((a).index == -1) ? (b) : \\
     ( ((b).index == -1) ? (a) : \\
-    ( ((a).value == (b).value) ? create2_min_max_st_##T( (a).value, min((a).index, (b).index) ) : \\
+    ( ((a).value == (b).value) ? \\
+    create2_min_max_st_##T( (a).value, min((a).index, (b).index) ) : \\
     ( ((a).value <= (b).value) ? a : b \\
     ))))
 #define my_argmin_float(a, b, T) \\
     ( ((a).index == -1) ? (b) : \\
     ( ((b).index == -1) ? (a) : \\
-    ( ((a).value == (b).value) ? create2_min_max_st_##T( (a).value, min((a).index, (b).index) ) : \\
+    ( ((a).value == (b).value) ? \\
+    create2_min_max_st_##T( (a).value, min((a).index, (b).index) ) : \\
     ( is_nan((a).value) ? (a) : \\
     ( is_nan((b).value) ? (b) : \\
     ( ((a).value <= (b).value) ? a : b \\
@@ -1991,13 +2008,15 @@ CREATE_MIN_MAX_ST(bool)
 #define my_argmax(a, b, T) \\
     ( ((a).index == -1) ? (b) : \\
     ( ((b).index == -1) ? (a) : \\
-    ( ((a).value == (b).value) ? create2_min_max_st_##T( (a).value, min((a).index, (b).index) ) : \\
+    ( ((a).value == (b).value) ? \\
+    create2_min_max_st_##T( (a).value, min((a).index, (b).index) ) : \\
     ( ((a).value >= (b).value) ? a : b \\
     ))))
 #define my_argmax_float(a, b, T) \\
     ( ((a).index == -1) ? (b) : \\
     ( ((b).index == -1) ? (a) : \\
-    ( ((a).value == (b).value) ? create2_min_max_st_##T( (a).value, min((a).index, (b).index) ) : \\
+    ( ((a).value == (b).value) ? \\
+    create2_min_max_st_##T( (a).value, min((a).index, (b).index) ) : \\
     ( is_nan((a).value) ? (a) : \\
     ( is_nan((b).value) ? (b) : \\
     ( ((a).value >= (b).value) ? a : b \\
@@ -2006,110 +2025,188 @@ CREATE_MIN_MAX_ST(bool)
 
 _amin = create_reduction_func(
     'clpy_min',
-    (('?->?', ('create1_min_max_st_bool(in0)', 'my_min(a, b, bool)', None, 'min_max_st_bool')),
-     ('b->b', ('create1_min_max_st_char(in0)', 'my_min(a, b, char)', None, 'min_max_st_char')),
-     ('B->B', ('create1_min_max_st_uchar(in0)', 'my_min(a, b, uchar)', None, 'min_max_st_uchar')),
-     ('h->h', ('create1_min_max_st_short(in0)', 'my_min(a, b, short)', None, 'min_max_st_short')),
-     ('H->H', ('create1_min_max_st_ushort(in0)', 'my_min(a, b, ushort)', None, 'min_max_st_ushort')),
-     ('i->i', ('create1_min_max_st_int(in0)', 'my_min(a, b, int)', None, 'min_max_st_int')),
-     ('I->I', ('create1_min_max_st_uint(in0)', 'my_min(a, b, uint)', None, 'min_max_st_uint')),
-     ('l->l', ('create1_min_max_st_long(in0)', 'my_min(a, b, long)', None, 'min_max_st_long')),
-     ('L->L', ('create1_min_max_st_ulong(in0)', 'my_min(a, b, ulong)', None, 'min_max_st_ulong')),
-     ('q->q', ('create1_min_max_st_long(in0)', 'my_min(a, b, long)', None, 'min_max_st_long')),
-     ('Q->Q', ('create1_min_max_st_ulong(in0)', 'my_min(a, b, ulong)', None, 'min_max_st_ulong')),
-     ('f->f', ('create1_min_max_st_float(in0)', 'my_min_float(a, b, float)', None, 'min_max_st_float')),
-     ('d->d', ('create1_min_max_st_double(in0)', 'my_min_float(a, b, double)', None, 'min_max_st_double'))),
-              (None, None, 'out0 = a.value', None),
+    (('?->?', ('create1_min_max_st_bool(in0)',
+               'my_min(a, b, bool)', None, 'min_max_st_bool')),
+     ('b->b', ('create1_min_max_st_char(in0)',
+               'my_min(a, b, char)', None, 'min_max_st_char')),
+     ('B->B', ('create1_min_max_st_uchar(in0)',
+               'my_min(a, b, uchar)', None, 'min_max_st_uchar')),
+     ('h->h', ('create1_min_max_st_short(in0)',
+               'my_min(a, b, short)', None, 'min_max_st_short')),
+     ('H->H', ('create1_min_max_st_ushort(in0)',
+               'my_min(a, b, ushort)', None, 'min_max_st_ushort')),
+     ('i->i', ('create1_min_max_st_int(in0)',
+               'my_min(a, b, int)', None, 'min_max_st_int')),
+     ('I->I', ('create1_min_max_st_uint(in0)',
+               'my_min(a, b, uint)', None, 'min_max_st_uint')),
+     ('l->l', ('create1_min_max_st_long(in0)',
+               'my_min(a, b, long)', None, 'min_max_st_long')),
+     ('L->L', ('create1_min_max_st_ulong(in0)',
+               'my_min(a, b, ulong)', None, 'min_max_st_ulong')),
+     ('q->q', ('create1_min_max_st_long(in0)',
+               'my_min(a, b, long)', None, 'min_max_st_long')),
+     ('Q->Q', ('create1_min_max_st_ulong(in0)',
+               'my_min(a, b, ulong)', None, 'min_max_st_ulong')),
+     ('f->f', ('create1_min_max_st_float(in0)',
+               'my_min_float(a, b, float)', None, 'min_max_st_float')),
+     ('d->d', ('create1_min_max_st_double(in0)',
+               'my_min_float(a, b, double)', None, 'min_max_st_double'))),
+    (None, None, 'out0 = a.value', None),
     'create0_${reduce_type}()', _min_max_preamble)
 
 _amax = create_reduction_func(
     'clpy_max',
-    (('?->?', ('create1_min_max_st_bool(in0)', 'my_max(a, b, bool)', None, 'min_max_st_bool')),
-     ('b->b', ('create1_min_max_st_char(in0)', 'my_max(a, b, char)', None, 'min_max_st_char')),
-     ('B->B', ('create1_min_max_st_uchar(in0)', 'my_max(a, b, uchar)', None, 'min_max_st_uchar')),
-     ('h->h', ('create1_min_max_st_short(in0)', 'my_max(a, b, short)', None, 'min_max_st_short')),
-     ('H->H', ('create1_min_max_st_ushort(in0)', 'my_max(a, b, ushort)', None, 'min_max_st_ushort')),
-     ('i->i', ('create1_min_max_st_int(in0)', 'my_max(a, b, int)', None, 'min_max_st_int')),
-     ('I->I', ('create1_min_max_st_uint(in0)', 'my_max(a, b, uint)', None, 'min_max_st_uint')),
-     ('l->l', ('create1_min_max_st_long(in0)', 'my_max(a, b, long)', None, 'min_max_st_long')),
-     ('L->L', ('create1_min_max_st_ulong(in0)', 'my_max(a, b, ulong)', None, 'min_max_st_ulong')),
-     ('q->q', ('create1_min_max_st_long(in0)', 'my_max(a, b, long)', None, 'min_max_st_long')),
-     ('Q->Q', ('create1_min_max_st_ulong(in0)', 'my_max(a, b, ulong)', None, 'min_max_st_ulong')),
-     ('f->f', ('create1_min_max_st_float(in0)', 'my_max_float(a, b, float)', None, 'min_max_st_float')),
-     ('d->d', ('create1_min_max_st_double(in0)', 'my_max_float(a, b, double)', None, 'min_max_st_double'))),
-              (None, None, 'out0 = a.value', None),
+    (('?->?', ('create1_min_max_st_bool(in0)',
+               'my_max(a, b, bool)', None, 'min_max_st_bool')),
+     ('b->b', ('create1_min_max_st_char(in0)',
+               'my_max(a, b, char)', None, 'min_max_st_char')),
+     ('B->B', ('create1_min_max_st_uchar(in0)',
+               'my_max(a, b, uchar)', None, 'min_max_st_uchar')),
+     ('h->h', ('create1_min_max_st_short(in0)',
+               'my_max(a, b, short)', None, 'min_max_st_short')),
+     ('H->H', ('create1_min_max_st_ushort(in0)',
+               'my_max(a, b, ushort)', None, 'min_max_st_ushort')),
+     ('i->i', ('create1_min_max_st_int(in0)',
+               'my_max(a, b, int)', None, 'min_max_st_int')),
+     ('I->I', ('create1_min_max_st_uint(in0)',
+               'my_max(a, b, uint)', None, 'min_max_st_uint')),
+     ('l->l', ('create1_min_max_st_long(in0)',
+               'my_max(a, b, long)', None, 'min_max_st_long')),
+     ('L->L', ('create1_min_max_st_ulong(in0)',
+               'my_max(a, b, ulong)', None, 'min_max_st_ulong')),
+     ('q->q', ('create1_min_max_st_long(in0)',
+               'my_max(a, b, long)', None, 'min_max_st_long')),
+     ('Q->Q', ('create1_min_max_st_ulong(in0)',
+               'my_max(a, b, ulong)', None, 'min_max_st_ulong')),
+     ('f->f', ('create1_min_max_st_float(in0)',
+               'my_max_float(a, b, float)', None, 'min_max_st_float')),
+     ('d->d', ('create1_min_max_st_double(in0)',
+               'my_max_float(a, b, double)', None, 'min_max_st_double'))),
+    (None, None, 'out0 = a.value', None),
     'create0_${reduce_type}()', _min_max_preamble)
 
 nanmin = create_reduction_func(
     'clpy_nanmin',
-    (('?->?', ('create1_min_max_st_bool(in0)', 'my_min(a, b, bool)', None, 'min_max_st_bool')),
-     ('b->b', ('create1_min_max_st_char(in0)', 'my_min(a, b, char)', None, 'min_max_st_char')),
-     ('B->B', ('create1_min_max_st_uchar(in0)', 'my_min(a, b, uchar)', None, 'min_max_st_uchar')),
-     ('h->h', ('create1_min_max_st_short(in0)', 'my_min(a, b, short)', None, 'min_max_st_short')),
-     ('H->H', ('create1_min_max_st_ushort(in0)', 'my_min(a, b, ushort)', None, 'min_max_st_ushort')),
-     ('i->i', ('create1_min_max_st_int(in0)', 'my_min(a, b, int)', None, 'min_max_st_int')),
-     ('I->I', ('create1_min_max_st_uint(in0)', 'my_min(a, b, uint)', None, 'min_max_st_uint')),
-     ('l->l', ('create1_min_max_st_long(in0)', 'my_min(a, b, long)', None, 'min_max_st_long')),
-     ('L->L', ('create1_min_max_st_ulong(in0)', 'my_min(a, b, ulong)', None, 'min_max_st_ulong')),
-     ('q->q', ('create1_min_max_st_long(in0)', 'my_min(a, b, long)', None, 'min_max_st_long')),
-     ('Q->Q', ('create1_min_max_st_ulong(in0)', 'my_min(a, b, ulong)', None, 'min_max_st_ulong')),
-     ('f->f', ('create1_min_max_st_float(in0)', 'my_min(a, b, float)', None, 'min_max_st_float')),
-     ('d->d', ('create1_min_max_st_double(in0)', 'my_min(a, b, double)', None, 'min_max_st_double'))),
-              (None, None, 'out0 = a.value', None),
+    (('?->?', ('create1_min_max_st_bool(in0)',
+               'my_min(a, b, bool)', None, 'min_max_st_bool')),
+     ('b->b', ('create1_min_max_st_char(in0)',
+               'my_min(a, b, char)', None, 'min_max_st_char')),
+     ('B->B', ('create1_min_max_st_uchar(in0)',
+               'my_min(a, b, uchar)', None, 'min_max_st_uchar')),
+     ('h->h', ('create1_min_max_st_short(in0)',
+               'my_min(a, b, short)', None, 'min_max_st_short')),
+     ('H->H', ('create1_min_max_st_ushort(in0)',
+               'my_min(a, b, ushort)', None, 'min_max_st_ushort')),
+     ('i->i', ('create1_min_max_st_int(in0)',
+               'my_min(a, b, int)', None, 'min_max_st_int')),
+     ('I->I', ('create1_min_max_st_uint(in0)',
+               'my_min(a, b, uint)', None, 'min_max_st_uint')),
+     ('l->l', ('create1_min_max_st_long(in0)',
+               'my_min(a, b, long)', None, 'min_max_st_long')),
+     ('L->L', ('create1_min_max_st_ulong(in0)',
+               'my_min(a, b, ulong)', None, 'min_max_st_ulong')),
+     ('q->q', ('create1_min_max_st_long(in0)',
+               'my_min(a, b, long)', None, 'min_max_st_long')),
+     ('Q->Q', ('create1_min_max_st_ulong(in0)',
+               'my_min(a, b, ulong)', None, 'min_max_st_ulong')),
+     ('f->f', ('create1_min_max_st_float(in0)',
+               'my_min(a, b, float)', None, 'min_max_st_float')),
+     ('d->d', ('create1_min_max_st_double(in0)',
+               'my_min(a, b, double)', None, 'min_max_st_double'))),
+    (None, None, 'out0 = a.value', None),
     'create0_${reduce_type}()', _min_max_preamble)
 
 nanmax = create_reduction_func(
     'clpy_nanmax',
-    (('?->?', ('create1_min_max_st_bool(in0)', 'my_max(a, b, bool)', None, 'min_max_st_bool')),
-     ('b->b', ('create1_min_max_st_char(in0)', 'my_max(a, b, char)', None, 'min_max_st_char')),
-     ('B->B', ('create1_min_max_st_uchar(in0)', 'my_max(a, b, uchar)', None, 'min_max_st_uchar')),
-     ('h->h', ('create1_min_max_st_short(in0)', 'my_max(a, b, short)', None, 'min_max_st_short')),
-     ('H->H', ('create1_min_max_st_ushort(in0)', 'my_max(a, b, ushort)', None, 'min_max_st_ushort')),
-     ('i->i', ('create1_min_max_st_int(in0)', 'my_max(a, b, int)', None, 'min_max_st_int')),
-     ('I->I', ('create1_min_max_st_uint(in0)', 'my_max(a, b, uint)', None, 'min_max_st_uint')),
-     ('l->l', ('create1_min_max_st_long(in0)', 'my_max(a, b, long)', None, 'min_max_st_long')),
-     ('L->L', ('create1_min_max_st_ulong(in0)', 'my_max(a, b, ulong)', None, 'min_max_st_ulong')),
-     ('q->q', ('create1_min_max_st_long(in0)', 'my_max(a, b, long)', None, 'min_max_st_long')),
-     ('Q->Q', ('create1_min_max_st_ulong(in0)', 'my_max(a, b, ulong)', None, 'min_max_st_ulong')),
-     ('f->f', ('create1_min_max_st_float(in0)', 'my_max(a, b, float)', None, 'min_max_st_float')),
-     ('d->d', ('create1_min_max_st_double(in0)', 'my_max(a, b, double)', None, 'min_max_st_double'))),
-              (None, None, 'out0 = a.value', None),
+    (('?->?', ('create1_min_max_st_bool(in0)',
+               'my_max(a, b, bool)', None, 'min_max_st_bool')),
+     ('b->b', ('create1_min_max_st_char(in0)',
+               'my_max(a, b, char)', None, 'min_max_st_char')),
+     ('B->B', ('create1_min_max_st_uchar(in0)',
+               'my_max(a, b, uchar)', None, 'min_max_st_uchar')),
+     ('h->h', ('create1_min_max_st_short(in0)',
+               'my_max(a, b, short)', None, 'min_max_st_short')),
+     ('H->H', ('create1_min_max_st_ushort(in0)',
+               'my_max(a, b, ushort)', None, 'min_max_st_ushort')),
+     ('i->i', ('create1_min_max_st_int(in0)',
+               'my_max(a, b, int)', None, 'min_max_st_int')),
+     ('I->I', ('create1_min_max_st_uint(in0)',
+               'my_max(a, b, uint)', None, 'min_max_st_uint')),
+     ('l->l', ('create1_min_max_st_long(in0)',
+               'my_max(a, b, long)', None, 'min_max_st_long')),
+     ('L->L', ('create1_min_max_st_ulong(in0)',
+               'my_max(a, b, ulong)', None, 'min_max_st_ulong')),
+     ('q->q', ('create1_min_max_st_long(in0)',
+               'my_max(a, b, long)', None, 'min_max_st_long')),
+     ('Q->Q', ('create1_min_max_st_ulong(in0)',
+               'my_max(a, b, ulong)', None, 'min_max_st_ulong')),
+     ('f->f', ('create1_min_max_st_float(in0)',
+               'my_max(a, b, float)', None, 'min_max_st_float')),
+     ('d->d', ('create1_min_max_st_double(in0)',
+               'my_max(a, b, double)', None, 'min_max_st_double'))),
+    (None, None, 'out0 = a.value', None),
     'create0_${reduce_type}()', _min_max_preamble)
 
 cdef _argmin = create_reduction_func(
     'clpy_argmin',
-    (('?->?', ('create1_min_max_st_bool(in0)', 'my_argmin(a, b, bool)', None, 'min_max_st_bool')),
-     ('b->b', ('create1_min_max_st_char(in0)', 'my_argmin(a, b, char)', None, 'min_max_st_char')),
-     ('B->B', ('create1_min_max_st_uchar(in0)', 'my_argmin(a, b, uchar)', None, 'min_max_st_uchar')),
-     ('h->h', ('create1_min_max_st_short(in0)', 'my_argmin(a, b, short)', None, 'min_max_st_short')),
-     ('H->H', ('create1_min_max_st_ushort(in0)', 'my_argmin(a, b, ushort)', None, 'min_max_st_ushort')),
-     ('i->i', ('create1_min_max_st_int(in0)', 'my_argmin(a, b, int)', None, 'min_max_st_int')),
-     ('I->I', ('create1_min_max_st_uint(in0)', 'my_argmin(a, b, uint)', None, 'min_max_st_uint')),
-     ('l->l', ('create1_min_max_st_long(in0)', 'my_argmin(a, b, long)', None, 'min_max_st_long')),
-     ('L->L', ('create1_min_max_st_ulong(in0)', 'my_argmin(a, b, ulong)', None, 'min_max_st_ulong')),
-     ('q->q', ('create1_min_max_st_long(in0)', 'my_argmin(a, b, long)', None, 'min_max_st_long')),
-     ('Q->Q', ('create1_min_max_st_ulong(in0)', 'my_argmin(a, b, ulong)', None, 'min_max_st_ulong')),
-     ('f->f', ('create1_min_max_st_float(in0)', 'my_argmin_float(a, b, float)', None, 'min_max_st_float')),
-     ('d->d', ('create1_min_max_st_double(in0)', 'my_argmin_float(a, b, double)', None, 'min_max_st_double'))),
-              (None, None, 'out0 = a.index', None),
+    (('?->?', ('create1_min_max_st_bool(in0)',
+               'my_argmin(a, b, bool)', None, 'min_max_st_bool')),
+     ('b->b', ('create1_min_max_st_char(in0)',
+               'my_argmin(a, b, char)', None, 'min_max_st_char')),
+     ('B->B', ('create1_min_max_st_uchar(in0)',
+               'my_argmin(a, b, uchar)', None, 'min_max_st_uchar')),
+     ('h->h', ('create1_min_max_st_short(in0)',
+               'my_argmin(a, b, short)', None, 'min_max_st_short')),
+     ('H->H', ('create1_min_max_st_ushort(in0)',
+               'my_argmin(a, b, ushort)', None, 'min_max_st_ushort')),
+     ('i->i', ('create1_min_max_st_int(in0)',
+               'my_argmin(a, b, int)', None, 'min_max_st_int')),
+     ('I->I', ('create1_min_max_st_uint(in0)',
+               'my_argmin(a, b, uint)', None, 'min_max_st_uint')),
+     ('l->l', ('create1_min_max_st_long(in0)',
+               'my_argmin(a, b, long)', None, 'min_max_st_long')),
+     ('L->L', ('create1_min_max_st_ulong(in0)',
+               'my_argmin(a, b, ulong)', None, 'min_max_st_ulong')),
+     ('q->q', ('create1_min_max_st_long(in0)',
+               'my_argmin(a, b, long)', None, 'min_max_st_long')),
+     ('Q->Q', ('create1_min_max_st_ulong(in0)',
+               'my_argmin(a, b, ulong)', None, 'min_max_st_ulong')),
+     ('f->f', ('create1_min_max_st_float(in0)',
+               'my_argmin_float(a, b, float)', None, 'min_max_st_float')),
+     ('d->d', ('create1_min_max_st_double(in0)',
+               'my_argmin_float(a, b, double)', None, 'min_max_st_double'))),
+    (None, None, 'out0 = a.index', None),
     'create0_${reduce_type}()', _min_max_preamble)
 
 cdef _argmax = create_reduction_func(
     'clpy_argmax',
-    (('?->q', ('create2_min_max_st_bool(in0, _J)', 'my_argmax(a, b, bool)', None, 'min_max_st_bool')),
-     ('b->q', ('create2_min_max_st_char(in0, _J)', 'my_argmax(a, b, char)', None, 'min_max_st_char')),
-     ('B->q', ('create2_min_max_st_uchar(in0, _J)', 'my_argmax(a, b, uchar)', None, 'min_max_st_uchar')),
-     ('h->q', ('create2_min_max_st_short(in0, _J)', 'my_argmax(a, b, short)', None, 'min_max_st_short')),
-     ('H->q', ('create2_min_max_st_ushort(in0, _J)', 'my_argmax(a, b, ushort)', None, 'min_max_st_ushort')),
-     ('i->q', ('create2_min_max_st_int(in0, _J)', 'my_argmax(a, b, int)', None, 'min_max_st_int')),
-     ('I->q', ('create2_min_max_st_uint(in0, _J)', 'my_argmax(a, b, uint)', None, 'min_max_st_uint')),
-     ('l->q', ('create2_min_max_st_long(in0, _J)', 'my_argmax(a, b, long)', None, 'min_max_st_long')),
-     ('L->q', ('create2_min_max_st_ulong(in0, _J)', 'my_argmax(a, b, ulong)', None, 'min_max_st_ulong')),
-     ('q->q', ('create2_min_max_st_long(in0, _J)', 'my_argmax(a, b, long)', None, 'min_max_st_long')),
-     ('Q->q', ('create2_min_max_st_ulong(in0, _J)', 'my_argmax(a, b, ulong)', None, 'min_max_st_ulong')),
-     ('f->q', ('create2_min_max_st_float(in0, _J)', 'my_argmax_float(a, b, float)', None, 'min_max_st_float')),
-     ('d->q', ('create2_min_max_st_double(in0, _J)', 'my_argmax_float(a, b, double)', None, 'min_max_st_double'))),
-              (None, None, 'out0 = a.index', None),
+    (('?->q', ('create2_min_max_st_bool(in0, _J)',
+               'my_argmax(a, b, bool)', None, 'min_max_st_bool')),
+     ('b->q', ('create2_min_max_st_char(in0, _J)',
+               'my_argmax(a, b, char)', None, 'min_max_st_char')),
+     ('B->q', ('create2_min_max_st_uchar(in0, _J)',
+               'my_argmax(a, b, uchar)', None, 'min_max_st_uchar')),
+     ('h->q', ('create2_min_max_st_short(in0, _J)',
+               'my_argmax(a, b, short)', None, 'min_max_st_short')),
+     ('H->q', ('create2_min_max_st_ushort(in0, _J)',
+               'my_argmax(a, b, ushort)', None, 'min_max_st_ushort')),
+     ('i->q', ('create2_min_max_st_int(in0, _J)',
+               'my_argmax(a, b, int)', None, 'min_max_st_int')),
+     ('I->q', ('create2_min_max_st_uint(in0, _J)',
+               'my_argmax(a, b, uint)', None, 'min_max_st_uint')),
+     ('l->q', ('create2_min_max_st_long(in0, _J)',
+               'my_argmax(a, b, long)', None, 'min_max_st_long')),
+     ('L->q', ('create2_min_max_st_ulong(in0, _J)',
+               'my_argmax(a, b, ulong)', None, 'min_max_st_ulong')),
+     ('q->q', ('create2_min_max_st_long(in0, _J)',
+               'my_argmax(a, b, long)', None, 'min_max_st_long')),
+     ('Q->q', ('create2_min_max_st_ulong(in0, _J)',
+               'my_argmax(a, b, ulong)', None, 'min_max_st_ulong')),
+     ('f->q', ('create2_min_max_st_float(in0, _J)',
+               'my_argmax_float(a, b, float)', None, 'min_max_st_float')),
+     ('d->q', ('create2_min_max_st_double(in0, _J)',
+               'my_argmax_float(a, b, double)', None, 'min_max_st_double'))),
+    (None, None, 'out0 = a.index', None),
     'create0_${reduce_type}()', _min_max_preamble, default=True)
 
 
@@ -2159,7 +2256,8 @@ cpdef ndarray array(obj, dtype=None, bint copy=True, str order='K',
             a.fill(a_cpu[()])
             return a
         a.set(a_cpu)
-        # TODO(LWisteria): Use ALLOC_HOST_PTR and clEnqueueMapBuffer instead of above set()
+        # TODO(LWisteria): Use ALLOC_HOST_PTR and clEnqueueMapBuffer
+        #                  instead of above set()
 #        mem = pinned_memory.alloc_pinned_memory(a.nbytes)
 #        src_cpu = numpy.frombuffer(mem, a_cpu.dtype,
 #                                   a_cpu.size).reshape(a_cpu.shape)
@@ -2538,7 +2636,8 @@ cpdef ndarray concatenate(tup, axis, shape, dtype):
 
     ret = ndarray(shape, dtype=dtype)
 
-    # TODO(yoshiki.imaizumi): keep clpy implementation to optimize when len(tup) > 3
+    # TODO(yoshiki.imaizumi): keep clpy implementation to optimize
+    #                         when len(tup) > 3
 #    if len(tup) > 3:
 #        all_same_type = True
 #        all_one_and_contiguous = True
@@ -3975,18 +4074,18 @@ if six.PY3:
 floor_divide = create_ufunc(
     'clpy_floor_divide',
     (
-     ('bb->b', 'out0 = _floor_divide_c(in0, in1)'),
-     ('BB->B', 'out0 = _floor_divide_C(in0, in1)'),
-     ('hh->h', 'out0 = _floor_divide_s(in0, in1)'),
-     ('HH->H', 'out0 = _floor_divide_S(in0, in1)'),
-     ('ii->i', 'out0 = _floor_divide_i(in0, in1)'),
-     ('II->I', 'out0 = _floor_divide_I(in0, in1)'),
-     ('ll->l', 'out0 = _floor_divide_l(in0, in1)'),
-     ('LL->L', 'out0 = _floor_divide_L(in0, in1)'),
-     ('qq->q', 'out0 = _floor_divide_l(in0, in1)'),
-     ('QQ->Q', 'out0 = _floor_divide_L(in0, in1)'),
-     ('ff->f', 'out0 = _floor_divide_f(in0, in1)'),
-     ('dd->d', 'out0 = _floor_divide_d(in0, in1)'),
+        ('bb->b', 'out0 = _floor_divide_c(in0, in1)'),
+        ('BB->B', 'out0 = _floor_divide_C(in0, in1)'),
+        ('hh->h', 'out0 = _floor_divide_s(in0, in1)'),
+        ('HH->H', 'out0 = _floor_divide_S(in0, in1)'),
+        ('ii->i', 'out0 = _floor_divide_i(in0, in1)'),
+        ('II->I', 'out0 = _floor_divide_I(in0, in1)'),
+        ('ll->l', 'out0 = _floor_divide_l(in0, in1)'),
+        ('LL->L', 'out0 = _floor_divide_L(in0, in1)'),
+        ('qq->q', 'out0 = _floor_divide_l(in0, in1)'),
+        ('QQ->Q', 'out0 = _floor_divide_L(in0, in1)'),
+        ('ff->f', 'out0 = _floor_divide_f(in0, in1)'),
+        ('dd->d', 'out0 = _floor_divide_d(in0, in1)'),
     ),
     doc='''Elementwise floor division (i.e. integer quotient).
 
@@ -3998,18 +4097,28 @@ floor_divide = create_ufunc(
 remainder = create_ufunc(
     'clpy_remainder',
     (
-     ('bb->b', 'out0 = (in0 - _floor_divide_c(in0, in1) * in1) * (in1 != 0)'),
-     ('BB->B', 'out0 = (in0 - _floor_divide_C(in0, in1) * in1) * (in1 != 0)'),
-     ('hh->h', 'out0 = (in0 - _floor_divide_s(in0, in1) * in1) * (in1 != 0)'),
-     ('HH->H', 'out0 = (in0 - _floor_divide_S(in0, in1) * in1) * (in1 != 0)'),
-     ('ii->i', 'out0 = (in0 - _floor_divide_i(in0, in1) * in1) * (in1 != 0)'),
-     ('II->I', 'out0 = (in0 - _floor_divide_I(in0, in1) * in1) * (in1 != 0)'),
-     ('ll->l', 'out0 = (in0 - _floor_divide_l(in0, in1) * in1) * (in1 != 0)'),
-     ('LL->L', 'out0 = (in0 - _floor_divide_L(in0, in1) * in1) * (in1 != 0)'),
-     ('qq->q', 'out0 = (in0 - _floor_divide_l(in0, in1) * in1) * (in1 != 0)'),
-     ('QQ->Q', 'out0 = (in0 - _floor_divide_L(in0, in1) * in1) * (in1 != 0)'),
-     ('ff->f', 'out0 =  in0 - _floor_divide_f(in0, in1) * in1'),
-     ('dd->d', 'out0 =  in0 - _floor_divide_d(in0, in1) * in1'),
+        ('bb->b',
+         'out0 = (in0 - _floor_divide_c(in0, in1) * in1) * (in1 != 0)'),
+        ('BB->B',
+         'out0 = (in0 - _floor_divide_C(in0, in1) * in1) * (in1 != 0)'),
+        ('hh->h',
+         'out0 = (in0 - _floor_divide_s(in0, in1) * in1) * (in1 != 0)'),
+        ('HH->H',
+         'out0 = (in0 - _floor_divide_S(in0, in1) * in1) * (in1 != 0)'),
+        ('ii->i',
+         'out0 = (in0 - _floor_divide_i(in0, in1) * in1) * (in1 != 0)'),
+        ('II->I',
+         'out0 = (in0 - _floor_divide_I(in0, in1) * in1) * (in1 != 0)'),
+        ('ll->l',
+         'out0 = (in0 - _floor_divide_l(in0, in1) * in1) * (in1 != 0)'),
+        ('LL->L',
+         'out0 = (in0 - _floor_divide_L(in0, in1) * in1) * (in1 != 0)'),
+        ('qq->q',
+         'out0 = (in0 - _floor_divide_l(in0, in1) * in1) * (in1 != 0)'),
+        ('QQ->Q',
+         'out0 = (in0 - _floor_divide_L(in0, in1) * in1) * (in1 != 0)'),
+        ('ff->f', 'out0 =  in0 - _floor_divide_f(in0, in1) * in1'),
+        ('dd->d', 'out0 =  in0 - _floor_divide_d(in0, in1) * in1'),
     ),
     doc='''Computes the remainder of Python division elementwise.
 
