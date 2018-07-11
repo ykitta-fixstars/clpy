@@ -181,7 +181,7 @@ class TestNdarray(unittest.TestCase):
         actual = y.get()
 
         self.assertTrue(np.all(expected == actual))
-        
+
     def test_sum(self):
         x_np = np.array([[1, 3, 2, 4]], dtype='float32')
         x = clpy.array(x_np)
