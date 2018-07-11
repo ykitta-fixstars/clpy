@@ -3,8 +3,8 @@
 from __future__ import division
 import sys
 
-import numpy
 import six
+import numpy
 
 import clpy
 from clpy.core import flags
