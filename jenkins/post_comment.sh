@@ -7,6 +7,7 @@ ERRORS_FILENAME=$WORKSPACE/erros.log
 # only if "bash build_and_test.sh" has exited successfully.
 if [[ $1 -eq 0 ]]; then
   BODY="Test (commit ${GIT_COMMIT}) passed in *$(uname -n)*."
+  EVENT="APPROVE"
 else
   N_ERRORFILE_LINES=$(cat ${ERRORS_FILENAME} | wc -l)
   N_CROP=50
@@ -14,6 +15,7 @@ else
 \`\`\`
 $(head -n ${N_CROP} ${ERRORS_FILENAME})
 \`\`\`"
+  EVENT="REQUEST_CHANGES"
 
   # If the error file is too long,
   # mention that there are more lines.
@@ -32,6 +34,6 @@ echo "${BODY}" |
   jq -sR "{ 
     \"commit_id\": \"${ghprbActualCommit}\",
     \"body\": . ,
-    \"event\": \"COMMENT\"
+    \"event\": \"${EVENT}\"
   }" |
   curl -XPOST "https://api.github.com/repos/fixstars/clpy/pulls/${ghprbPullId}/reviews?access_token=${access_token}" -d @- 
